@@ -27,8 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install deny
-        run: cargo install cargo-deny
+      - uses: taiki-e/install-action@cargo-deny
       - name: Run deny
         run: cargo deny check
 

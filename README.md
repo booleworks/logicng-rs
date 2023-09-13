@@ -1,6 +1,8 @@
 <a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/logicng_logo_ferris.png" alt="logo" width="400"></a>
 
+[![CI](https://github.com/booleworks/logicng-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/booleworks/logicng-rs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/booleworks/logicng-rs/graph/badge.svg?token=AMGWKMH7VM)](https://codecov.io/gh/booleworks/logicng-rs)
+[![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)]()
 <a href="https://blog.rust-lang.org/2023/06/01/Rust-1.70.0.html"><img alt="Rustc Version 1.70.0+" src="https://img.shields.io/badge/rustc-1.70.0%2B-lightgrey.svg"/></a>
 
 # A Library for Creating, Manipulating, and Solving Boolean Formulas
