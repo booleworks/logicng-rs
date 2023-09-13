@@ -1,0 +1,7 @@
+max_width = 140
+where_single_line = true
+brace_style = "PreferSameLine"
+blank_lines_upper_bound = 2
+short_array_element_width_threshold = 30
+use_small_heuristics = "MAX"
+imports_granularity = "Module"
