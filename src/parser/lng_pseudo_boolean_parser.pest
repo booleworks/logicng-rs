@@ -1,0 +1,31 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+pseudo_boolean = { SOI ~ equivalence? ~ EOI }
+equivalence = { implication ~ ("<=>" ~ implication)* }
+implication = { disjunction ~ ("=>" ~ disjunction)* }
+disjunction = { conjunction ~ ("|" ~ conjunction)* }
+conjunction = { lit ~ ("&" ~ lit)* }
+lit = { comparison | simp }
+simp = { not* ~ ( literal | constant | "(" ~ equivalence ~ ")") }
+comparison = { mul ~ ( (add | sub) ~ mul)* ~ comp_type ~ number }
+mul = { (number ~ "*")? ~ literal }
+
+literal = ${ not? ~ var_name }
+var_name = @{ (ASCII_ALPHANUMERIC | "_" | "@") ~ (ASCII_ALPHANUMERIC | "_")* }
+number = @{ "-"? ~ ASCII_DIGIT+ }
+
+constant = { verum | falsum }
+verum = @{ "$true" }
+falsum = @{ "$false" }
+
+add = @{ "+" }
+sub = @{ "-" }
+
+comp_type = { eq | le | lt | ge | gt }
+eq = @{ "=" }
+le = @{ "<=" }
+lt = @{ "<" }
+ge = @{ ">=" }
+gt = @{ ">" }
+
+not = @{ "~" }

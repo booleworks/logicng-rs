@@ -1,0 +1,13 @@
+.vscode
+.idea
+/target
+
+# temporary and possibly large files
+/resources/tmp
+
+# flamegraphs
+/*.svg
+
+# According to the cargo book: "If you’re building a non-end product, such as a rust library
+# that other rust packages will depend on, put Cargo.lock in your .gitignore"
+Cargo.lock

@@ -1,0 +1,11 @@
+[package]
+name = "open_wbo_ffi"
+version = "0.1.0-alpha.1"
+authors = ["BooleWorks GmbH <info@booleworks.com>"]
+publish = false
+
+[build-dependencies]
+cxx-build = "1.0.91"
+
+[dependencies]
+cxx = "1.0.91"

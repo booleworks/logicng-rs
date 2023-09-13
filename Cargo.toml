@@ -1,0 +1,75 @@
+[package]
+name = "logicng"
+version = "0.1.0-alpha.1"
+description = "A Library for Creating, Manipulating, and Solving Boolean Formulas"
+authors = ["BooleWorks GmbH <info@booleworks.com>"]
+homepage = "https://www.logicng.org/"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+publish = false
+include = ["/src", "/lib"]
+keywords = ["logic", "sat-solving", "boolean-formulas"]
+categories = ["data-structures", "algorithms", "mathematics", "science"]
+
+[lib]
+crate-type = ["lib"]
+
+[workspace]
+members = ["lib/open_wbo_ffi"]
+
+[dependencies]
+fastrand = "2.0.0"
+regex = "1.9.5"
+bitvec = "1.0.1"
+itertools = "0.11.0"
+num-bigint = "0.4.4"
+pest = "2.7.3"
+pest_derive = "2.7.3"
+dashmap = "5.5.3"
+open_wbo_ffi = { path = "lib/open_wbo_ffi", optional = true }
+
+[features]
+default = []
+long_running_tests = [] # these tests should only be executed with the release profile, otherwise they take too much time
+open_wbo = ["dep:open_wbo_ffi"]
+
+[profile.release]
+debug = true # no runtime costs involved
+
+[[example]]
+name = "misc"
+path = "examples/benches/performance_large.rs"
+
+[[example]]
+name = "model_counting"
+path = "examples/benches/model_counting.rs"
+
+[[example]]
+name = "maximize"
+path = "examples/benches/maximize.rs"
+
+[[example]]
+name = "maximize_maxsat"
+path = "examples/benches/maximize_maxsat.rs"
+required-features = ["open_wbo"]
+
+[[example]]
+name = "solve"
+path = "examples/benches/solve.rs"
+
+[[example]]
+name = "parse"
+path = "examples/benches/parse.rs"
+
+[[example]]
+name = "bench_overview"
+path = "examples/benches/overview.rs"
+required-features = ["open_wbo"]
+
+[[test]]
+name = "test"
+path = "tests/sat/dimacs_tests.rs"
+
+[[test]]
+name = "concurrency_tests"
+path = "tests/concurrency.rs"
