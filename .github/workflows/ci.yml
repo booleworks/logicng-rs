@@ -13,10 +13,24 @@ jobs:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - name: Run clippy
-        run: cargo clippy
       - name: Run tests
         run: cargo test --verbose
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run clippy
+        run: cargo clippy
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install deny
+        run: cargo install cargo-deny
+      - name: Run deny
+        run: cargo deny check
 
   check-formatting:
     runs-on: ubuntu-latest
