@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       longRunningTests:
-        description: Executes the long running tests (including the open_wbo tests) using the release profile
+        description: Execute the long running tests
         default: false
         type: boolean
 
@@ -27,4 +27,4 @@ jobs:
         run: cargo test --verbose
       - name: Run long running tests
         if: ${{ inputs.longRunningTests }}
-        run: cargo test --release --features long_running_tests open_wbo
+        run: cargo test --release --features long_running_tests,open_wbo
