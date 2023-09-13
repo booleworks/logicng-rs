@@ -1,5 +1,7 @@
 <a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/logicng_logo_ferris.png" alt="logo" width="400"></a>
 
+[![codecov](https://codecov.io/gh/booleworks/logicng-rs/graph/badge.svg?token=AMGWKMH7VM)](https://codecov.io/gh/booleworks/logicng-rs)
+
 # A Library for Creating, Manipulating, and Solving Boolean Formulas
 
 __THIS IS AN ALPHA VERSION! THE API MAY STILL CHANGE IN SIGNIFICANT WAYS! THE

@@ -28,3 +28,25 @@ jobs:
       - name: Run long running tests
         if: ${{ inputs.longRunningTests }}
         run: cargo test --release --features long_running_tests,open_wbo
+
+  coverage:
+    name: Test Coverage
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate code coverage
+        run: cargo llvm-cov --lcov --output-path lcov.info
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          file: lcov.info
+          flags: unittests
+          name: logicng-ci-coverage
+          fail_ci_if_error: false
+          verbose: true
