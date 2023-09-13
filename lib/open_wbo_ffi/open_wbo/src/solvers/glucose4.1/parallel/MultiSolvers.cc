@@ -200,7 +200,7 @@ bool MultiSolvers::addClause_(vec<Lit> &ps) {
         return ok = false;
     }
     else if(ps.size() == 1) {
-        assert(solvers[0]->value(ps[0]) == l_Undef); // TODO : Passes values to all threads
+        assert(solvers[0]->value(ps[0]) == l_Undef);
         solvers[0]->uncheckedEnqueue(ps[0]);
         if(!allClonesAreBuilt) {
             return ok = ((solvers[0]->propagate()) == CRef_Undef); // checks only main solver here for propagation constradiction
@@ -240,7 +240,6 @@ bool MultiSolvers::simplify() {
 
 bool MultiSolvers::eliminate() {
 
-    // TODO allow variable elimination when all threads are built!
     assert(allClonesAreBuilt == false);
 
     SimpSolver *s = (SimpSolver *) getPrimarySolver();
@@ -251,7 +250,6 @@ bool MultiSolvers::eliminate() {
 }
 
 
-// TODO: Use a template here
 void *localLaunch(void *arg) {
     ParallelSolver *s = (ParallelSolver *) arg;
 

@@ -167,8 +167,6 @@ bool GTE::encodeLeq(uint64_t k, Solver *S, const weightedlitst &iliterals,
 
 void GTE::encode(Solver *S, vec<Lit> &lits, vec<uint64_t> &coeffs,
                  uint64_t rhs) {
-  // FIXME: do not change coeffs in this method. Make coeffs const.
-
   // If the rhs is larger than INT32_MAX is not feasible to encode this
   // pseudo-Boolean constraint to CNF.
   if (rhs >= UINT64_MAX) {
@@ -272,8 +270,6 @@ void GTE::update(Solver *S, uint64_t rhs) {
 
   current_pb_rhs = rhs;
 }
-
-// TODO: refactor the code to reduce duplication for the predict methods
 
 // predict number of variables and clauses that this encode will generate
 Lit GTE::get_var_predict(Solver *S, wlit_mapt &oliterals, uint64_t weight) {

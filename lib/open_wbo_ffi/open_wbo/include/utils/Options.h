@@ -127,7 +127,6 @@ class DoubleOption : public Option
  public:
     DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false))
         : Option(n, d, c, "<double>"), range(r), value(def) {
-        // FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
     }
 
     operator      double   (void) const { return value; }

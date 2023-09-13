@@ -617,8 +617,6 @@ StatusCode OLL::weighted() {
             }
 #else
 
-            // FIXME: improve the OLL algorithm by reusing the cardinality
-            // constraint This current alternative does not work!
             while (nVars() < solver->nVars())
               newLiteral();
 
@@ -771,7 +769,6 @@ StatusCode OLL::search() {
   printConfiguration();
 
   if (maxsat_formula->getProblemType() == _WEIGHTED_) {
-    // FIXME: consider lexicographical optimization for weighted problems
     return weighted();
   } else
     return unweighted();

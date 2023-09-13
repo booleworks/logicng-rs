@@ -54,8 +54,6 @@ using namespace openwbo;
   |________________________________________________________________________________________________@*/
 void SWC::encode(Solver *S, vec<Lit> &lits, vec<uint64_t> &coeffs,
                  uint64_t rhs) {
-  // FIXME: do not change coeffs in this method. Make coeffs const.
-
   // If the rhs is larger than INT32_MAX is not feasible to encode this
   // pseudo-Boolean constraint to CNF.
   if (rhs >= INT32_MAX) {

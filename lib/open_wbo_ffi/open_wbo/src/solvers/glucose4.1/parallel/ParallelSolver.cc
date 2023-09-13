@@ -263,7 +263,7 @@ void ParallelSolver::reportProgress() {
 }
 
 void ParallelSolver::reportProgressArrayImports(vec<unsigned int> &totalColumns) {
-    return ; // TODO : does not currently work
+    return ;
     unsigned int totalImports = 0;
     printf("c %3d | ", thn);
     for (int i = 0; i <  sharedcomp->nbThreads; i++) {
@@ -391,7 +391,7 @@ bool ParallelSolver::parallelImportClauses() {
 
 void ParallelSolver::parallelExportUnaryClause(Lit p) {
     // Multithread
-    sharedcomp->addLearnt(this,p ); // TODO: there can be a contradiction here (two theads proving a and -a)
+    sharedcomp->addLearnt(this,p );
     stats[nbexportedunit]++;
 }
 

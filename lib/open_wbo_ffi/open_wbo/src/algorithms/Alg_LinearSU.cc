@@ -239,7 +239,6 @@ StatusCode LinearSU::normalSearch() {
         if (maxsat_formula->getProblemType() == _WEIGHTED_) {
           if (!encoder.hasPBEncoding()){
             // check if GTE encoding will generate too many clauses
-            // TODO: generalize this to all PB encodings
             if (encoder.getPBEncoding() == _PB_GTE_){
               int expected_clauses = encoder.predictPB(solver, objFunction, coeffs, newCost-1);
               if (expected_clauses >= _MAX_CLAUSES_) {

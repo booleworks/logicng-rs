@@ -110,8 +110,7 @@ void PartMSU3::computeGuideTree(std::deque<TreeNode *> &out_tree) {
   out_tree.clear();
 
   // If there is a single partition, return a single root node
-  if (nPartitions() == 1) // FIXME: not doing this will cause a seg fault in the
-                          // MaxSATPartition code
+  if (nPartitions() == 1)
   {
     TreeNode *node = new TreeNode();
     node->addPartition(0);

@@ -217,7 +217,7 @@ int main(int argc, char** argv)
             printf("\n"); }
 
 	//-------------- Result is put in a external file
-     	/* I must admit I have to print the model of one thread... But which one? FIXME !!
+     	/* I must admit I have to print the model of one thread... But which one?
 	  if (res != NULL){  
 	  if (ret == l_True){
 	    fprintf(res, "SAT\n");

@@ -122,12 +122,10 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
   , bwdsub_assigns     (s.bwdsub_assigns)
   , n_touched          (s.n_touched)
 {
-    // TODO: Copy dummy... what is it???
     vec<Lit> dummy(1,lit_Undef);
     ca.extra_clause_field = true; // NOTE: must happen before allocating the dummy clause below.
     bwdsub_tmpunit        = ca.alloc(dummy);
-    remove_satisfied      = false;
-    //End TODO  
+    remove_satisfied      = false;  
     
 
     s.elimclauses.memCopyTo(elimclauses);
@@ -780,7 +778,7 @@ bool SimpSolver::eliminate(bool turn_off_elim)
         garbageCollect();
     }else{
         // Cheaper cleanup:
-        cleanUpClauses(); // TODO: can we make 'cleanUpClauses()' not be linear in the problem size somehow?
+        cleanUpClauses();
         checkGarbage();
     }
 

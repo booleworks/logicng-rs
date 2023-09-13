@@ -40,7 +40,6 @@ class RegionAllocator
     void capacity(uint32_t min_cap);
 
  public:
-    // TODO: make this a class for better type-checking?
     typedef uint32_t Ref;
     enum { Ref_Undef = UINT32_MAX };
     enum { Unit_Size = sizeof(uint32_t) };

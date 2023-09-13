@@ -1221,12 +1221,11 @@ CRef Solver::propagateUnaryWatches(Lit p) {
                     maxlevel = level(var(c[k]));
                 }
             }
-            detachClausePurgatory(cr, true); // TODO: check that the cleanAll is ok (use ",true" otherwise)
+            detachClausePurgatory(cr, true);
             assert(index != -1);
             Lit tmp = c[1];
             c[1] = c[index], c[index] = tmp;
             attachClause(cr);
-            // TODO used in function ParallelSolver::reportProgressArrayImports
             //Override :-(
             //goodImportsFromThreads[ca[cr].importedFrom()]++;
             ca[cr].setOneWatched(false);
@@ -1474,7 +1473,7 @@ lbool Solver::search(int nof_conflicts) {
 
     starts++;
     for(; ;) {
-        if(decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
+        if(decisionLevel() == 0) {
             parallelImportUnaryClauses();
 
             if(parallelImportClauses())
@@ -1846,8 +1845,6 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 
 //=================================================================================================
 // Writing CNF to DIMACS:
-// 
-// FIXME: this needs to be rewritten completely.
 
 static Var mapVar(Var x, vec <Var> &map, Var &max) {
     if(map.size() <= x || map[x] == -1) {

@@ -184,7 +184,7 @@ bool ClausesBuffer::pushClause(int threadId, Clause & c) {
 bool ClausesBuffer::getClause(int threadId, int & threadOrigin, vec<Lit> & resultClause,  bool firstFound) {
     assert(lastOfThread.size() > threadId);
     unsigned int thislast = lastOfThread[threadId];
-    assert(!firstFound || thislast == last); // FIXME: Gilles has this assertion on his cluster
+    assert(!firstFound || thislast == last);
 
     // Early exiting
     if (nextIndex(thislast) == first) return false;
