@@ -1,37 +1,28 @@
-name: build
+name: CI
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      longRunningTests:
-        description: Execute the long running tests
-        default: false
-        type: boolean
+on: [ push, pull_request, workflow_dispatch ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  testing:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --verbose
+      - name: Check formatting
+        run: cargo +nightly fmt -- --check
+      - name: Run clippy
+        run: cargo clippy
       - name: Run tests
         run: cargo test --verbose
-      - name: Run long running tests
-        if: ${{ inputs.longRunningTests }}
-        run: cargo test --release --features long_running_tests,open_wbo
 
   coverage:
     name: Test Coverage
-    needs: build
+    needs: testing
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

@@ -1,0 +1,14 @@
+name: Long Running Tests
+
+on: [ workflow_dispatch ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  testing:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run long running tests
+        run: cargo test --release --features long_running_tests,open_wbo
