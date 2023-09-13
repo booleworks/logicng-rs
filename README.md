@@ -1,19 +1,47 @@
-# LogicNG - The Next Generation Logic Framework
+<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/logicng_logo_ferris.png" alt="logo" width="400"></a>
+
+# A Library for Creating, Manipulating, and Solving Boolean Formulas
 
 __THIS IS AN ALPHA VERSION! THE API MAY STILL CHANGE IN SIGNIFICANT WAYS! THE
 PROGRAM IS NOT FULLY TESTED, DO NOT USE IN PRODUCTION!__
 
 ## Introduction
 
-This is [LogicNG](https://logicng.org/) for Rust. The original version of
-LogicNG is a Java Library for creating, manipulating and solving Boolean and
-Pseudo-Boolean formulas.
+This is [LogicNG](https://logicng.org/) for Rust. The [original
+version](https://github.com/logic-ng/LogicNG) of LogicNG is a Java Library for
+creating, manipulating and solving Boolean and Pseudo-Boolean formulas.
 
-Its main focus lies on memory-efficient data-structures for Boolean formulas and
-efficient algorithms for manipulating and solving them. The library is designed
-to be used in industrial systems which have to manipulate and solve millions of
-formulas per day.
+Its main focus lies on memory-efficient data-structures for Boolean formulas
+and efficient algorithms for manipulating and solving them. The library is
+designed and most notably used in industrial systems which have to manipulate
+and solve millions of formulas per day. The Java version of LogicNG is heavily
+used by the German automotive industry to validate and optimize their product
+documentation, support the configuration process of vehicles, and compute WLTP
+values for emission and consumption.
 
+## Implemented Algorithms
+
+The Rust version of LogicNG currently provides -among others- the following key
+functionalities:
+
+- Support for Boolean formulas, cardinality constraints, and pseudo-Boolean
+formulas
+- Thread-safe formula factory (in contrast to the Java version)
+- Parsing of Boolean formulas from strings or files
+- Transformations of formulas, like
+  - Normal-Forms NNF, DNF, or CNF with various configurable algorithms
+  - Anonymization of formulas
+  - Simplification of formulas via subsumption or backbones
+- Encoding cardinality constraints and pseudo-Boolean formulas to purely
+Boolean formulas with a majority of different algorithms
+- Solving formulas with an integrated SAT Solver including
+  - Fast backbone computation on the solver
+  - Incremental/Decremental solver interface
+  - Proof generation
+  - Optimization with incremental cardinality constraints
+- Optimizing formulas with a MaxSAT solver (integrated
+[OpenWBO](https://github.com/sat-group/open-wbo))
+- Knowledge compilation with BDDs or DNNFs
 
 ## Philosophy
 
@@ -26,7 +54,14 @@ and fast execution of algorithms. Formulas can cache the results of algorithms
 executed on them and since every formula is hold only once in memory it is
 assured that the same algorithm on the same formula is also executed only once.
 
+## Whitepaper
+
 If you want a high-level overview of LogicNG and how it is used in many
 applications in the area of product configuration, you can read our
 [whitepaper](https://logicng.org/whitepaper/abstract/).
 
+## Funding
+
+LogicNG for Rust development is funded by the [SofDCar project](https://sofdcar.de/):
+
+<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/bmwk.png" alt="logo" width="200"></a>
