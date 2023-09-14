@@ -65,6 +65,55 @@ If you want a high-level overview of LogicNG and how it is used in many
 applications in the area of product configuration, you can read our
 [whitepaper](https://logicng.org/whitepaper/abstract/).
 
+## First Steps
+
+The following code creates the Boolean Formula _A and not (B or not C)_
+programmatically.
+
+```rust
+use logicng::formulas::FormulaFactory;
+
+let f = FormulaFactory::new();
+let a = f.variable("A");
+let b = f.variable("B");
+let not_c = f.literal("C", false);
+let formula = f.and(&[a, f.not(f.or(&[b, not_c]))]);
+```
+
+Alternatively you can just parse the formula from a string:
+
+```rust
+use logicng::formulas::FormulaFactory;
+
+let f = FormulaFactory::new();
+let formula = f.parse("A & ~(B | ~C)").expect("Parsing failed");
+```
+
+Or even shorter:
+
+```rust
+use logicng::formulas::{FormulaFactory, ToFormula};
+
+let f = FormulaFactory::new();
+let formula = "A & ~(B | ~C)".to_formula(&f);
+```
+
+Once you created the formula you can for example convert it to NNF or CNF or
+solve it with an instance of MiniSat:
+
+```rust
+use logicng::formulas::{FormulaFactory, ToFormula};
+use logicng::solver::minisat::MiniSat;
+
+let f = FormulaFactory::new();
+let formula = "A & ~(B | ~C)".to_formula(&f);
+
+let nnf = f.nnf_of(formula);
+let cnf = f.cnf_of(formula);
+let mut miniSat = MiniSat::new();
+let result = miniSat.sat();
+```
+
 ## Funding
 
 LogicNG for Rust development is funded by the [SofDCar project](https://sofdcar.de/):
