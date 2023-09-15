@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path) {
-    let open_wbo_src_path = open_wbo_path.join("src");
+    let open_wbo_src_path = open_wbo_path.join("logicng-open-wbo");
     if !open_wbo_src_path.exists() {
         panic!("Cannot build OpenWBO, because the source code is missing.")
     }

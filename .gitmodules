@@ -1,0 +1,3 @@
+[submodule "lib/open_wbo_ffi/open_wbo/logicng-open-wbo"]
+	path = lib/open_wbo_ffi/open_wbo/logicng-open-wbo
+	url = https://github.com/booleworks/logicng-open-wbo.git
