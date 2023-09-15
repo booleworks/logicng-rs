@@ -16,7 +16,7 @@ fn main() {
 
     let lib_path = abs_open_wbo_path.join(lib_file_name);
     if !lib_path.exists() {
-        build_open_wbo(open_wbo_path, &lib_path);
+        build_open_wbo(open_wbo_path, &lib_path, &os, &arch);
     }
 
     //Link OpenWBO Library
@@ -24,7 +24,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static={lib_name}");
 
     //Link other stuff
-    if cfg!(target_os = "linux") {
+    if os == "linux" {
         println!("cargo:rustc-link-lib=gmpxx");
         println!("cargo:rustc-link-lib=gmp");
     }
@@ -48,19 +48,18 @@ fn main() {
     build.compile("open_wbo_wrapper");
 }
 
-fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path) {
+fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path, os: &str, arch: &str) {
     let open_wbo_src_path = open_wbo_path.join("logicng-open-wbo");
     if !open_wbo_src_path.exists() {
         panic!("Cannot build OpenWBO, because the source code is missing.")
     }
-    let abs_open_wbo_src_path = match std::fs::canonicalize(&open_wbo_src_path) {
-        Ok(r) => r,
-        Err(e) => panic!("Building OpenWBO failed with: {}", e),
-    };
 
     //Building OpenWBO Library
     let mut make = std::process::Command::new("make");
-    make.env("PWD", &abs_open_wbo_src_path).current_dir(&open_wbo_src_path).arg("libr");
+    if os == "macos" && arch == "aarch64" {
+        make.env("CPATH", "/opt/homebrew/include");
+    }
+    make.current_dir(&open_wbo_src_path).arg("libr");
     if let Err(e) = make.status() {
         panic!("Building OpenWBO failed with: {}", e);
     }
