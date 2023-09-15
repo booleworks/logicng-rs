@@ -11,3 +11,6 @@
 # According to the cargo book: "If you’re building a non-end product, such as a rust library
 # that other rust packages will depend on, put Cargo.lock in your .gitignore"
 Cargo.lock
+
+# OpenWBO library builds
+/lib/open_wbo_ffi/open_wbo/*.a
