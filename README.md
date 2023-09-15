@@ -1,4 +1,4 @@
-<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/logicng_logo_ferris.png" alt="logo" width="400"></a>
+<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/logicng_logo_ferris.png?raw=true" alt="logo" width="400"></a>
 
 [![CI](https://github.com/booleworks/logicng-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/booleworks/logicng-rs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/booleworks/logicng-rs/graph/badge.svg?token=AMGWKMH7VM)](https://codecov.io/gh/booleworks/logicng-rs)
@@ -118,4 +118,4 @@ let result = miniSat.sat();
 
 LogicNG for Rust development is funded by the [SofDCar project](https://sofdcar.de/):
 
-<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/bmwk.png" alt="logo" width="200"></a>
+<a href="https://www.logicng.org"><img src="https://github.com/booleworks/logicng-rs/blob/main/doc/logos/bmwk.png?raw=true" alt="logo" width="200"></a>
