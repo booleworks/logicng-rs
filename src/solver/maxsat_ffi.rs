@@ -5,7 +5,7 @@ use crate::solver::maxsat::{
     Algorithm, CardinalEncoding, GraphType, MaxSatConfig, MaxSatResult, MaxSatStats, MergeStrategy, PbEncoding, Symmetry, Verbosity,
     WeightStrategy,
 };
-use open_wbo_ffi::ffi;
+use logicng_open_wbo_sys::ffi;
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::{Debug, Display, Formatter};
 

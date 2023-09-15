@@ -1,8 +1,19 @@
 [package]
-name = "open_wbo_ffi"
+name = "logicng-open-wbo-sys"
 version = "0.1.0-alpha.1"
+description = "Bindings for OpenWBO"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
-publish = false
+homepage = "https://www.logicng.org/"
+repository = "https://github.com/booleworks/logicng-rs"
+documentation = "https://docs.rs/logicng-open-wbo-sys/"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+include = ["/src", "/open_wbo", "/open_wbo_wrapper"]
+keywords = ["FFI", "solver", "MaxSAT"]
+categories = ["external-ffi-bindings"]
+
+[lib]
+crate-type = ["lib"]
 
 [build-dependencies]
 cxx-build = "1.0.107"

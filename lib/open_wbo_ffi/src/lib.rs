@@ -70,7 +70,7 @@ pub mod ffi {
     }
 
     extern "C++" {
-        include!("open_wbo_ffi/open_wbo_wrapper/include/library.h");
+        include!("logicng-open-wbo-sys/open_wbo_wrapper/include/library.h");
 
         //Opaque Types
         pub type MaxSAT;

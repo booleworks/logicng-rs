@@ -4,9 +4,11 @@ version = "0.1.0-alpha.1"
 description = "A Library for Creating, Manipulating, and Solving Boolean Formulas"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
 homepage = "https://www.logicng.org/"
+repository = "https://github.com/booleworks/logicng-rs"
+readme = "README.md"
+documentation = "https://docs.rs/logicng/"
 license = "MIT OR Apache-2.0"
 edition = "2021"
-publish = false
 include = ["/src", "/lib"]
 keywords = ["logic", "sat-solving", "boolean-formulas"]
 categories = ["data-structures", "algorithms", "mathematics", "science"]
@@ -26,12 +28,13 @@ num-bigint = "0.4.4"
 pest = "2.7.3"
 pest_derive = "2.7.3"
 dashmap = "5.5.3"
-open_wbo_ffi = { path = "lib/open_wbo_ffi", optional = true }
+logicng-open-wbo-sys = { path = "lib/open_wbo_ffi", optional = true }
 
 [features]
 default = []
-long_running_tests = [] # these tests should only be executed with the release profile, otherwise they take too much time
-open_wbo = ["dep:open_wbo_ffi"]
+# these tests should only be executed with the release profile, otherwise they take too much time
+long_running_tests = []
+open_wbo = ["dep:logicng-open-wbo-sys"]
 
 [profile.release]
 debug = true # no runtime costs involved
