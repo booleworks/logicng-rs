@@ -24,8 +24,10 @@ fn main() {
     println!("cargo:rustc-link-lib=static={lib_name}");
 
     //Link other stuff
-    println!("cargo:rustc-link-lib=gmpxx");
-    println!("cargo:rustc-link-lib=gmp");
+    if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-lib=gmpxx");
+        println!("cargo:rustc-link-lib=gmp");
+    }
 
     //Build Bridge between OpenWBO Wrapper and LogicNG
     let mut build = cxx_build::bridge("src/lib.rs");
