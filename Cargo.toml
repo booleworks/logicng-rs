@@ -1,17 +1,18 @@
 [package]
 name = "logicng"
 version = "0.1.0-alpha.1"
-description = "A Library for Creating, Manipulating, and Solving Boolean Formulas"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
-homepage = "https://www.logicng.org/"
-repository = "https://github.com/booleworks/logicng-rs"
-readme = "README.md"
-documentation = "https://docs.rs/logicng/"
-license = "MIT OR Apache-2.0"
 edition = "2021"
 include = ["/src", "/lib"]
+
+description = "A Library for Creating, Manipulating, and Solving Boolean Formulas"
+license = "MIT OR Apache-2.0"
 keywords = ["logic", "sat-solving", "boolean-formulas"]
 categories = ["data-structures", "algorithms", "mathematics", "science"]
+readme = "README.md"
+documentation = "https://docs.rs/logicng/"
+homepage = "https://www.logicng.org/"
+repository = "https://github.com/booleworks/logicng-rs"
 
 [lib]
 crate-type = ["lib"]
