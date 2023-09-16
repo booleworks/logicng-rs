@@ -30,7 +30,7 @@ The Rust version of LogicNG currently provides -among others- the following key
 functionalities:
 
 - Support for Boolean formulas, cardinality constraints, and pseudo-Boolean
-formulas
+  formulas
 - Thread-safe formula factory (in contrast to the Java version)
 - Parsing of Boolean formulas from strings or files
 - Transformations of formulas, like
@@ -38,14 +38,15 @@ formulas
   - Anonymization of formulas
   - Simplification of formulas via subsumption or backbones
 - Encoding cardinality constraints and pseudo-Boolean formulas to purely
-Boolean formulas with a majority of different algorithms
+  Boolean formulas with a majority of different algorithms
 - Solving formulas with an integrated SAT Solver including
   - Fast backbone computation on the solver
   - Incremental/Decremental solver interface
   - Proof generation
   - Optimization with incremental cardinality constraints
 - Optimizing formulas with a MaxSAT solver (integrated
-[OpenWBO](https://github.com/sat-group/open-wbo))
+  [Open-WBO](https://github.com/sat-group/open-wbo)), activate via feature
+  `open_wbo`
 - Knowledge compilation with BDDs or DNNFs
 
 ## Philosophy
@@ -113,6 +114,13 @@ let cnf = f.cnf_of(formula);
 let mut miniSat = MiniSat::new();
 let result = miniSat.sat();
 ```
+
+## Features
+
+| Feature    | Description                            |
+| ---------- | -------------------------------------- |
+| `open_wbo` | Activates MaxSAT solving with Open-WBO |
+
 
 ## Funding
 
