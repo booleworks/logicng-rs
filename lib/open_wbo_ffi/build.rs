@@ -1,5 +1,5 @@
-use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 fn main() {
     println!("cargo:rerun-if-changed=src/lib.rs");
@@ -13,9 +13,10 @@ fn main() {
 
     let open_wbo_path = std::path::Path::new("open_wbo/");
     let out_dir = env::var("OUT_DIR").expect("$OUT_DIR is not set");
-    let lib_path = PathBuf::from(&out_dir).join(lib_file_name);
+    let operating_path = PathBuf::from(&out_dir);
+    let lib_path = operating_path.join(lib_file_name);
     if !lib_path.exists() {
-        build_open_wbo(open_wbo_path, &lib_path, &os, &arch);
+        build_open_wbo(open_wbo_path, &lib_path, &operating_path.join("logicng-open-wbo-src"), &os, &arch);
     }
 
     //Link OpenWBO Library
@@ -47,41 +48,43 @@ fn main() {
     build.compile("open_wbo_wrapper");
 }
 
-fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path, os: &str, arch: &str) {
+fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path, operating_path: &std::path::Path, os: &str, arch: &str) {
     let open_wbo_src_path = open_wbo_path.join("logicng-open-wbo");
     if !open_wbo_src_path.exists() {
         panic!("Cannot build OpenWBO, because the source code is missing.")
     }
+
+    copy_src(&open_wbo_src_path, operating_path);
 
     //Building OpenWBO Library
     let mut make = std::process::Command::new("make");
     if os == "macos" && arch == "aarch64" {
         make.env("CPATH", "/opt/homebrew/include");
     }
-    make.current_dir(&open_wbo_src_path).arg("libr");
+    make.current_dir(operating_path).arg("libr");
     if let Err(e) = make.status() {
         panic!("Building OpenWBO failed with: {}", e);
     }
-    let lib_src_path = open_wbo_src_path.join("lib_release.a");
+    let lib_src_path = operating_path.join("lib_release.a");
     if let Err(e) = std::fs::copy(lib_src_path, lib_path) {
         panic!("Building OpenWBO failed with: {}", e);
     }
 
     //Cleanup build files
-    let mut dirs = Vec::new();
-    dirs.push(open_wbo_src_path);
-    while let Some(dir) = dirs.pop() {
-        for entry in dir.read_dir().unwrap() {
-            let e = entry.unwrap().path();
-            let is_build_file = matches!(e.extension().map(|c| c.to_str()), Some(Some("a" | "o" | "or" | "od")));
-            let is_depend_file = matches!(e.file_name().map(|c| c.to_str()), Some(Some("depend.mk")));
-            if is_build_file || is_depend_file {
-                if let Err(e) = std::fs::remove_file(e) {
-                    panic!("Building OpenWBO failed with: {}", e);
-                }
-            } else if e.is_dir() {
-                dirs.push(e);
-            }
+    if let Err(e) = fs::remove_dir_all(operating_path) {
+        panic!("Building OpenWBO failed with: {}", e)
+    }
+}
+
+fn copy_src(src: &Path, dst: &Path) {
+    fs::create_dir_all(dst).expect("Couldn't create root directory");
+    for entry in fs::read_dir(src).expect("Couldn't read directory") {
+        let entry = entry.expect("Couldn't read file");
+        let ty = entry.file_type().expect("Couldn't access filetype");
+        if ty.is_dir() {
+            copy_src(&entry.path(), &dst.join(entry.file_name()));
+        } else {
+            fs::copy(entry.path(), dst.join(entry.file_name())).expect("Couldn't copy file");
         }
     }
 }

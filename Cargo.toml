@@ -29,7 +29,7 @@ num-bigint = "0.4.4"
 pest = "2.7.3"
 pest_derive = "2.7.3"
 dashmap = "5.5.3"
-logicng-open-wbo-sys = { version = "0.1.0-alpha.2", path = "lib/open_wbo_ffi", optional = true }
+logicng-open-wbo-sys = { version = "0.1.0-alpha.3", path = "lib/open_wbo_ffi", optional = true }
 
 [features]
 default = []
