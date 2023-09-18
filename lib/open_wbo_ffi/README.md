@@ -10,8 +10,9 @@ activating the feature `open_wbo`.
 This crate builds the Open-WBO solver from source.  There is a LogicNG-specific
 fork of the solver in this
 [repository](https://github.com/booleworks/logicng-open-wbo) which is used in
-this build step. The code is included with a submodule at
-`lib/open_wbo/logicng-open-wbo`. Make sure to load this submodule first.
+this build step. The code is included with a Git submodule at
+`lib/open_wbo/logicng-open-wbo`. When building from source, make sure to load
+this submodule first via `git submodule update --init`.
 
 Building is tested on macOS and Linux and should usually just require an
 installed C++ compiler toolchain an the GMP library which can be installed e.g.
