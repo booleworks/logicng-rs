@@ -1,9 +1,10 @@
 [package]
 name = "logicng-open-wbo-sys"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
 edition = "2021"
-include = ["/src", "/open_wbo/include", "/open_wbo/logicng-open-wbo", "/open_wbo_wrapper"]
+build = "build.rs"
+include = ["build.rs", "/src", "/open_wbo/include", "/open_wbo/logicng-open-wbo", "/open_wbo_wrapper"]
 
 description = "LogicNG Bindings for OpenWBO"
 license = "MIT OR Apache-2.0"
