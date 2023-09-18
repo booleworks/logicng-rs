@@ -1,3 +1,6 @@
+use std::env;
+use std::path::PathBuf;
+
 fn main() {
     println!("cargo:rerun-if-changed=src/lib.rs");
     println!("cargo:rerun-if-changed=open_wbo_wrapper/library.cpp");
@@ -9,18 +12,14 @@ fn main() {
     let lib_file_name = format!("lib{lib_name}.a");
 
     let open_wbo_path = std::path::Path::new("open_wbo/");
-    let abs_open_wbo_path = match std::fs::canonicalize(open_wbo_path) {
-        Ok(r) => r,
-        Err(e) => panic!("Building OpenWBO failed with: {}", e),
-    };
-
-    let lib_path = abs_open_wbo_path.join(lib_file_name);
+    let out_dir = env::var("OUT_DIR").expect("$OUT_DIR is not set");
+    let lib_path = PathBuf::from(&out_dir).join(lib_file_name);
     if !lib_path.exists() {
         build_open_wbo(open_wbo_path, &lib_path, &os, &arch);
     }
 
     //Link OpenWBO Library
-    println!("cargo:rustc-link-search={}", abs_open_wbo_path.display());
+    println!("cargo:rustc-link-search={}", out_dir);
     println!("cargo:rustc-link-lib=static={lib_name}");
 
     //Link other stuff
