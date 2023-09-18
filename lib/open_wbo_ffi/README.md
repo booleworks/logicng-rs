@@ -1,5 +1,8 @@
 ## Low Level LogicNG Bindings for OpenWBO
 
+[![Crates.io](https://img.shields.io/crates/v/logicng-open-wbo-sys.svg)](https://crates.io/crates/logicng-open-wbo-sys)
+[![Docs](https://docs.rs/logicng-open-wbo-sys/badge.svg)](https://docs.rs/logicng-open-wbo-sys)
+
 Low level Rust bindings for the MaxSAT solver
 [Open-WBO](https://github.com/sat-group/open-wbo).  This crate is used within
 the logic library [LogicNG](https://github.com/booleworks/logicng-rs.git) by
