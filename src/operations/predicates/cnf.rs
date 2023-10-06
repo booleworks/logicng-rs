@@ -58,12 +58,12 @@ mod tests {
         assert!(F.OR1.is_cnf(f));
         assert!(F.AND1.is_cnf(f));
         assert!(F.AND3.is_cnf(f));
-        assert!(f.and(&[F.OR1, F.OR2, F.A, F.NY]).is_cnf(f));
+        assert!(f.and([F.OR1, F.OR2, F.A, F.NY]).is_cnf(f));
         assert!(!F.OR3.is_cnf(f));
         assert!(!F.IMP1.is_cnf(f));
         assert!(!F.EQ1.is_cnf(f));
         assert!(!F.NOT1.is_cnf(f));
         assert!(!F.NOT2.is_cnf(f));
-        assert!(!f.and(&[F.OR1, F.EQ1]).is_cnf(f));
+        assert!(!f.and([F.OR1, F.EQ1]).is_cnf(f));
     }
 }

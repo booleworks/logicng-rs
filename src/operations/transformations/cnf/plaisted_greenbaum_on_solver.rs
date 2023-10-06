@@ -355,7 +355,7 @@ mod tests {
         let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(method));
         solver.add(formula, f);
         let clauses = solver.formula_on_solver(f);
-        f.and(&clauses)
+        f.and(clauses.iter())
     }
 
     fn test_formula(f: &FormulaFactory, formula: EncodedFormula) {

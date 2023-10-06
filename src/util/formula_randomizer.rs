@@ -936,8 +936,8 @@ impl FormulaRandomizer {
             self.atom(f)
         } else {
             let num_operands = self.random.u32(2..self.config.maximum_operands_and);
-            let operands: Box<[EncodedFormula]> = (0..num_operands).map(|_| self.formula(f, max_depth - 1)).collect();
-            let result = f.and(&operands);
+            let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
+            let result = f.and(operands);
             if result.is_and() {
                 result
             } else {
@@ -964,8 +964,8 @@ impl FormulaRandomizer {
             self.atom(f)
         } else {
             let num_operands = self.random.u32(2..self.config.maximum_operands_or);
-            let operands: Box<[EncodedFormula]> = (0..num_operands).map(|_| self.formula(f, max_depth - 1)).collect();
-            let result = f.or(&operands);
+            let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
+            let result = f.or(operands);
             if result.is_or() {
                 result
             } else {
@@ -1585,7 +1585,7 @@ mod tests {
             random.implication(f, 3),
             random.equivalence(f, 3),
             random.formula(f, 3),
-            f.and(&constraint_set),
+            f.and(constraint_set.iter()),
             random.cc(f),
             random.pbc(f),
             random.amo(f),

@@ -12,7 +12,7 @@ fn test_parse_empty() {
     assert_eq!(parse(&f, "\n").unwrap(), f.verum());
     assert_eq!(parse(&f, "\r").unwrap(), f.verum());
     assert_eq!(parse(&f, " \r\n\n  \t").unwrap(), f.verum());
-    assert_eq!(parse(&f, "a\n&\tb").unwrap(), f.and(&[a, b]));
+    assert_eq!(parse(&f, "a\n&\tb").unwrap(), f.and([a, b]));
     assert_eq!(parse(&f, " a\r=>\t\tb").unwrap(), f.implication(a, b));
 }
 
@@ -49,12 +49,12 @@ fn test_parse_operators() {
     let nc = f.literal("c", false);
     assert_eq!(parse(&f, "~a").unwrap(), f.not(a));
     assert_eq!(parse(&f, "~Var").unwrap(), f.not(var));
-    assert_eq!(parse(&f, "a & b").unwrap(), f.and(&[a, b]));
-    assert_eq!(parse(&f, "~a & ~b").unwrap(), f.and(&[na, nb]));
-    assert_eq!(parse(&f, "~a & b & ~c & d").unwrap(), f.and(&[na, b, nc, d]));
-    assert_eq!(parse(&f, "a | b").unwrap(), f.or(&[a, b]));
-    assert_eq!(parse(&f, "~a | ~b").unwrap(), f.or(&[na, nb]));
-    assert_eq!(parse(&f, "~a | b | ~c | d").unwrap(), f.or(&[na, b, nc, d]));
+    assert_eq!(parse(&f, "a & b").unwrap(), f.and([a, b]));
+    assert_eq!(parse(&f, "~a & ~b").unwrap(), f.and([na, nb]));
+    assert_eq!(parse(&f, "~a & b & ~c & d").unwrap(), f.and([na, b, nc, d]));
+    assert_eq!(parse(&f, "a | b").unwrap(), f.or([a, b]));
+    assert_eq!(parse(&f, "~a | ~b").unwrap(), f.or([na, nb]));
+    assert_eq!(parse(&f, "~a | b | ~c | d").unwrap(), f.or([na, b, nc, d]));
     assert_eq!(parse(&f, "a => b").unwrap(), f.implication(a, b));
     assert_eq!(parse(&f, "~a => ~b").unwrap(), f.implication(na, nb));
     assert_eq!(parse(&f, "a <=> b").unwrap(), f.equivalence(a, b));
@@ -114,9 +114,9 @@ fn test_combination() {
     let x = f.variable("x");
     let y = f.variable("y");
     let z = f.variable("z");
-    let yz = f.and(&[y, z]);
+    let yz = f.and([y, z]);
     let imp = f.implication(x, yz);
-    assert_eq!(parse(&f, "(x => y & z) & (6 * a + -6 * ~b + 12 * ~c > -6)").unwrap(), f.and(&[imp, pbc]));
+    assert_eq!(parse(&f, "(x => y & z) & (6 * a + -6 * ~b + 12 * ~c > -6)").unwrap(), f.and([imp, pbc]));
     assert_eq!(parse(&f, "~(6 * a - 6 * ~b - -12 * ~c > -6)").unwrap(), f.not(pbc));
 }
 
@@ -127,16 +127,16 @@ fn test_parse_precedences() {
     let x = f.variable("x");
     let y = f.variable("y");
     let z = f.variable("z");
-    let x_and_y = f.and(&[x, y]);
-    let y_and_z = f.and(&[y, z]);
-    let x_or_y = f.or(&[x, y]);
-    let y_or_z = f.or(&[y, z]);
+    let x_and_y = f.and([x, y]);
+    let y_and_z = f.and([y, z]);
+    let x_or_y = f.or([x, y]);
+    let y_or_z = f.or([y, z]);
     let y_imp_z = f.implication(y, z);
     let y_eq_z = f.equivalence(y, z);
     let x_eq_y = f.equivalence(x, y);
     let x_imp_y = f.implication(x, y);
-    assert_eq!(parse(&f, "x | y & z").unwrap(), f.or(&[x, y_and_z]));
-    assert_eq!(parse(&f, "x & y | z").unwrap(), f.or(&[x_and_y, z]));
+    assert_eq!(parse(&f, "x | y & z").unwrap(), f.or([x, y_and_z]));
+    assert_eq!(parse(&f, "x & y | z").unwrap(), f.or([x_and_y, z]));
     assert_eq!(parse(&f, "x => y & z").unwrap(), f.implication(x, y_and_z));
     assert_eq!(parse(&f, "x & y => z").unwrap(), f.implication(x_and_y, z));
     assert_eq!(parse(&f, "x <=> y & z").unwrap(), f.equivalence(x, y_and_z));
@@ -147,16 +147,16 @@ fn test_parse_precedences() {
     assert_eq!(parse(&f, "x | y <=> z").unwrap(), f.equivalence(x_or_y, z));
     assert_eq!(parse(&f, "x => y => z").unwrap(), f.implication(x, y_imp_z));
     assert_eq!(parse(&f, "x <=> y <=> z").unwrap(), f.equivalence(x, y_eq_z));
-    assert_eq!(parse(&f, "(x | y) & z").unwrap(), f.and(&[x_or_y, z]));
-    assert_eq!(parse(&f, "x & (y | z)").unwrap(), f.and(&[x, y_or_z]));
-    assert_eq!(parse(&f, "(x => y) & z").unwrap(), f.and(&[x_imp_y, z]));
-    assert_eq!(parse(&f, "x & (y => z)").unwrap(), f.and(&[x, y_imp_z]));
-    assert_eq!(parse(&f, "(x => y) | z").unwrap(), f.or(&[x_imp_y, z]));
-    assert_eq!(parse(&f, "x | (y => z)").unwrap(), f.or(&[x, y_imp_z]));
-    assert_eq!(parse(&f, "(x <=> y) & z").unwrap(), f.and(&[x_eq_y, z]));
-    assert_eq!(parse(&f, "x & (y <=> z)").unwrap(), f.and(&[x, y_eq_z]));
-    assert_eq!(parse(&f, "(x <=> y) | z").unwrap(), f.or(&[x_eq_y, z]));
-    assert_eq!(parse(&f, "x | (y <=> z)").unwrap(), f.or(&[x, y_eq_z]));
+    assert_eq!(parse(&f, "(x | y) & z").unwrap(), f.and([x_or_y, z]));
+    assert_eq!(parse(&f, "x & (y | z)").unwrap(), f.and([x, y_or_z]));
+    assert_eq!(parse(&f, "(x => y) & z").unwrap(), f.and([x_imp_y, z]));
+    assert_eq!(parse(&f, "x & (y => z)").unwrap(), f.and([x, y_imp_z]));
+    assert_eq!(parse(&f, "(x => y) | z").unwrap(), f.or([x_imp_y, z]));
+    assert_eq!(parse(&f, "x | (y => z)").unwrap(), f.or([x, y_imp_z]));
+    assert_eq!(parse(&f, "(x <=> y) & z").unwrap(), f.and([x_eq_y, z]));
+    assert_eq!(parse(&f, "x & (y <=> z)").unwrap(), f.and([x, y_eq_z]));
+    assert_eq!(parse(&f, "(x <=> y) | z").unwrap(), f.or([x_eq_y, z]));
+    assert_eq!(parse(&f, "x | (y <=> z)").unwrap(), f.or([x, y_eq_z]));
     assert_eq!(parse(&f, "x => y <=> z").unwrap(), f.equivalence(x_imp_y, z));
     assert_eq!(parse(&f, "x => (y <=> z)").unwrap(), f.implication(x, y_eq_z));
 
@@ -170,8 +170,8 @@ fn test_parse_precedences() {
         (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
         (&[1_i64, 13, 1]) as &[i64],
     );
-    assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 & x").unwrap(), f.and(&[pbc, x]));
-    assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 | ~x").unwrap(), f.or(&[pbc, not_x]));
+    assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 & x").unwrap(), f.and([pbc, x]));
+    assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 | ~x").unwrap(), f.or([pbc, not_x]));
     assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 => ~x").unwrap(), f.implication(pbc, not_x));
     assert_eq!(parse(&f, "~x => ~12 - -13 * A + ~B <= -25").unwrap(), f.implication(not_x, pbc));
     assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 <=> ~x").unwrap(), f.equivalence(pbc, not_x));
@@ -190,8 +190,8 @@ fn test_number_literals() {
         parse(&f, "12 + A <= 25").unwrap(),
         f.cc(CType::LE, 25, (&[lit12.as_variable().unwrap(), a.as_variable().unwrap()]) as &[Variable])
     );
-    assert_eq!(parse(&f, "12 & A").unwrap(), f.and(&[lit12, a]));
-    assert_eq!(parse(&f, "~12 & A").unwrap(), f.and(&[not_lit12, a]));
+    assert_eq!(parse(&f, "12 & A").unwrap(), f.and([lit12, a]));
+    assert_eq!(parse(&f, "~12 & A").unwrap(), f.and([not_lit12, a]));
     assert_eq!(
         parse(&f, "12 * 12 + 13 * A + 10 * B <= 25").unwrap(),
         f.pbc(

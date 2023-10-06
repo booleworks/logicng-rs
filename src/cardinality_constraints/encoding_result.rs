@@ -99,27 +99,32 @@ impl EncodingResult for Vec<EncodedFormula> {
     }
 
     fn add_clause(&mut self, f: &FormulaFactory, lits: &[Literal]) {
-        let clause = f.or(&lits.iter().map(|lit| EncodedFormula::from(*lit)).collect::<Box<[_]>>());
+        let clause = f.or(lits.iter().map(|lit| EncodedFormula::from(*lit)));
         self.push(clause);
     }
 
     fn add_clause1(&mut self, f: &FormulaFactory, literal: Literal) {
-        let clause = f.or(&[literal.into()]);
+        let clause = f.or([EncodedFormula::from(literal)]);
         self.push(clause);
     }
 
     fn add_clause2(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal) {
-        let clause = f.or(&[literal1.into(), literal2.into()]);
+        let clause = f.or([EncodedFormula::from(literal1), EncodedFormula::from(literal2)]);
         self.push(clause);
     }
 
     fn add_clause3(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal) {
-        let clause = f.or(&[literal1.into(), literal2.into(), literal3.into()]);
+        let clause = f.or([EncodedFormula::from(literal1), EncodedFormula::from(literal2), EncodedFormula::from(literal3)]);
         self.push(clause);
     }
 
     fn add_clause4(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal) {
-        let clause = f.or(&[literal1.into(), literal2.into(), literal3.into(), literal4.into()]);
+        let clause = f.or([
+            EncodedFormula::from(literal1),
+            EncodedFormula::from(literal2),
+            EncodedFormula::from(literal3),
+            EncodedFormula::from(literal4),
+        ]);
         self.push(clause);
     }
 }

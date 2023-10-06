@@ -671,8 +671,8 @@ fn test_up_zero_literals_dimacs_files() {
                 cnf.iter().for_each(|&clause| solver.add(clause, f));
                 if solver.sat() == True {
                     let up_zero_literals = solver.up_zero_literals().unwrap();
-                    let negations = up_zero_literals.iter().map(|lit| EncodedFormula::from(lit.negate())).collect::<Box<[_]>>();
-                    solver.add(f.or(&negations), f);
+                    let negations = up_zero_literals.iter().map(|lit| EncodedFormula::from(lit.negate()));
+                    solver.add(f.or(negations), f);
                     assert_eq!(solver.sat(), False);
                 }
             }

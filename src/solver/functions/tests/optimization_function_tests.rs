@@ -239,12 +239,8 @@ fn test_larger_formula_minimize() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/small_formulas.txt").unwrap();
         let reader = BufReader::new(file);
-        let ops = reader
-            .lines()
-            .filter(|s| !s.as_ref().unwrap().trim().is_empty())
-            .map(|s| f.parse(&s.unwrap()).unwrap())
-            .collect::<Box<[EncodedFormula]>>();
-        let formula = f.and(&ops);
+        let ops = reader.lines().filter(|s| !s.as_ref().unwrap().trim().is_empty()).map(|s| f.parse(&s.unwrap()).unwrap());
+        let formula = f.and(ops);
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
         let minimum_model = optimize(&[formula], &literals, &[], false, solver, f);
         test_minimum_model(formula, minimum_model, &literals, f);
@@ -258,12 +254,8 @@ fn test_larger_formula_maximize() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/small_formulas.txt").unwrap();
         let reader = BufReader::new(file);
-        let ops = reader
-            .lines()
-            .filter(|s| !s.as_ref().unwrap().trim().is_empty())
-            .map(|s| f.parse(&s.unwrap()).unwrap())
-            .collect::<Box<[EncodedFormula]>>();
-        let formula = f.and(&ops);
+        let ops = reader.lines().filter(|s| !s.as_ref().unwrap().trim().is_empty()).map(|s| f.parse(&s.unwrap()).unwrap());
+        let formula = f.and(ops);
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
         let maximum_model = optimize(&[formula], &literals, &[], true, solver, f);
         test_maximum_model(formula, maximum_model, &literals, f);
@@ -300,7 +292,7 @@ fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, lit
     solver.add(formula, f);
     if solver.sat() == True {
         let with_formula = solver.save_state();
-        solver.add(f.and(&optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l)).collect::<Box<[_]>>()), f);
+        solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f);
         assert_eq!(solver.sat(), True);
         solver.load_state(&with_formula);
         let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals).len() as u64;

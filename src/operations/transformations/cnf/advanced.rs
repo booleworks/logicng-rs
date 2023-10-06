@@ -14,8 +14,8 @@ pub fn advanced_cnf_encoding(
     state: &mut CnfEncoder,
 ) -> EncodedFormula {
     if formula.is_and() {
-        let new_ops = formula.operands(f).iter().map(|&op| single_advanced_encoding(op, f, config, state)).collect::<Box<[_]>>();
-        f.and(&new_ops)
+        let new_ops = formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state));
+        f.and(new_ops)
     } else {
         single_advanced_encoding(formula, f, config, state)
     }

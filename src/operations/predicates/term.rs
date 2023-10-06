@@ -100,17 +100,17 @@ mod tests {
         assert!(is_minterm(F.NA, f));
         assert!(is_minterm(F.AND1, f));
         assert!(is_minterm(F.AND2, f));
-        assert!(is_minterm(f.and(&[F.AND1, F.A, F.C, F.NX]), f));
+        assert!(is_minterm(f.and([F.AND1, F.A, F.C, F.NX]), f));
         assert!(!is_minterm(F.OR1, f));
         assert!(!is_minterm(F.OR2, f));
         assert!(!is_minterm(F.OR3, f));
         assert!(!is_minterm(F.AND3, f));
-        assert!(!is_minterm(f.and(&[F.OR1, F.OR2, F.A, F.NY]), f));
+        assert!(!is_minterm(f.and([F.OR1, F.OR2, F.A, F.NY]), f));
         assert!(!is_minterm(F.IMP1, f));
         assert!(!is_minterm(F.EQ1, f));
         assert!(!is_minterm(F.NOT1, f));
         assert!(!is_minterm(F.NOT2, f));
-        assert!(!is_minterm(f.or(&[F.OR1, F.EQ1]), f));
+        assert!(!is_minterm(f.or([F.OR1, F.EQ1]), f));
     }
 
     #[test]
@@ -123,16 +123,16 @@ mod tests {
         assert!(is_maxterm(F.NA, f));
         assert!(is_maxterm(F.OR1, f));
         assert!(is_maxterm(F.OR2, f));
-        assert!(is_maxterm(f.or(&[F.OR1, F.NA, F.C, F.X]), f));
+        assert!(is_maxterm(f.or([F.OR1, F.NA, F.C, F.X]), f));
         assert!(!is_maxterm(F.AND1, f));
         assert!(!is_maxterm(F.AND3, f));
-        assert!(!is_maxterm(f.and(&[F.OR1, F.OR2, F.A, F.NY]), f));
+        assert!(!is_maxterm(f.and([F.OR1, F.OR2, F.A, F.NY]), f));
         assert!(!is_maxterm(F.OR3, f));
         assert!(!is_maxterm(F.IMP1, f));
         assert!(!is_maxterm(F.EQ1, f));
         assert!(!is_maxterm(F.NOT1, f));
         assert!(!is_maxterm(F.NOT2, f));
-        assert!(!is_maxterm(f.and(&[F.OR1, F.EQ1]), f));
+        assert!(!is_maxterm(f.and([F.OR1, F.EQ1]), f));
     }
 
     #[test]
@@ -145,15 +145,15 @@ mod tests {
         assert!(is_clause(F.NA, f));
         assert!(is_clause(F.OR1, f));
         assert!(is_clause(F.OR2, f));
-        assert!(is_clause(f.or(&[F.OR1, F.NA, F.C, F.X]), f));
+        assert!(is_clause(f.or([F.OR1, F.NA, F.C, F.X]), f));
         assert!(!is_clause(F.AND1, f));
         assert!(!is_clause(F.AND3, f));
-        assert!(!is_clause(f.and(&[F.OR1, F.OR2, F.A, F.NY]), f));
+        assert!(!is_clause(f.and([F.OR1, F.OR2, F.A, F.NY]), f));
         assert!(!is_clause(F.OR3, f));
         assert!(!is_clause(F.IMP1, f));
         assert!(!is_clause(F.EQ1, f));
         assert!(!is_clause(F.NOT1, f));
         assert!(!is_clause(F.NOT2, f));
-        assert!(!is_clause(f.and(&[F.OR1, F.EQ1]), f));
+        assert!(!is_clause(f.and([F.OR1, F.EQ1]), f));
     }
 }

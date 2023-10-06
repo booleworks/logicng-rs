@@ -48,14 +48,14 @@ fn compute_tseitin(formula: EncodedFormula, f: &FormulaFactory, state: &mut Tsei
                     neg_operands.push(ts_literal);
                     handle_nary(formula, f, &mut nops, &mut operands, &mut neg_operands, state);
                     for operand in &operands {
-                        nops.push(f.or(&[neg_ts_literal, *operand]));
+                        nops.push(f.or([neg_ts_literal, *operand]));
                     }
                     nops.push(f.or(&neg_operands));
                 } else {
                     operands.push(neg_ts_literal);
                     handle_nary(formula, f, &mut nops, &mut operands, &mut neg_operands, state);
                     for operand in &neg_operands {
-                        nops.push(f.or(&[ts_literal, *operand]));
+                        nops.push(f.or([ts_literal, *operand]));
                     }
                     nops.push(f.or(&operands));
                 }

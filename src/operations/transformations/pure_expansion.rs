@@ -15,7 +15,7 @@ pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFor
             if cc.is_amo() || cc.is_exo() {
                 let mut enc = ENCODER.encode(cc, f);
                 if cc.is_exo() {
-                    enc.push(f.or(&cc.variables.iter().map(|v| v.to_formula(f)).collect::<Box<[_]>>()));
+                    enc.push(f.or(cc.variables.iter().map(|v| v.to_formula(f))));
                 }
                 f.and(&enc)
             } else {
@@ -24,8 +24,8 @@ pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFor
         }
         Formula::Equiv((l, r)) => f.equivalence(pure_expansion(l, f), pure_expansion(r, f)),
         Formula::Impl((l, r)) => f.implication(pure_expansion(l, f), pure_expansion(r, f)),
-        Formula::Or(ops) => f.or(&ops.map(|op| pure_expansion(op, f)).collect::<Box<[_]>>()),
-        Formula::And(ops) => f.and(&ops.map(|op| pure_expansion(op, f)).collect::<Box<[_]>>()),
+        Formula::Or(ops) => f.or(ops.map(|op| pure_expansion(op, f))),
+        Formula::And(ops) => f.and(ops.map(|op| pure_expansion(op, f))),
         Formula::Not(op) => f.not(pure_expansion(op, f)),
         Formula::True | Formula::False | Formula::Lit(_) => formula,
     };

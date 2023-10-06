@@ -330,7 +330,7 @@ impl CardinalityConstraint {
                     self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                     vec![1; self.variables.len()],
                 );
-                f.or(&[lt, gt])
+                f.or([lt, gt])
             }
             GT => f.pbc(
                 LE,
@@ -484,7 +484,7 @@ impl PbConstraint {
             EQ => {
                 let lt = f.pbc(LT, self.rhs, self.literals.clone(), self.coefficients.clone());
                 let gt = f.pbc(GT, self.rhs, self.literals.clone(), self.coefficients.clone());
-                f.or(&[lt, gt])
+                f.or([lt, gt])
             }
             GT => f.pbc(LE, self.rhs, self.literals.clone(), self.coefficients.clone()),
             GE => f.pbc(LT, self.rhs, self.literals.clone(), self.coefficients.clone()),
@@ -514,7 +514,7 @@ impl PbConstraint {
                 }
                 norm_rhs = -self.rhs;
                 let f2 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f);
-                f.and(&[f1, f2])
+                f.and([f1, f2])
             }
             LT | LE => {
                 for i in 0..self.literals.len() {

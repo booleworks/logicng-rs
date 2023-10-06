@@ -46,12 +46,12 @@ pub fn restrict(formula: EncodedFormula, assignment: &Assignment, f: &FormulaFac
             f.implication(rec_left, rec_right)
         }
         Or(ops) => {
-            let rec_ops = ops.map(|op| restrict(op, assignment, f)).collect::<Box<[_]>>();
-            f.or(&rec_ops)
+            let rec_ops = ops.map(|op| restrict(op, assignment, f));
+            f.or(rec_ops)
         }
         And(ops) => {
-            let rec_ops = ops.map(|op| restrict(op, assignment, f)).collect::<Box<[_]>>();
-            f.and(&rec_ops)
+            let rec_ops = ops.map(|op| restrict(op, assignment, f));
+            f.and(rec_ops)
         }
         Not(op) => {
             let rec_op = restrict(op, assignment, f);
@@ -86,12 +86,12 @@ pub fn restrict_lit(formula: EncodedFormula, lit: Literal, f: &FormulaFactory) -
             f.implication(rec_left, rec_right)
         }
         Or(ops) => {
-            let rec_ops = ops.map(|op| restrict_lit(op, lit, f)).collect::<Box<[_]>>();
-            f.or(&rec_ops)
+            let rec_ops = ops.map(|op| restrict_lit(op, lit, f));
+            f.or(rec_ops)
         }
         And(ops) => {
-            let rec_ops = ops.map(|op| restrict_lit(op, lit, f)).collect::<Box<[_]>>();
-            f.and(&rec_ops)
+            let rec_ops = ops.map(|op| restrict_lit(op, lit, f));
+            f.and(rec_ops)
         }
         Not(op) => {
             let rec_op = restrict_lit(op, lit, f);

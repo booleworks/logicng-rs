@@ -5,7 +5,7 @@
 //! and commutativity) are hold exactly once in memory.
 
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
@@ -29,7 +29,7 @@ use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFor
 use super::formula_cache::implication_cache::ImplicationCache;
 use super::formula_cache::nary_formula_cache::NaryFormulaCache;
 use super::formula_cache::not_cache::NotCache;
-use super::{Formula, FormulaType, LitType, VarType};
+use super::{Formula, FormulaType, LitType, ToOwnedFormula, VarType};
 
 const FF_ID_LENGTH: i32 = 4;
 
@@ -609,8 +609,11 @@ impl FormulaFactory {
     ///
     /// assert_eq!(conjunction, "a & ~b & ~c".to_formula(&f));
     /// ```
-    pub fn and(&self, operands: &[EncodedFormula]) -> EncodedFormula {
-        match self.filter(operands, FormulaType::And) {
+    pub fn and<E, Ops>(&self, operands: Ops) -> EncodedFormula
+    where
+        E: ToOwnedFormula,
+        Ops: IntoIterator<Item = E>, {
+        match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
             Some((new_ops32, new_set32, new_ops64, new_set64)) => {
                 if new_ops32.is_empty() && new_ops64.is_empty() {
@@ -645,8 +648,11 @@ impl FormulaFactory {
     ///
     /// assert_eq!(disjunction, "a | ~b | ~c".to_formula(&f));
     /// ```
-    pub fn or(&self, operands: &[EncodedFormula]) -> EncodedFormula {
-        match self.filter(operands, FormulaType::Or) {
+    pub fn or<E, Ops>(&self, operands: Ops) -> EncodedFormula
+    where
+        E: ToOwnedFormula,
+        Ops: IntoIterator<Item = E>, {
+        match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
             Some((new_ops32, new_set32, new_ops64, new_set64)) => {
                 if new_ops32.is_empty() && new_ops64.is_empty() {
@@ -687,7 +693,7 @@ impl FormulaFactory {
     /// assert_eq!(clause, "a | ~b | ~c".to_formula(&f));
     /// ```
     pub fn clause(&self, operands: &[Literal]) -> EncodedFormula {
-        self.or(&operands.iter().map(|&lit| lit.into()).collect::<Box<[_]>>())
+        self.or(operands.iter().map(|&lit| EncodedFormula::from(lit)))
     }
 
     /// Creates a new implication, where `left` implies `right`.
@@ -1298,13 +1304,20 @@ impl FormulaFactory {
         }
     }
 
-    fn filter(&self, ops: &[EncodedFormula], op_type: FormulaType) -> Option<FilterResult> {
+    fn prepare_nary<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Option<FilterResult>
+    where
+        E: ToOwnedFormula,
+        Ops: IntoIterator<Item = E>, {
         let flattened_ops = self.flatten_ops(ops, op_type);
+        self.filter(&flattened_ops, op_type)
+    }
+
+    fn filter(&self, flattened_ops: &[EncodedFormula], op_type: FormulaType) -> Option<FilterResult> {
         let mut reduced32 = Vec::new();
         let mut reduced_set32 = HashSet::new();
         let mut reduced64 = Vec::new();
         let mut reduced_set64 = HashSet::new();
-        for op in flattened_ops {
+        for &op in flattened_ops {
             if op.is_verum() {
                 if op_type == FormulaType::Or {
                     return None;
@@ -1340,11 +1353,24 @@ impl FormulaFactory {
         Some((reduced32, reduced_set32, reduced64, reduced_set64))
     }
 
-    fn flatten_ops(&self, ops: &[EncodedFormula], op_type: FormulaType) -> Vec<EncodedFormula> {
-        let mut nops = Vec::with_capacity(ops.len());
-        for &op in ops {
+    fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Vec<EncodedFormula>
+    where
+        E: ToOwnedFormula,
+        Ops: IntoIterator<Item = E>, {
+        let mut nops = Vec::new();
+        let mut queue: VecDeque<_> = VecDeque::new();
+        for op in ops {
+            let owned = op.get();
+            if owned.is_type(op_type) {
+                queue.extend(owned.operands(self));
+            } else {
+                nops.push(owned);
+            }
+        }
+
+        while let Some(op) = queue.pop_front() {
             if op.is_type(op_type) {
-                nops.extend(self.flatten_ops(&op.operands(self), op_type));
+                queue.extend(op.operands(self));
             } else {
                 nops.push(op);
             }

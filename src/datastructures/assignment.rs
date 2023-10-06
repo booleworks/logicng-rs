@@ -528,7 +528,7 @@ impl Assignment {
             ops.append(&mut self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())).collect());
             ops
         };
-        f.or(&ops)
+        f.or(ops)
     }
 
     /// Returns a vector of [`Literal`] representing this assignment.

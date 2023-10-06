@@ -176,15 +176,15 @@ mod tests {
         use std::fs::File;
         use std::io::{BufRead, BufReader};
 
-        use crate::formulas::{EncodedFormula, FormulaFactory};
+        use crate::formulas::FormulaFactory;
         use crate::knowledge_compilation::dnnf::dtree::dtree_factory::DTreeFactory;
         use crate::knowledge_compilation::dnnf::dtree::dtree_generator::min_fill_dtree_generation;
 
         let reader = BufReader::new(File::open("resources/formulas/large_formula.txt").unwrap());
         let f = &FormulaFactory::new();
         let mut df = DTreeFactory::new();
-        let formulas: Vec<EncodedFormula> = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap()).collect();
-        let formula = f.and(&formulas);
+        let formulas = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap());
+        let formula = f.and(formulas);
         let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(formula, f);
         let tree = min_fill_dtree_generation(cnf, f, &mut df);
         println!("{}", tree.to_string(&df, f));

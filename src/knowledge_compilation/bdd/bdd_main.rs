@@ -240,12 +240,12 @@ fn create_model(model_bdd: usize, kernel: &mut BddKernel) -> Option<Model> {
 }
 
 fn bdd_from_variables(variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> usize {
-    let formula = f.and(&variables.iter().map(|x| EncodedFormula::from(*x)).collect::<Box<[_]>>());
+    let formula = f.and(variables.iter().map(|x| EncodedFormula::from(*x)));
     build_rec(formula, f, kernel, &mut NopBddHandler {}).expect("Nop Handler never aborts.")
 }
 
 fn bdd_from_literals(literals: &[Literal], f: &FormulaFactory, kernel: &mut BddKernel) -> usize {
-    let formula = f.and(&literals.iter().map(|x| EncodedFormula::from(*x)).collect::<Box<[_]>>());
+    let formula = f.and(literals.iter().map(|x| EncodedFormula::from(*x)));
     build_rec(formula, f, kernel, &mut NopBddHandler {}).expect("Nop Handler never aborts.")
 }
 
@@ -258,8 +258,8 @@ fn to_formula_rec(index: usize, f: &FormulaFactory, kernel: &mut BddKernel) -> E
     let var_index = bdd_var(index, kernel);
     let node_variable = *kernel.idx2var.get(&var_index).unwrap();
     let rec1 = to_formula_rec(bdd_high(index, kernel), f, kernel);
-    let op1 = f.and(&[node_variable.into(), rec1]);
+    let op1 = f.and([node_variable.into(), rec1]);
     let rec2 = to_formula_rec(bdd_low(index, kernel), f, kernel);
-    let op2 = f.and(&[node_variable.negate().into(), rec2]);
-    f.or(&[op1, op2])
+    let op2 = f.and([node_variable.negate().into(), rec2]);
+    f.or([op1, op2])
 }

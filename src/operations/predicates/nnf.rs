@@ -56,16 +56,16 @@ mod tests {
         assert!(F.OR1.is_nnf(f));
         assert!(F.AND1.is_nnf(f));
         assert!(F.AND3.is_nnf(f));
-        assert!(f.and(&[F.OR1, F.OR2, F.A, F.NY]).is_nnf(f));
-        assert!(f.and(&[F.OR1, F.OR2, F.AND1, F.AND2, F.AND3, F.A, F.NY]).is_nnf(f));
+        assert!(f.and([F.OR1, F.OR2, F.A, F.NY]).is_nnf(f));
+        assert!(f.and([F.OR1, F.OR2, F.AND1, F.AND2, F.AND3, F.A, F.NY]).is_nnf(f));
         assert!(F.OR3.is_nnf(f));
         assert!(!F.IMP1.is_nnf(f));
         assert!(!F.EQ1.is_nnf(f));
         assert!(!F.NOT1.is_nnf(f));
         assert!(!F.NOT2.is_nnf(f));
         let not = f.not(F.OR2);
-        assert!(!f.and(&[F.OR1, not, F.A, F.NY]).is_nnf(f));
-        assert!(!f.and(&[F.OR1, F.EQ1]).is_nnf(f));
-        assert!(!f.and(&[F.OR1, F.IMP1, F.AND1]).is_nnf(f));
+        assert!(!f.and([F.OR1, not, F.A, F.NY]).is_nnf(f));
+        assert!(!f.and([F.OR1, F.EQ1]).is_nnf(f));
+        assert!(!f.and([F.OR1, F.IMP1, F.AND1]).is_nnf(f));
     }
 }

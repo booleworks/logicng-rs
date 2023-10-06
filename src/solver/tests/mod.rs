@@ -13,14 +13,14 @@ pub fn generate_pigeon_hole(n: usize, f: &FormulaFactory) -> EncodedFormula {
 pub fn generate_pigeon_hole_with_prefix(n: usize, prefix: &str, f: &FormulaFactory) -> EncodedFormula {
     let some_hole = place_in_some_hole(n, prefix, f);
     let one_pigeon = only_one_pigeon_in_hole(n, prefix, f);
-    f.and(&[some_hole, one_pigeon])
+    f.and([some_hole, one_pigeon])
 }
 
 fn place_in_some_hole(n: usize, prefix: &str, f: &FormulaFactory) -> EncodedFormula {
     if n == 1 {
         let v1 = f.variable(&format!("{prefix}1"));
         let v2 = f.variable(&format!("{prefix}2"));
-        f.and(&[v1, v2])
+        f.and([v1, v2])
     } else {
         let mut ors = Vec::with_capacity(n + 1);
         for i in 1..=(n + 1) {
@@ -38,7 +38,7 @@ fn only_one_pigeon_in_hole(n: usize, prefix: &str, f: &FormulaFactory) -> Encode
     if n == 1 {
         let v1 = f.literal(&format!("{prefix}1"), false);
         let v2 = f.literal(&format!("{prefix}2"), false);
-        f.and(&[v1, v2])
+        f.and([v1, v2])
     } else {
         let mut ors = Vec::with_capacity(n + 1);
         for i in 1..=n {
@@ -46,7 +46,7 @@ fn only_one_pigeon_in_hole(n: usize, prefix: &str, f: &FormulaFactory) -> Encode
                 for k in (j + 1)..=(n + 1) {
                     let v1 = f.literal(&format!("{prefix}{}", n * (j - 1) + i), false);
                     let v2 = f.literal(&format!("{prefix}{}", n * (k - 1) + i), false);
-                    ors.push(f.or(&[v1, v2]));
+                    ors.push(f.or([v1, v2]));
                 }
             }
         }

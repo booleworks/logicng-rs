@@ -59,12 +59,12 @@ mod tests {
         assert!(F.OR1.is_dnf(f));
         assert!(F.AND1.is_dnf(f));
         assert!(F.OR3.is_dnf(f));
-        assert!(f.or(&[F.AND1, F.AND2, F.A, F.NY]).is_dnf(f));
+        assert!(f.or([F.AND1, F.AND2, F.A, F.NY]).is_dnf(f));
         assert!(!F.AND3.is_dnf(f));
         assert!(!F.IMP1.is_dnf(f));
         assert!(!F.EQ1.is_dnf(f));
         assert!(!F.NOT1.is_dnf(f));
         assert!(!F.NOT2.is_dnf(f));
-        assert!(!f.and(&[F.OR1, F.EQ1]).is_dnf(f));
+        assert!(!f.and([F.OR1, F.EQ1]).is_dnf(f));
     }
 }

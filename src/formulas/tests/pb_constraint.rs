@@ -428,14 +428,14 @@ mod pb_constraint_tests {
 
         let op11 = f.pbc(LT, 2, lits.clone(), coeffs.clone());
         let op12 = f.pbc(GT, 2, lits.clone(), coeffs.clone());
-        assert_eq!(f.or(&[op11, op12]), f.negate(pb1));
+        assert_eq!(f.or([op11, op12]), f.negate(pb1));
         assert_eq!(f.pbc(LT, 1, lits.clone(), coeffs.clone()), f.negate(pb3));
         assert_eq!(f.pbc(LE, 0, lits.clone(), coeffs.clone()), f.negate(pb4));
         assert_eq!(f.pbc(GT, 1, lits.clone(), coeffs.clone()), f.negate(pb5));
         assert_eq!(f.pbc(GE, 2, lits.clone(), coeffs.clone()), f.negate(pb6));
         let op21 = f.pbc(LT, -2, lits.clone(), coeffs.clone());
         let op22 = f.pbc(GT, -2, lits, coeffs);
-        assert_eq!(f.or(&[op21, op22]), f.negate(pb7));
+        assert_eq!(f.or([op21, op22]), f.negate(pb7));
     }
 
     #[test]
@@ -450,7 +450,7 @@ mod pb_constraint_tests {
 
         let op11 = f.cc(LT, 2, vars.clone());
         let op12 = f.cc(GT, 2, vars.clone());
-        assert_eq!(f.or(&[op11, op12]), f.negate(cc1));
+        assert_eq!(f.or([op11, op12]), f.negate(cc1));
         assert_eq!(f.cc(LT, 1, vars.clone()), f.negate(cc3));
         assert_eq!(f.cc(LE, 0, vars.clone()), f.negate(cc4));
         assert_eq!(f.cc(GT, 1, vars.clone()), f.negate(cc5));

@@ -142,7 +142,7 @@ impl Backbone {
 impl ToFormula for Backbone {
     fn to_formula(&self, f: &FormulaFactory) -> EncodedFormula {
         if self.sat {
-            f.and(&self.complete_backbone().iter().map(|&lit| EncodedFormula::from(lit)).collect::<Box<[_]>>())
+            f.and(self.complete_backbone().iter().map(|&lit| EncodedFormula::from(lit)))
         } else {
             f.falsum()
         }

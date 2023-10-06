@@ -40,12 +40,12 @@ pub fn substitute(formula: EncodedFormula, substitution: &Substitution, f: &Form
             f.negate(formula)
         }
         And(ops) => {
-            let new_ops = ops.map(|op| substitute(op, substitution, f)).collect::<Box<[_]>>();
-            f.and(&new_ops)
+            let new_ops = ops.map(|op| substitute(op, substitution, f));
+            f.and(new_ops)
         }
         Or(ops) => {
-            let new_ops = ops.map(|op| substitute(op, substitution, f)).collect::<Box<[_]>>();
-            f.or(&new_ops)
+            let new_ops = ops.map(|op| substitute(op, substitution, f));
+            f.or(new_ops)
         }
         Impl((left, right)) => {
             let new_left = substitute(left, substitution, f);
@@ -179,10 +179,10 @@ mod tests {
         let subst = create_substitution(&ff);
         let f = &ff.f;
         assert_eq!("(a & b | y) & (~(a & b) | ~y)".to_formula(f), f.substitute(ff.AND3, &subst));
-        let formula1 = f.and(&[ff.NB, ff.C, ff.X, ff.NY]);
+        let formula1 = f.and([ff.NB, ff.C, ff.X, ff.NY]);
         assert_eq!("~(x | y) & c & a & b & ~y".to_formula(f), f.substitute(formula1, &subst));
         assert_eq!("(~a & (x | y)) | (a & ~(x | y))".to_formula(f), f.substitute(ff.OR3, &subst));
-        let formula2 = f.or(&[ff.A, ff.NB, ff.C, ff.X, ff.NY]);
+        let formula2 = f.or([ff.A, ff.NB, ff.C, ff.X, ff.NY]);
         assert_eq!("~a | ~(x | y) | c | a & b | ~y".to_formula(f), f.substitute(formula2, &subst));
     }
 
@@ -261,9 +261,9 @@ mod tests {
         assert_eq!("~(x | y)".to_formula(f), f.substitute_var(ff.NA, ff.A.as_variable().unwrap(), ff.OR1));
         assert_eq!("a => (x | y)".to_formula(f), f.substitute_var(ff.IMP1, ff.B.as_variable().unwrap(), ff.OR1));
         assert_eq!("~a <=> ~(x | y)".to_formula(f), f.substitute_var(ff.EQ2, ff.B.as_variable().unwrap(), ff.OR1));
-        let formula1 = f.and(&[ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
+        let formula1 = f.and([ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
         assert_eq!("a & ~b & c & ~x".to_formula(f), f.substitute_var(formula1, ff.Y.as_variable().unwrap(), ff.X));
-        let formula2 = f.or(&[ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
+        let formula2 = f.or([ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
         assert_eq!("a | ~b | c | ~x".to_formula(f), f.substitute_var(formula2, ff.Y.as_variable().unwrap(), ff.X));
         let formula3 = "a + b + c + d < 3".to_formula(f);
         assert_eq!("a + b + x + d < 3".to_formula(f), f.substitute_var(formula3, ff.C.as_variable().unwrap(), ff.X));

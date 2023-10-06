@@ -63,7 +63,7 @@ fn handle_or(
     handler: &mut impl FactorizationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
 ) -> Result<EncodedFormula, FactorizationError> {
-    compute_nops(operands, f, handler, cache).map(|nops| f.or(&nops))
+    compute_nops(operands, f, handler, cache).map(|nops| f.or(nops))
 }
 
 fn handle_and(
@@ -110,7 +110,7 @@ fn distribute(
         }
         Ok(f.or(&nops))
     } else {
-        let result = f.and(&[f1, f2]);
+        let result = f.and([f1, f2]);
         handler.created_clause(result).map(|_| result)
     }
 }

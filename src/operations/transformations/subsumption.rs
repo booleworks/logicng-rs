@@ -41,7 +41,7 @@ pub fn dnf_subsumption(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFo
         let ub_tree = generate_subsumed_ubtree(formula, f);
         let mut minterms = Vec::new();
         for literals in ub_tree.all_sets() {
-            minterms.push(f.and(&literals.iter().map(|&l| EncodedFormula::from(l)).collect::<Box<[_]>>()));
+            minterms.push(f.and(literals.iter().map(|&l| EncodedFormula::from(l))));
         }
         f.or(&minterms)
     }

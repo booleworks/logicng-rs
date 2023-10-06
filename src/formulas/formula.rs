@@ -9,6 +9,22 @@ use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
 use super::formula_cache::nary_formula_cache::NaryIterator;
 use super::LitType;
 
+pub trait ToOwnedFormula {
+    fn get(&self) -> EncodedFormula;
+}
+
+impl ToOwnedFormula for EncodedFormula {
+    fn get(&self) -> EncodedFormula {
+        *self
+    }
+}
+
+impl ToOwnedFormula for &EncodedFormula {
+    fn get(&self) -> EncodedFormula {
+        **self
+    }
+}
+
 /// Specifies all types a [`EncodedFormula`] can have.
 ///
 /// You can get the type of an `EncodedFormula` by calling [`EncodedFormula::formula_type()`].
@@ -1347,16 +1363,16 @@ mod tests {
         let vg = factory.variable("g");
         let na = factory.literal("a", false);
         let nh = factory.literal("nh", false);
-        let ab = factory.and(&[va, vb]);
-        let ab_c_d = factory.or(&[ab, vc, vd]);
-        let ab_c_d2 = factory.or(&[ab, vc, vd]);
+        let ab = factory.and([va, vb]);
+        let ab_c_d = factory.or([ab, vc, vd]);
+        let ab_c_d2 = factory.or([ab, vc, vd]);
         let nab = factory.not(ab);
         let ab_z_ab_c_d = factory.implication(ab, ab_c_d);
-        let d_e = factory.or(&[vd, ve]);
+        let d_e = factory.or([vd, ve]);
         let ab_eq_d_e = factory.equivalence(ab, d_e);
         let ab_eq_d_e2 = factory.equivalence(ab, d_e);
-        let de = factory.and(&[vd, ab_eq_d_e]);
-        let de2 = factory.and(&[vd, ab_eq_d_e]);
+        let de = factory.and([vd, ab_eq_d_e]);
+        let de2 = factory.and([vd, ab_eq_d_e]);
 
         assert_eq!(factory.verum().unpack(&factory), Formula::True);
         assert_eq!(factory.falsum().unpack(&factory), Formula::False);
@@ -1392,16 +1408,16 @@ mod tests {
         let _g = f.variable("g");
         let na = f.literal("a", false);
         let _nh = f.literal("nh", false);
-        let ab = f.and(&[a, b]);
-        let ab_c_d = f.or(&[ab, c, d]);
-        let _ab_c_d2 = f.or(&[ab, c, d]);
+        let ab = f.and([a, b]);
+        let ab_c_d = f.or([ab, c, d]);
+        let _ab_c_d2 = f.or([ab, c, d]);
         let _nab = f.not(ab);
         let _ab_z_ab_c_d = f.implication(ab, ab_c_d);
-        let d_e = f.or(&[d, e]);
+        let d_e = f.or([d, e]);
         let ab_eq_d_e = f.equivalence(ab, d_e);
         let _ab_eq_d_e2 = f.equivalence(ab, d_e);
-        let de = f.and(&[d, ab_eq_d_e]);
-        let _de2 = f.and(&[d, ab_eq_d_e]);
+        let de = f.and([d, ab_eq_d_e]);
+        let _de2 = f.and([d, ab_eq_d_e]);
         assert_eq!(na.to_string(&f), "~a");
         assert_eq!(de.to_string(&f), "d & (a & b <=> d | e)");
     }

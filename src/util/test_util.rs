@@ -115,13 +115,13 @@ impl F {
         let NX = ff.literal("x", false);
         let NY = ff.literal("y", false);
 
-        let OR1 = f.or(&[X, Y]);
-        let OR2 = f.or(&[NX, NY]);
-        let AND1 = f.and(&[A, B]);
-        let AND2 = f.and(&[NA, NB]);
+        let OR1 = f.or([X, Y]);
+        let OR2 = f.or([NX, NY]);
+        let AND1 = f.and([A, B]);
+        let AND2 = f.and([NA, NB]);
 
-        let OR3 = f.or(&[AND1, AND2]);
-        let AND3 = f.and(&[OR1, OR2]);
+        let OR3 = f.or([AND1, AND2]);
+        let AND3 = f.and([OR1, OR2]);
 
         let NOT1 = f.not(AND1);
         let NOT2 = f.not(OR1);

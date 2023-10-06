@@ -41,14 +41,14 @@ fn main() {
         GLOBAL.print_memory(format!("[{file_name}] File read"));
 
         let start = Instant::now();
-        let formulas: Box<[EncodedFormula]> = lines.iter().map(|l| f.parse(l).unwrap()).collect();
+        let formulas = lines.iter().map(|l| f.parse(l).unwrap());
         if PRINT_PERFORMANCE {
             println!("[{}] Parse: {:?}", file_name, start.elapsed());
         }
         GLOBAL.print_memory(format!("[{file_name}] Formulas parsed"));
 
         let start = Instant::now();
-        let formula = f.and(&formulas);
+        let formula = f.and(formulas);
         if PRINT_PERFORMANCE {
             println!("[{}] Big And: {:?}", file_name, start.elapsed());
         }

@@ -78,7 +78,7 @@ impl<'a> DnnfCompiler<'a> {
 
     fn compile_tree(&mut self, tree: DTree) -> EncodedFormula {
         let result = self.cnf2ddnnf(tree);
-        self.f.and(&[self.unit_clauses, result])
+        self.f.and([self.unit_clauses, result])
     }
 
     fn cnf2ddnnf(&mut self, tree: DTree) -> EncodedFormula {
@@ -89,7 +89,7 @@ impl<'a> DnnfCompiler<'a> {
             match tree {
                 DTree::Leaf(n) => {
                     let leaf_formula = self.leaf2ddnnf(n);
-                    self.f.and(&[implied, leaf_formula])
+                    self.f.and([implied, leaf_formula])
                 }
                 DTree::Node(n) => self.conjoin(implied, self.df.children(n)),
             }
@@ -121,10 +121,10 @@ impl<'a> DnnfCompiler<'a> {
 
             let lit = EncodedFormula::from(self.solver.var_for_idx(var).pos_lit());
             let neg_lit = self.f.negate(lit);
-            let positive_branch = self.f.and(&[lit, positive_dnnf]);
-            let negative_branch = self.f.and(&[neg_lit, negative_dnnf]);
-            let shannon = self.f.or(&[positive_branch, negative_branch]);
-            self.f.and(&[implied, shannon])
+            let positive_branch = self.f.and([lit, positive_dnnf]);
+            let negative_branch = self.f.and([neg_lit, negative_dnnf]);
+            let shannon = self.f.or([positive_branch, negative_branch]);
+            self.f.and([implied, shannon])
         }
     }
 
@@ -164,7 +164,7 @@ impl<'a> DnnfCompiler<'a> {
         if right.is_falsum() {
             return right;
         }
-        self.f.and(&[implied, left, right])
+        self.f.and([implied, left, right])
     }
 
     fn cnf_aux(&mut self, tree: DTree) -> EncodedFormula {
@@ -207,8 +207,8 @@ impl<'a> DnnfCompiler<'a> {
 fn initialize_clauses(cnf: EncodedFormula, f: &FormulaFactory) -> (EncodedFormula, EncodedFormula) {
     match cnf.formula_type() {
         FormulaType::And => {
-            let (l, r): (Vec<_>, Vec<_>) = cnf.operands(f).iter().partition(|&&o| o.is_atomic());
-            (f.and(&l), f.and(&r))
+            let (l, r): (Vec<EncodedFormula>, Vec<EncodedFormula>) = cnf.operands(f).iter().partition(|&&o| o.is_atomic());
+            (f.and(l), f.and(r))
         }
         FormulaType::Or => (f.verum(), cnf),
         _ => (cnf, f.verum()),
@@ -259,11 +259,11 @@ mod tests {
         let cnf3 = read_cnf("resources/dnnf/both_bdd_dnnf_3.cnf", f).unwrap();
         let cnf4 = read_cnf("resources/dnnf/both_bdd_dnnf_4.cnf", f).unwrap();
         let cnf5 = read_cnf("resources/dnnf/both_bdd_dnnf_5.cnf", f).unwrap();
-        test_formula(f.and(&cnf1), f, true);
-        test_formula(f.and(&cnf2), f, true);
-        test_formula(f.and(&cnf3), f, true);
-        test_formula(f.and(&cnf4), f, true);
-        test_formula(f.and(&cnf5), f, true);
+        test_formula(f.and(cnf1), f, true);
+        test_formula(f.and(cnf2), f, true);
+        test_formula(f.and(cnf3), f, true);
+        test_formula(f.and(cnf4), f, true);
+        test_formula(f.and(cnf5), f, true);
     }
 
     #[test]

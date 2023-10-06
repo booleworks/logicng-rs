@@ -59,17 +59,11 @@ pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -
         if !line.starts_with('c') && !line.starts_with('p') && !line.trim().is_empty() {
             let split: Vec<&str> = Regex::new(r"[ \t]+").unwrap().split(&line).collect();
             assert_eq!(*split.last().unwrap(), "0", "Line {line} did not end with 0.");
-            let vars = split
-                .iter()
-                .take(split.len() - 1)
-                .map(|&lit| lit.trim())
-                .filter(|&lit| !lit.is_empty())
-                .map(|lit| {
-                    lit.strip_prefix('-')
-                        .map_or_else(|| f.variable(&format!("{prefix}{lit}")), |stripped| f.literal(&format!("{prefix}{stripped}"), false))
-                })
-                .collect::<Box<[_]>>();
-            result.push(f.or(&vars));
+            let vars = split.iter().take(split.len() - 1).map(|&lit| lit.trim()).filter(|&lit| !lit.is_empty()).map(|lit| {
+                lit.strip_prefix('-')
+                    .map_or_else(|| f.variable(&format!("{prefix}{lit}")), |stripped| f.literal(&format!("{prefix}{stripped}"), false))
+            });
+            result.push(f.or(vars));
         }
     }
     Ok(result)

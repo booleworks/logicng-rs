@@ -289,9 +289,9 @@ impl MaxSatSolver {
             let sel_var_name = format!("{SEL_PREFIX}{}", self.selector_variables.len());
             let sel_var = f.var(&sel_var_name);
             self.selector_variables.insert(sel_var);
-            let f1 = f.or(&[sel_var.negate().into(), formula]);
+            let f1 = f.or([sel_var.negate().into(), formula]);
             let neg_f = f.negate(formula);
-            let f2 = f.or(&[neg_f, sel_var.into()]);
+            let f2 = f.or([neg_f, sel_var.into()]);
             self.add_hard_formula(f1, f)?;
             self.add_hard_formula(f2, f)?;
             self.add_clause(Some(weight), sel_var.into(), f)

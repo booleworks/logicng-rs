@@ -35,7 +35,7 @@ pub fn backbone_simplification(formula: EncodedFormula, f: &FormulaFactory) -> E
             let backbone_formula = backbone.to_formula(f);
             let assignment = Assignment::from_set(backbone.complete_backbone());
             let restricted_formula = f.restrict(formula, &assignment);
-            f.and(&[backbone_formula, restricted_formula])
+            f.and([backbone_formula, restricted_formula])
         } else {
             formula
         };

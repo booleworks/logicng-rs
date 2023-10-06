@@ -38,19 +38,19 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
         }
         Formula::Not(op) => nnf_rec(op, f, !polarity),
         Formula::Or(ops) => {
-            let new_ops = ops.map(|op| nnf_rec(op, f, polarity)).collect::<Box<[_]>>();
+            let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
             if polarity {
-                f.or(&new_ops)
+                f.or(new_ops)
             } else {
-                f.and(&new_ops)
+                f.and(new_ops)
             }
         }
         Formula::And(ops) => {
-            let new_ops = ops.map(|op| nnf_rec(op, f, polarity)).collect::<Box<[_]>>();
+            let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
             if polarity {
-                f.and(&new_ops)
+                f.and(new_ops)
             } else {
-                f.or(&new_ops)
+                f.or(new_ops)
             }
         }
         Formula::Equiv((left, right)) => {
@@ -59,38 +59,40 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
             let left_true = nnf_rec(left, f, true);
             let right_false = nnf_rec(right, f, false);
             if polarity {
-                let op1 = f.or(&[left_false, right_true]);
-                let op2 = f.or(&[left_true, right_false]);
-                f.and(&[op1, op2])
+                let op1 = f.or([left_false, right_true]);
+                let op2 = f.or([left_true, right_false]);
+                f.and([op1, op2])
             } else {
-                let op1 = f.or(&[left_false, right_false]);
-                let op2 = f.or(&[left_true, right_true]);
-                f.and(&[op1, op2])
+                let op1 = f.or([left_false, right_false]);
+                let op2 = f.or([left_true, right_true]);
+                f.and([op1, op2])
             }
         }
         Formula::Impl((left, right)) => {
             if polarity {
                 let left_false = nnf_rec(left, f, false);
                 let right_true = nnf_rec(right, f, true);
-                f.or(&[left_false, right_true])
+                f.or([left_false, right_true])
             } else {
                 let left_true = nnf_rec(left, f, true);
                 let right_false = nnf_rec(right, f, false);
-                f.and(&[left_true, right_false])
+                f.and([left_true, right_false])
             }
         }
         Formula::Cc(c) => {
             if polarity {
-                let new_ops = c.encode(f).iter().map(|&op| nnf_rec(op, f, true)).collect::<Box<[_]>>();
-                f.and(&new_ops)
+                let encoded = c.encode(f);
+                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true));
+                f.and(new_ops)
             } else {
                 nnf_rec(c.negate(f), f, true)
             }
         }
         Formula::Pbc(p) => {
             if polarity {
-                let new_ops = p.encode(f).iter().map(|&op| nnf_rec(op, f, true)).collect::<Box<[_]>>();
-                f.and(&new_ops)
+                let encoded = p.encode(f);
+                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true));
+                f.and(new_ops)
             } else {
                 nnf_rec(p.negate(f), f, true)
             }

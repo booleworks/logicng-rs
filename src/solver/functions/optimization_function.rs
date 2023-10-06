@@ -54,17 +54,17 @@ impl OptimizationFunction {
         if self.maximize {
             selector_map
                 .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or(&[EncodedFormula::from(sel_var.negate()), EncodedFormula::from(*lit)]), f));
+                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(*lit)]), f));
             selector_map
                 .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or(&[EncodedFormula::from(lit.negate()), EncodedFormula::from(*sel_var)]), f));
+                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(lit.negate()), EncodedFormula::from(*sel_var)]), f));
         } else {
             for (sel_var, lit) in &selector_map {
-                solver.add(f.or(&[EncodedFormula::from(sel_var.negate()), EncodedFormula::from(lit.negate())]), f);
+                solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(lit.negate())]), f);
             }
             selector_map
                 .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or(&[EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]), f));
+                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]), f));
         }
         if solver.sat() != True {
             return None;

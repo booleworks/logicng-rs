@@ -62,7 +62,7 @@ fn handle_and(
     handler: &mut dyn FactorizationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
 ) -> Result<EncodedFormula, FactorizationError> {
-    compute_nops(operands, f, handler, local_cache).map(|nops| f.and(&nops))
+    compute_nops(operands, f, handler, local_cache).map(|nops| f.and(nops))
 }
 
 fn handle_or(
@@ -108,7 +108,7 @@ fn distribute(
         }
         Ok(f.and(&nops))
     } else {
-        let result = f.or(&[f1, f2]);
+        let result = f.or([f1, f2]);
         handler.created_clause(result).map(|_| result)
     }
 }
@@ -211,7 +211,7 @@ mod tests {
         let reader = BufReader::new(File::open(file_name).unwrap());
         let f = &FormulaFactory::new();
         let formulas: Vec<EncodedFormula> = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap()).collect();
-        let formula = f.and(&formulas);
+        let formula = f.and(formulas);
         let start = Instant::now();
         let cnf = factorization_cnf(formula, f);
         println!("{file_name}: {:?}", start.elapsed());
