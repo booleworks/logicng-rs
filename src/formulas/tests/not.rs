@@ -57,7 +57,7 @@ mod not_test {
         assert_eq!(ff.NOT1.string_literals(f), string_lits("a b"));
 
         let imp = f.implication(ff.B, ff.NA);
-        let and = f.and(&[ff.A, ff.NB, imp]);
+        let and = f.and([ff.A, ff.NB, imp]);
         let not = f.not(and);
         assert_eq!(*not.literals(f), lits("a b ~a ~b", f));
         assert_eq!(not.string_literals(f), string_lits("a b ~a ~b"));
