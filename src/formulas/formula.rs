@@ -9,22 +9,6 @@ use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
 use super::formula_cache::nary_formula_cache::NaryIterator;
 use super::LitType;
 
-pub trait ToOwnedFormula {
-    fn get(&self) -> EncodedFormula;
-}
-
-impl ToOwnedFormula for EncodedFormula {
-    fn get(&self) -> EncodedFormula {
-        *self
-    }
-}
-
-impl ToOwnedFormula for &EncodedFormula {
-    fn get(&self) -> EncodedFormula {
-        **self
-    }
-}
-
 /// Specifies all types a [`EncodedFormula`] can have.
 ///
 /// You can get the type of an `EncodedFormula` by calling [`EncodedFormula::formula_type()`].

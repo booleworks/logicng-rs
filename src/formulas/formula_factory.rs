@@ -5,6 +5,7 @@
 //! and commutativity) are hold exactly once in memory.
 
 
+use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -29,7 +30,7 @@ use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFor
 use super::formula_cache::implication_cache::ImplicationCache;
 use super::formula_cache::nary_formula_cache::NaryFormulaCache;
 use super::formula_cache::not_cache::NotCache;
-use super::{Formula, FormulaType, LitType, ToOwnedFormula, VarType};
+use super::{Formula, FormulaType, LitType, VarType};
 
 const FF_ID_LENGTH: i32 = 4;
 
@@ -611,7 +612,7 @@ impl FormulaFactory {
     /// ```
     pub fn and<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
-        E: ToOwnedFormula,
+        E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
@@ -650,7 +651,7 @@ impl FormulaFactory {
     /// ```
     pub fn or<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
-        E: ToOwnedFormula,
+        E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
@@ -1306,7 +1307,7 @@ impl FormulaFactory {
 
     fn prepare_nary<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Option<FilterResult>
     where
-        E: ToOwnedFormula,
+        E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
         let flattened_ops = self.flatten_ops(ops, op_type);
         self.filter(&flattened_ops, op_type)
@@ -1355,12 +1356,12 @@ impl FormulaFactory {
 
     fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Vec<EncodedFormula>
     where
-        E: ToOwnedFormula,
+        E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
         let mut nops = Vec::new();
         let mut queue: VecDeque<_> = VecDeque::new();
         for op in ops {
-            let owned = op.get();
+            let owned = *op.borrow();
             if owned.is_type(op_type) {
                 queue.extend(owned.operands(self));
             } else {
