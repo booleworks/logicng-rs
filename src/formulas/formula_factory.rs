@@ -693,8 +693,11 @@ impl FormulaFactory {
     ///
     /// assert_eq!(clause, "a | ~b | ~c".to_formula(&f));
     /// ```
-    pub fn clause(&self, operands: &[Literal]) -> EncodedFormula {
-        self.or(operands.iter().map(|&lit| EncodedFormula::from(lit)))
+    pub fn clause<E, Ops>(&self, operands: Ops) -> EncodedFormula
+    where
+        E: Borrow<Literal>,
+        Ops: IntoIterator<Item = E>, {
+        self.or(operands.into_iter().map(|lit| EncodedFormula::from(*lit.borrow())))
     }
 
     /// Creates a new implication, where `left` implies `right`.
