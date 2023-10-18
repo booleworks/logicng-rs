@@ -6,7 +6,7 @@
 
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
@@ -1309,7 +1309,8 @@ impl FormulaFactory {
     where
         E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
-        let flattened_ops = self.flatten_ops(ops, op_type);
+        let mut flattened_ops = Vec::new();
+        self.flatten_ops(ops, op_type, &mut flattened_ops);
         self.filter(&flattened_ops, op_type)
     }
 
@@ -1318,6 +1319,7 @@ impl FormulaFactory {
         let mut reduced_set32 = HashSet::new();
         let mut reduced64 = Vec::new();
         let mut reduced_set64 = HashSet::new();
+        let mut is_large = false;
         for &op in flattened_ops {
             if op.is_verum() {
                 if op_type == FormulaType::Or {
@@ -1327,22 +1329,14 @@ impl FormulaFactory {
                 if op_type == FormulaType::And {
                     return None;
                 }
-            } else if op.is_type(op_type) {
-                for &sub_op in &*op.operands(self) {
-                    let sub_encoded = sub_op.encoding;
-                    if sub_encoded.is_large() {
-                        if reduced_set64.insert(sub_encoded) {
-                            reduced64.push(sub_encoded);
-                        }
-                    } else if reduced_set32.insert(sub_encoded.as_32()) {
-                        reduced32.push(sub_encoded.as_32());
-                    }
-                }
             } else if self.contains_complement(&reduced_set32, &reduced_set64, op) {
                 return None;
             } else {
                 let op_encoded = op.encoding;
                 if op_encoded.is_large() {
+                    is_large = true;
+                }
+                if is_large {
                     if reduced_set64.insert(op_encoded) {
                         reduced64.push(op_encoded);
                     }
@@ -1354,29 +1348,18 @@ impl FormulaFactory {
         Some((reduced32, reduced_set32, reduced64, reduced_set64))
     }
 
-    fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Vec<EncodedFormula>
+    fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType, flattened: &mut Vec<EncodedFormula>)
     where
         E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
-        let mut nops = Vec::new();
-        let mut queue: VecDeque<_> = VecDeque::new();
         for op in ops {
             let owned = *op.borrow();
             if owned.is_type(op_type) {
-                queue.extend(owned.operands(self));
+                self.flatten_ops(&owned.operands(self), op_type, flattened);
             } else {
-                nops.push(owned);
+                flattened.push(owned);
             }
         }
-
-        while let Some(op) = queue.pop_front() {
-            if op.is_type(op_type) {
-                queue.extend(op.operands(self));
-            } else {
-                nops.push(op);
-            }
-        }
-        nops
     }
 
     fn contains_complement(
