@@ -68,6 +68,7 @@ impl NaryFormulaCache {
             })
         } else {
             elements64.extend(elements32.iter().map(|e| e.as_64()));
+            elements64.rotate_right(elements32.len());
             element_set64.extend(elements32.iter().map(|e| e.as_64()));
             let set = HashableFormulaSet::new(element_set64);
             *self.reverse_map64.entry(set).or_insert_with(|| {

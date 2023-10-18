@@ -1340,7 +1340,7 @@ impl FormulaFactory {
                     is_large = true;
                 }
                 if is_large {
-                    if reduced_set64.insert(op_encoded) {
+                    if !reduced_set32.contains(&op_encoded.as_32()) && reduced_set64.insert(op_encoded) {
                         reduced64.push(op_encoded);
                     }
                 } else if reduced_set32.insert(op_encoded.as_32()) {
