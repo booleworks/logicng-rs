@@ -92,15 +92,21 @@ pub enum ClauseMinimization {
 }
 
 /// Class containing the information required for generating a proof.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct ProofInformation {
+#[derive(PartialEq, Eq, Debug)]
+pub struct ProofInformation<Backpack> {
     pub(crate) clause: Vec<isize>,
-    pub(crate) proposition: Option<Proposition>,
+    pub(crate) proposition: Option<Proposition<Backpack>>,
 }
 
-impl ProofInformation {
+impl<Backpack> Clone for ProofInformation<Backpack> {
+    fn clone(&self) -> Self {
+        Self { clause: self.clause.clone(), proposition: self.proposition.clone() }
+    }
+}
+
+impl<B> ProofInformation<B> {
     /// Constructs new proof information object.
-    pub fn new(clause: Vec<isize>, proposition: Option<Proposition>) -> Self {
+    pub fn new(clause: Vec<isize>, proposition: Option<Proposition<B>>) -> Self {
         Self { clause, proposition }
     }
 }

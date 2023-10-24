@@ -54,7 +54,7 @@ fn watch_equality(w1: &MsWatcher, w2: &MsWatcher) -> bool {
 /// certain way. Usually, this is not necessary and you want to use the wrapper
 /// [`MiniSat`](`crate::solver::minisat::MiniSat`).
 #[allow(clippy::struct_excessive_bools)]
-pub struct MiniSat2Solver {
+pub struct MiniSat2Solver<Backpack> {
     pub(crate) config: MiniSatConfig,
 
     // internal solver state
@@ -88,7 +88,7 @@ pub struct MiniSat2Solver {
 
     // Proof generating information
     proof_generation: bool,
-    pub(crate) pg_original_clauses: Vec<ProofInformation>,
+    pub(crate) pg_original_clauses: Vec<ProofInformation<Backpack>>,
     pub(crate) pg_proof: Vec<Vec<isize>>,
 
     // Selection order
@@ -107,13 +107,13 @@ pub struct MiniSat2Solver {
     pub(crate) dnnf_assignment: Option<Vec<Tristate>>,
 }
 
-impl Default for MiniSat2Solver {
+impl<B> Default for MiniSat2Solver<B> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MiniSat2Solver {
+impl<B> MiniSat2Solver<B> {
     /// Constructs a new solver with default configuration.
     #[must_use]
     pub fn new() -> Self {
@@ -241,10 +241,10 @@ impl MiniSat2Solver {
     }
 
     /// Adds a clause to this solver.
-    pub fn add_clause(&mut self, mut ps: Vec<MsLit>, proposition: &Option<Proposition>) -> bool {
+    pub fn add_clause(&mut self, mut ps: Vec<MsLit>, proposition: Option<Proposition<B>>) -> bool {
         if self.proof_generation {
             let pg_clause = ps.iter().map(|&p| (var(p).0 as isize + 1) * (-2 * isize::from(sign(p)) + 1)).collect();
-            self.pg_original_clauses.push(ProofInformation::new(pg_clause, proposition.clone()));
+            self.pg_original_clauses.push(ProofInformation::new(pg_clause, proposition));
         }
         if !self.ok {
             return false;

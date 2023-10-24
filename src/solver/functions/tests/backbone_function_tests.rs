@@ -62,16 +62,16 @@ fn solvers() -> [(MiniSat, &'static str); 10] {
         .bb_check_for_complement_model_literals(true)
         .bb_initial_ubcheck_for_rotatable_literals(true);
     [
-        (MiniSat::new_with_config(config_no_pg1), "FF CNF -ROT -COMP -UB"),
-        (MiniSat::new_with_config(config_no_pg2), "FF CNF +ROT -COMP -UB"),
-        (MiniSat::new_with_config(config_no_pg3), "FF CNF -ROT +COMP -UB"),
-        (MiniSat::new_with_config(config_no_pg4), "FF CNF -ROT -COMP +UB"),
-        (MiniSat::new_with_config(config_no_pg5), "FF CNF +ROT +COMP +UB"),
-        (MiniSat::new_with_config(config_pg1), "PG CNF -ROT -COMP -UB"),
-        (MiniSat::new_with_config(config_pg2), "PG CNF +ROT -COMP -UB"),
-        (MiniSat::new_with_config(config_pg3), "PG CNF -ROT +COMP -UB"),
-        (MiniSat::new_with_config(config_pg4), "PG CNF -ROT -COMP +UB"),
-        (MiniSat::new_with_config(config_pg5), "PG CNF +ROT +COMP +UB"),
+        (MiniSat::from_config(config_no_pg1), "FF CNF -ROT -COMP -UB"),
+        (MiniSat::from_config(config_no_pg2), "FF CNF +ROT -COMP -UB"),
+        (MiniSat::from_config(config_no_pg3), "FF CNF -ROT +COMP -UB"),
+        (MiniSat::from_config(config_no_pg4), "FF CNF -ROT -COMP +UB"),
+        (MiniSat::from_config(config_no_pg5), "FF CNF +ROT +COMP +UB"),
+        (MiniSat::from_config(config_pg1), "PG CNF -ROT -COMP -UB"),
+        (MiniSat::from_config(config_pg2), "PG CNF +ROT -COMP -UB"),
+        (MiniSat::from_config(config_pg3), "PG CNF -ROT +COMP -UB"),
+        (MiniSat::from_config(config_pg4), "PG CNF -ROT -COMP +UB"),
+        (MiniSat::from_config(config_pg5), "PG CNF +ROT +COMP +UB"),
     ]
 }
 

@@ -11,11 +11,11 @@ use crate::solver::minisat_config::SolverCnfMethod::{FullPgOnSolver, PgOnSolver}
 
 fn solvers() -> [MiniSat; 5] {
     [
-        MiniSat::new_with_config(MiniSatConfig::default().incremental(true)),
-        MiniSat::new_with_config(MiniSatConfig::default().incremental(false)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver).auxiliary_variables_in_models(false)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FullPgOnSolver).auxiliary_variables_in_models(false)),
+        MiniSat::from_config(MiniSatConfig::default().incremental(true)),
+        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver).auxiliary_variables_in_models(false)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver).auxiliary_variables_in_models(false)),
     ]
 }
 

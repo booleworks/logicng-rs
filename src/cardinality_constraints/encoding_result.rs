@@ -1,5 +1,5 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::solver::minisat::sat::{mk_lit, MsLit};
+use crate::solver::minisat::sat::MsLit;
 use crate::solver::minisat::MiniSat;
 
 // TODO: for MiniSat, we also would need a proposition to be passed to `add_clause` methods
@@ -31,7 +31,7 @@ pub trait EncodingResult {
     fn add_clause4(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal);
 }
 
-impl EncodingResult for MiniSat {
+impl<B> EncodingResult for MiniSat<B> {
     fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable {
         let index = self.underlying_solver.new_var(self.config.initial_phase, true);
         let variable = f.new_cc_variable();
@@ -48,44 +48,33 @@ impl EncodingResult for MiniSat {
         for lit in lits {
             clause_vec.push(self.add_literal(lit));
         }
-        self.underlying_solver.add_clause(clause_vec, &None);
+        self.underlying_solver.add_clause(clause_vec, None);
         self.set_solver_to_undef();
     }
 
     fn add_clause1(&mut self, _f: &FormulaFactory, literal: Literal) {
         let clause_vec = vec![self.add_literal(&literal)];
-        self.underlying_solver.add_clause(clause_vec, &None);
+        self.underlying_solver.add_clause(clause_vec, None);
         self.set_solver_to_undef();
     }
 
     fn add_clause2(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal) {
         let clause_vec = vec![self.add_literal(&literal1), self.add_literal(&literal2)];
-        self.underlying_solver.add_clause(clause_vec, &None);
+        self.underlying_solver.add_clause(clause_vec, None);
         self.set_solver_to_undef();
     }
 
     fn add_clause3(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal) {
         let clause_vec = vec![self.add_literal(&literal1), self.add_literal(&literal2), self.add_literal(&literal3)];
-        self.underlying_solver.add_clause(clause_vec, &None);
+        self.underlying_solver.add_clause(clause_vec, None);
         self.set_solver_to_undef();
     }
 
     fn add_clause4(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal) {
         let clause_vec =
             vec![self.add_literal(&literal1), self.add_literal(&literal2), self.add_literal(&literal3), self.add_literal(&literal4)];
-        self.underlying_solver.add_clause(clause_vec, &None);
+        self.underlying_solver.add_clause(clause_vec, None);
         self.set_solver_to_undef();
-    }
-}
-
-impl MiniSat {
-    fn add_literal(&mut self, lit: &Literal) -> MsLit {
-        let index = self.underlying_solver.idx_for_variable(lit.variable()).unwrap_or_else(|| {
-            let new_index = self.underlying_solver.new_var(!self.config.initial_phase, true);
-            self.underlying_solver.add_variable(lit.variable(), new_index);
-            new_index
-        });
-        mk_lit(index, !lit.phase())
     }
 }
 

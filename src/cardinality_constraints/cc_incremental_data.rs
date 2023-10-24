@@ -104,7 +104,7 @@ impl CcIncrementalData {
     /// Usage constraints:
     /// - New right-hand side must be greater than current right-hand side.
     /// - Cannot be used for at-most-k constraints.
-    pub fn new_lower_bound_for_solver(&mut self, solver: &mut MiniSat, f: &FormulaFactory, rhs: u64) {
+    pub fn new_lower_bound_for_solver<B>(&mut self, solver: &mut MiniSat<B>, f: &FormulaFactory, rhs: u64) {
         self.compute_lb_constraint(solver, f, rhs);
     }
 

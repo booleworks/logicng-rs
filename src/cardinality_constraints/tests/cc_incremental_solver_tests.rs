@@ -13,7 +13,7 @@ const fn configs() -> [CcConfig; 3] {
 }
 
 fn solvers() -> [MiniSat; 2] {
-    [MiniSat::new_with_config(MiniSatConfig::default()), MiniSat::new_with_config(MiniSatConfig::default().incremental(false))]
+    [MiniSat::from_config(MiniSatConfig::default()), MiniSat::from_config(MiniSatConfig::default().incremental(false))]
 }
 
 #[test]

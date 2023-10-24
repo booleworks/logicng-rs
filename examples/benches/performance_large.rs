@@ -54,7 +54,7 @@ fn main() {
         }
 
         for _ in 0..1 {
-            let mut minisat = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
+            let mut minisat = MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
             let start = Instant::now();
             minisat.add(formula, f);
             println!("{:?}", minisat.sat());

@@ -17,11 +17,11 @@ use crate::util::test_util::{lits, lits_list, vars_list};
 
 fn solvers() -> [MiniSat; 5] {
     [
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(true)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(false)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver).auxiliary_variables_in_models(false)),
-        MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FullPgOnSolver).auxiliary_variables_in_models(false)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(true)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(false)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver).auxiliary_variables_in_models(false)),
+        MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver).auxiliary_variables_in_models(false)),
     ]
 }
 
@@ -204,7 +204,7 @@ fn test_partial_model() {
 #[test]
 fn test_variables_removed_by_simplification_occurs_in_models() {
     let f = &FormulaFactory::new();
-    let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver));
+    let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
     let a = f.var("A");
     let b = f.var("B");
     let formula = "A & B => A".to_formula(f);
@@ -372,9 +372,9 @@ fn test_pigeon_hole_large() {
 fn test_different_clause_minimizations() {
     let f = &FormulaFactory::new();
     let solvers = [
-        MiniSat::new_with_config(MiniSatConfig::default().clause_min(ClauseMinimization::None)),
-        MiniSat::new_with_config(MiniSatConfig::default().clause_min(ClauseMinimization::Basic)),
-        MiniSat::new_with_config(MiniSatConfig::default().clause_min(ClauseMinimization::Deep)),
+        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::None)),
+        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::Basic)),
+        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::Deep)),
     ];
     for mut solver in solvers {
         solver.add(generate_pigeon_hole(7, f), f);
