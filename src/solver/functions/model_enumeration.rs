@@ -255,7 +255,7 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
         models.push(model);
         if model_empty {
             let blocking_clause = generate_blocking_clause(model_from_solver, &relevant_indices);
-            solver.underlying_solver.add_clause(blocking_clause, &None);
+            solver.underlying_solver.add_clause(blocking_clause, None);
         } else {
             break;
         }
@@ -299,7 +299,7 @@ fn generate_blocking_clause(model_from_solver: &Vec<bool>, relevant_vars: &Optio
 /// let count = count_models(&mut solver.underlying_solver, 100);
 /// assert_eq!(count, 2);
 /// ```
-pub fn count_models(solver: &mut MiniSat2Solver, max_models: usize) -> usize {
+pub fn count_models<B>(solver: &mut MiniSat2Solver<B>, max_models: usize) -> usize {
     let mut result = 0;
     while result <= max_models && solver.solve() == True {
         result += 1;
@@ -308,7 +308,7 @@ pub fn count_models(solver: &mut MiniSat2Solver, max_models: usize) -> usize {
             let pos = solver.model[i - 1];
             blocking_clause.push(mk_lit(MsVar(i - 1), pos));
         }
-        solver.add_clause(blocking_clause, &None);
+        solver.add_clause(blocking_clause, None);
     }
     result
 }
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn test_variables_removed_by_simplification_occurs_in_models() {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(PgOnSolver));
+        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
         let formula = "A & B => A".to_formula(f);
         solver.add(formula, f);
         let models = enumerate_models_with_config(

@@ -38,10 +38,10 @@ impl Default for PgOnSolverConfig {
     }
 }
 
-pub fn add_cnf_to_solver(
-    solver: &mut MiniSat2Solver,
+pub fn add_cnf_to_solver<B>(
+    solver: &mut MiniSat2Solver<B>,
     formula: EncodedFormula,
-    proposition: &Option<Proposition>,
+    proposition: Option<Proposition<B>>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -49,15 +49,16 @@ pub fn add_cnf_to_solver(
     let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula) } else { formula };
     if working_formula.is_cnf(f) {
         add_cnf(solver, working_formula, proposition, f, config);
-    } else if let Some(top_level_vars) = compute_transformation(working_formula, proposition, solver, f, cache, config, true, true) {
+    } else if let Some(top_level_vars) = compute_transformation(working_formula, proposition.clone(), solver, f, cache, config, true, true)
+    {
         add_clause(solver, &top_level_vars, proposition, config);
     }
 }
 
-fn add_cnf(
-    solver: &mut MiniSat2Solver,
+fn add_cnf<B>(
+    solver: &mut MiniSat2Solver<B>,
     cnf: EncodedFormula,
-    proposition: &Option<Proposition>,
+    proposition: Option<Proposition<B>>,
     f: &FormulaFactory,
     config: PgOnSolverConfig,
 ) {
@@ -71,7 +72,7 @@ fn add_cnf(
         And(operands) => {
             for clause in operands {
                 let clause_vec = (*clause.literals(f)).iter().copied().collect::<Vec<Literal>>();
-                add_clause(solver, &clause_vec, proposition, config);
+                add_clause(solver, &clause_vec, proposition.clone(), config);
             }
         }
         _ => panic!("Unexpected formula type: {}", cnf.to_string(f)),
@@ -79,10 +80,10 @@ fn add_cnf(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn compute_transformation(
+fn compute_transformation<B>(
     formula: EncodedFormula,
-    proposition: &Option<Proposition>,
-    solver: &mut MiniSat2Solver,
+    proposition: Option<Proposition<B>>,
+    solver: &mut MiniSat2Solver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -94,7 +95,7 @@ fn compute_transformation(
         Lit(Pos(var)) => Some(vec![Literal::new(var, polarity)]),
         Lit(Neg(var)) => Some(vec![Literal::new(var, !polarity)]),
         Not(op) => compute_transformation(op, proposition, solver, f, cache, config, !polarity, top_level),
-        Or(_) | And(_) => handle_nary(formula, proposition, solver, f, cache, config, polarity, top_level),
+        Or(_) | And(_) => handle_nary(formula, &proposition, solver, f, cache, config, polarity, top_level),
         Impl(_) => handle_impl(formula, proposition, solver, f, cache, config, polarity, top_level),
         Equiv(_) => handle_equiv(formula, proposition, solver, f, cache, config, polarity, top_level),
         _ => panic_unexpected_formula_type(formula, Some(f)),
@@ -102,10 +103,10 @@ fn compute_transformation(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_equiv(
+fn handle_equiv<B>(
     equiv: EncodedFormula,
-    proposition: &Option<Proposition>,
-    solver: &mut MiniSat2Solver,
+    proposition: Option<Proposition<B>>,
+    solver: &mut MiniSat2Solver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -121,19 +122,23 @@ fn handle_equiv(
             Some(vec![pg_lit.unwrap().negate()])
         }
     } else {
-        let mut left_pos = compute_transformation(equiv.left(f).unwrap(), proposition, solver, f, cache, config, true, false).unwrap();
-        let mut left_neg = compute_transformation(equiv.left(f).unwrap(), proposition, solver, f, cache, config, false, false).unwrap();
-        let right_pos = compute_transformation(equiv.right(f).unwrap(), proposition, solver, f, cache, config, true, false).unwrap();
-        let right_neg = compute_transformation(equiv.right(f).unwrap(), proposition, solver, f, cache, config, false, false).unwrap();
+        let mut left_pos =
+            compute_transformation(equiv.left(f).unwrap(), proposition.clone(), solver, f, cache, config, true, false).unwrap();
+        let mut left_neg =
+            compute_transformation(equiv.left(f).unwrap(), proposition.clone(), solver, f, cache, config, false, false).unwrap();
+        let right_pos =
+            compute_transformation(equiv.right(f).unwrap(), proposition.clone(), solver, f, cache, config, true, false).unwrap();
+        let right_neg =
+            compute_transformation(equiv.right(f).unwrap(), proposition.clone(), solver, f, cache, config, false, false).unwrap();
         if polarity {
             left_neg.extend(right_pos);
             left_pos.extend(right_neg);
             if top_level {
-                add_clause(solver, &left_neg, proposition, config);
+                add_clause(solver, &left_neg, proposition.clone(), config);
                 add_clause(solver, &left_pos, proposition, config);
                 None
             } else {
-                add_clause(solver, &vector(pg_lit.unwrap().negate(), left_neg), proposition, config);
+                add_clause(solver, &vector(pg_lit.unwrap().negate(), left_neg), proposition.clone(), config);
                 add_clause(solver, &vector(pg_lit.unwrap().negate(), left_pos), proposition, config);
                 Some(vec![pg_lit.unwrap()])
             }
@@ -141,11 +146,11 @@ fn handle_equiv(
             left_pos.extend(right_pos);
             left_neg.extend(right_neg);
             if top_level {
-                add_clause(solver, &left_pos, proposition, config);
+                add_clause(solver, &left_pos, proposition.clone(), config);
                 add_clause(solver, &left_neg, proposition, config);
                 None
             } else {
-                add_clause(solver, &vector(pg_lit.unwrap(), left_pos), proposition, config);
+                add_clause(solver, &vector(pg_lit.unwrap(), left_pos), proposition.clone(), config);
                 add_clause(solver, &vector(pg_lit.unwrap(), left_neg), proposition, config);
                 Some(vec![pg_lit.unwrap().negate()])
             }
@@ -154,10 +159,10 @@ fn handle_equiv(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_impl(
+fn handle_impl<B>(
     implication: EncodedFormula,
-    proposition: &Option<Proposition>,
-    solver: &mut MiniSat2Solver,
+    proposition: Option<Proposition<B>>,
+    solver: &mut MiniSat2Solver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -174,24 +179,25 @@ fn handle_impl(
         }
     } else if polarity {
         // pg => (~left | right) = ~pg | ~left | right
-        let mut left = compute_transformation(implication.left(f).unwrap(), proposition, solver, f, cache, config, false, false).unwrap();
+        let mut left =
+            compute_transformation(implication.left(f).unwrap(), proposition.clone(), solver, f, cache, config, false, false).unwrap();
         let right = compute_transformation(implication.right(f).unwrap(), proposition, solver, f, cache, config, true, false).unwrap();
         left.extend(right);
         Some(left)
     } else {
         // (~left | right) => pg = (left & ~right) | pg = (left | pg) & (~right | pg)
-        let left = compute_transformation(implication.left(f).unwrap(), proposition, solver, f, cache, config, true, top_level);
-        let right = compute_transformation(implication.right(f).unwrap(), proposition, solver, f, cache, config, false, top_level);
+        let left = compute_transformation(implication.left(f).unwrap(), proposition.clone(), solver, f, cache, config, true, top_level);
+        let right = compute_transformation(implication.right(f).unwrap(), proposition.clone(), solver, f, cache, config, false, top_level);
         if top_level {
             if let Some(l) = left {
-                add_clause(solver, &l, proposition, config);
+                add_clause(solver, &l, proposition.clone(), config);
             }
             if let Some(r) = right {
                 add_clause(solver, &r, proposition, config);
             }
             None
         } else {
-            add_clause(solver, &vector(pg_lit.unwrap(), left.unwrap()), proposition, config);
+            add_clause(solver, &vector(pg_lit.unwrap(), left.unwrap()), proposition.clone(), config);
             add_clause(solver, &vector(pg_lit.unwrap(), right.unwrap()), proposition, config);
             Some(vec![pg_lit.unwrap().negate()])
         }
@@ -199,10 +205,10 @@ fn handle_impl(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_nary(
+fn handle_nary<B>(
     formula: EncodedFormula,
-    proposition: &Option<Proposition>,
-    solver: &mut MiniSat2Solver,
+    proposition: &Option<Proposition<B>>,
+    solver: &mut MiniSat2Solver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -221,13 +227,13 @@ fn handle_nary(
         if polarity {
             // pg => (v1 & ... & vk) = (~pg | v1) & ... & (~pg | vk)
             for &op in &*formula.operands(f) {
-                let op_pg_vars = compute_transformation(op, proposition, solver, f, cache, config, true, top_level);
+                let op_pg_vars = compute_transformation(op, proposition.clone(), solver, f, cache, config, true, top_level);
                 if top_level {
                     if let Some(lits) = op_pg_vars {
-                        add_clause(solver, &lits, proposition, config);
+                        add_clause(solver, &lits, proposition.clone(), config);
                     }
                 } else {
-                    add_clause(solver, &vector(pg_lit.unwrap().negate(), op_pg_vars.unwrap()), proposition, config);
+                    add_clause(solver, &vector(pg_lit.unwrap().negate(), op_pg_vars.unwrap()), proposition.clone(), config);
                 }
             }
             if top_level {
@@ -240,7 +246,7 @@ fn handle_nary(
             // Speed-Up: Skip pg var
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
-                single_clause.extend(compute_transformation(op, proposition, solver, f, cache, config, false, false).unwrap());
+                single_clause.extend(compute_transformation(op, proposition.clone(), solver, f, cache, config, false, false).unwrap());
             }
             Some(single_clause)
         }
@@ -250,19 +256,19 @@ fn handle_nary(
             // Speed-Up: Skip pg var
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
-                single_clause.extend(compute_transformation(op, proposition, solver, f, cache, config, true, false).unwrap());
+                single_clause.extend(compute_transformation(op, proposition.clone(), solver, f, cache, config, true, false).unwrap());
             }
             Some(single_clause)
         } else {
             // (v1 | ... | vk) => pg = (~v1 | pg) & ... & (~vk | pg)
             for &op in &*formula.operands(f) {
-                let op_pg_lits = compute_transformation(op, proposition, solver, f, cache, config, false, top_level);
+                let op_pg_lits = compute_transformation(op, proposition.clone(), solver, f, cache, config, false, top_level);
                 if top_level {
                     if let Some(lits) = op_pg_lits {
-                        add_clause(solver, &lits, proposition, config);
+                        add_clause(solver, &lits, proposition.clone(), config);
                     }
                 } else {
-                    add_clause(solver, &vector(pg_lit.unwrap(), op_pg_lits.unwrap()), proposition, config);
+                    add_clause(solver, &vector(pg_lit.unwrap(), op_pg_lits.unwrap()), proposition.clone(), config);
                 }
             }
             if top_level {
@@ -276,7 +282,7 @@ fn handle_nary(
     }
 }
 
-fn add_clause(solver: &mut MiniSat2Solver, clause: &[Literal], proposition: &Option<Proposition>, config: PgOnSolverConfig) {
+fn add_clause<B>(solver: &mut MiniSat2Solver<B>, clause: &[Literal], proposition: Option<Proposition<B>>, config: PgOnSolverConfig) {
     let clause_vec = clause
         .iter()
         .map(|lit| {
@@ -352,7 +358,7 @@ mod tests {
     use super::*;
 
     fn pg_on_solver(formula: EncodedFormula, f: &FormulaFactory, method: SolverCnfMethod) -> EncodedFormula {
-        let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(method));
+        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(method));
         solver.add(formula, f);
         let clauses = solver.formula_on_solver(f);
         f.and(clauses.iter())

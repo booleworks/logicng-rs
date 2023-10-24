@@ -118,13 +118,13 @@ fn test_inc_dec_deep_3() {
 #[test]
 #[should_panic(expected = "Cannot save a state when the incremental mode is deactivated")]
 fn test_not_incremental_1() {
-    let mut s = MiniSat::new_with_config(MiniSatConfig::default().incremental(false));
+    let mut s = MiniSat::from_config(MiniSatConfig::default().incremental(false));
     s.save_state();
 }
 
 #[test]
 #[should_panic(expected = "Cannot load a state when the incremental mode is deactivated")]
 fn test_not_incremental_2() {
-    let mut s = MiniSat::new_with_config(MiniSatConfig::default().incremental(false));
+    let mut s = MiniSat::from_config(MiniSatConfig::default().incremental(false));
     s.underlying_solver.load_state([0, 0, 0, 0, 0, 0, 0]);
 }

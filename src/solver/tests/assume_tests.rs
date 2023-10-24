@@ -8,8 +8,8 @@ fn test_assume() {
     let ff = F::new();
     let f = &ff.f;
     let solvers = [
-        MiniSat::new_with_config(MiniSatConfig::default().incremental(true)),
-        MiniSat::new_with_config(MiniSatConfig::default().incremental(false)),
+        MiniSat::from_config(MiniSatConfig::default().incremental(true)),
+        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
     ];
 
     let assumptions1 = [f.lit("c", true), f.lit("d", true)];

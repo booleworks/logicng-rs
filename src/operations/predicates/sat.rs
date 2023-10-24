@@ -25,7 +25,7 @@ use crate::solver::minisat::{MiniSat, MiniSatConfig};
 /// ```
 pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
     f.caches.sat.get(formula).unwrap_or_else(|| {
-        let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FactoryCnf));
+        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
         solver.add(formula, f);
         let sat = solver.sat();
         if f.config.caches.sat {
@@ -77,7 +77,7 @@ pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> bool {
     let negeated_formula = f.negate(formula);
     f.caches.sat.get(negeated_formula).map_or_else(
         || {
-            let mut solver = MiniSat::new_with_config(MiniSatConfig::default().cnf_method(FactoryCnf));
+            let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
             solver.add(negeated_formula, f);
             let sat = solver.sat();
             if f.config.caches.sat {

@@ -9,7 +9,7 @@ use crate::solver::minisat::MiniSat;
 use std::collections::HashMap;
 
 /// Computes the [`UnsatCore`] if the formula is unsatisfiable.
-pub fn compute_unsat_core(solver: &mut MiniSat, f: &FormulaFactory) -> UnsatCore {
+pub fn compute_unsat_core<B: PartialEq>(solver: &mut MiniSat<B>, f: &FormulaFactory) -> UnsatCore<B> {
     assert!(solver.config.proof_generation, "Cannot generate an unsat core if proof generation is not turned on");
     assert_ne!(solver.result, True, "An unsat core can only be generated if the formula is solved and is UNSAT");
     assert_ne!(solver.result, Undef, "Cannot generate an unsat core before the formula was solved.");
@@ -46,7 +46,7 @@ pub fn compute_unsat_core(solver: &mut MiniSat, f: &FormulaFactory) -> UnsatCore
     }
 }
 
-fn handle_trivial_case(solver: &mut MiniSat, f: &FormulaFactory) -> UnsatCore {
+fn handle_trivial_case<B: PartialEq>(solver: &mut MiniSat<B>, f: &FormulaFactory) -> UnsatCore<B> {
     let clauses = &solver.underlying_solver.pg_original_clauses;
     for i in 0..clauses.len() {
         let ci = &clauses[i];
@@ -71,7 +71,7 @@ fn handle_trivial_case(solver: &mut MiniSat, f: &FormulaFactory) -> UnsatCore {
     panic!("Should be a trivial unsat core, but did not found one.");
 }
 
-fn get_formula_for_vector(solver: &mut MiniSat, vector: &Vec<isize>, f: &FormulaFactory) -> EncodedFormula {
+fn get_formula_for_vector<B>(solver: &mut MiniSat<B>, vector: &Vec<isize>, f: &FormulaFactory) -> EncodedFormula {
     let mut literals = Vec::with_capacity(vector.len());
     for &lit in vector {
         let var = *solver.underlying_solver.idx2name.get(&MsVar(lit.unsigned_abs() - 1)).unwrap();

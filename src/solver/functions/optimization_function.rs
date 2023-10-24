@@ -39,7 +39,7 @@ impl OptimizationFunction {
         self
     }
 
-    pub(crate) fn optimize(&self, solver: &mut MiniSat, f: &FormulaFactory) -> Option<Model> {
+    pub(crate) fn optimize<B>(&self, solver: &mut MiniSat<B>, f: &FormulaFactory) -> Option<Model> {
         let solver_state = if solver.config.incremental { Some(solver.save_state()) } else { None };
         let model = self.compute(solver, f);
         if let Some(state) = solver_state {
@@ -48,7 +48,7 @@ impl OptimizationFunction {
         model
     }
 
-    fn compute(&self, solver: &mut MiniSat, f: &FormulaFactory) -> Option<Model> {
+    fn compute<B>(&self, solver: &mut MiniSat<B>, f: &FormulaFactory) -> Option<Model> {
         let selector_map: BTreeMap<Variable, Literal> =
             self.literals.iter().enumerate().map(|(i, &l)| (f.var(&format!("{SEL_PREFIX}{i}")), l)).collect();
         if self.maximize {
@@ -98,7 +98,7 @@ impl OptimizationFunction {
         Some(self.mk_result_model(&internal_model, solver))
     }
 
-    fn mk_result_model(&self, internal_model: &Vec<bool>, solver: &MiniSat) -> Model {
+    fn mk_result_model<B>(&self, internal_model: &Vec<bool>, solver: &MiniSat<B>) -> Model {
         let relevant_indices: Vec<MsVar> =
             self.result_model_variables.iter().filter_map(|&v| solver.underlying_solver.idx_for_variable(v)).collect();
         solver.create_assignment(internal_model, &Some(relevant_indices))

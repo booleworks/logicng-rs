@@ -14,14 +14,14 @@ use crate::solver::minisat::sat::{mk_lit, ClauseRef, MiniSat2Solver, MsLit, MsVa
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 pub struct DnnfSatSolver {
-    internal_solver: MiniSat2Solver,
+    internal_solver: MiniSat2Solver<()>,
     newly_implied_dirty: bool,
     assertion_level: isize,
     last_learnt: Option<Vec<MsLit>>,
 }
 
 impl DnnfSatSolver {
-    pub fn new(mut internal_solver: MiniSat2Solver, number_of_variables: usize) -> Self {
+    pub fn new(mut internal_solver: MiniSat2Solver<()>, number_of_variables: usize) -> Self {
         internal_solver.dnnf_assignment = Some(repeat(Undef).take(2 * number_of_variables).collect());
         Self { internal_solver, newly_implied_dirty: false, assertion_level: -1, last_learnt: None }
     }
@@ -36,11 +36,11 @@ impl DnnfSatSolver {
             Formula::True => {}
             Formula::False | Formula::Or(_) | Formula::Lit(_) => {
                 let clause_vec = self.generate_clause_vec(&formula.literals(f));
-                self.internal_solver.add_clause(clause_vec, &None);
+                self.internal_solver.add_clause(clause_vec, None);
             }
             Formula::And(ops) => ops.for_each(|op| {
                 let clause_vec = self.generate_clause_vec(&op.literals(f));
-                self.internal_solver.add_clause(clause_vec, &None);
+                self.internal_solver.add_clause(clause_vec, None);
             }),
             _ => panic_unexpected_formula_type(formula, Some(f)),
         }

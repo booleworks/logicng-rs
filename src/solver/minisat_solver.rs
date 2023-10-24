@@ -19,9 +19,9 @@ use super::functions::OptimizationFunction;
 use super::minisat::sat::MsVar;
 
 /// Wrapper for the MiniSAT-style SAT solvers.
-pub struct MiniSat {
+pub struct MiniSat<Backpack = ()> {
     /// actual MiniSAT solver
-    pub underlying_solver: MiniSat2Solver,
+    pub underlying_solver: MiniSat2Solver<Backpack>,
     pub(crate) result: Tristate,
     pub(crate) config: MiniSatConfig,
     valid_states: Vec<usize>,
@@ -31,15 +31,29 @@ pub struct MiniSat {
     full_pg_variable_cache: HashMap<EncodedFormula, VarCacheEntry>,
 }
 
-impl Default for MiniSat {
+impl<B: Clone> Default for MiniSat<B> {
     fn default() -> Self {
-        Self::new()
+        Self::new_with_backpack()
     }
 }
 
 impl MiniSat {
     /// Constructs a new SAT solver instance.
+    #[must_use]
     pub fn new() -> Self {
+        Self::new_with_backpack()
+    }
+
+    /// Constructs a new SAT solver instance bases on a configuration.
+    #[must_use]
+    pub fn from_config(config: MiniSatConfig) -> Self {
+        Self::from_config_with_backpack(config)
+    }
+}
+
+impl<B> MiniSat<B> {
+    /// Constructs a new SAT solver instance.
+    pub fn new_with_backpack() -> Self {
         Self {
             underlying_solver: MiniSat2Solver::new(),
             result: Undef,
@@ -53,7 +67,7 @@ impl MiniSat {
     }
 
     /// Constructs a new SAT solver instance bases on a configuration.
-    pub fn new_with_config(config: MiniSatConfig) -> Self {
+    pub fn from_config_with_backpack(config: MiniSatConfig) -> Self {
         Self {
             underlying_solver: MiniSat2Solver::new_with_config(&config),
             result: Undef,
@@ -80,13 +94,13 @@ impl MiniSat {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
                     let cnf = f.cnf_of(formula);
-                    self.add_clause_set(cnf, &None, f);
+                    self.add_clause_set(cnf, None, f);
                 }
                 SolverCnfMethod::PgOnSolver => {
                     add_cnf_to_solver(
                         &mut self.underlying_solver,
                         formula,
-                        &None,
+                        None,
                         f,
                         &mut self.pg_variable_cache,
                         PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
@@ -96,7 +110,7 @@ impl MiniSat {
                     add_cnf_to_solver(
                         &mut self.underlying_solver,
                         formula,
-                        &None,
+                        None,
                         f,
                         &mut self.full_pg_variable_cache,
                         PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
@@ -108,23 +122,23 @@ impl MiniSat {
     }
 
     /// Adds the given propositions to the solver.
-    pub fn add_propositions(&mut self, propositions: &[&Proposition], f: &FormulaFactory) {
-        propositions.iter().for_each(|proposition| self.add_proposition(proposition, f));
+    pub fn add_propositions<Props: IntoIterator<Item = Proposition<B>>>(&mut self, propositions: Props, f: &FormulaFactory) {
+        propositions.into_iter().for_each(|proposition| self.add_proposition(proposition, f));
     }
 
     /// Adds the given proposition to the solver.
-    pub fn add_proposition(&mut self, proposition: &Proposition, f: &FormulaFactory) {
+    pub fn add_proposition(&mut self, proposition: Proposition<B>, f: &FormulaFactory) {
         self.result = Undef;
         match self.config.cnf_method {
             SolverCnfMethod::FactoryCnf => {
                 let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f);
-                self.add_clause_set(cnf, &Some(proposition.clone()), f);
+                self.add_clause_set(cnf, Some(proposition), f);
             }
             SolverCnfMethod::PgOnSolver => {
                 add_cnf_to_solver(
                     &mut self.underlying_solver,
                     proposition.formula,
-                    &Some(proposition.clone()),
+                    Some(proposition),
                     f,
                     &mut self.pg_variable_cache,
                     PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
@@ -134,7 +148,7 @@ impl MiniSat {
                 add_cnf_to_solver(
                     &mut self.underlying_solver,
                     proposition.formula,
-                    &Some(proposition.clone()),
+                    Some(proposition),
                     f,
                     &mut self.full_pg_variable_cache,
                     PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
@@ -244,11 +258,6 @@ impl MiniSat {
         self.underlying_solver.name2idx.iter().filter(|(_, &idx)| idx.0 < n_vars).map(|(&var, _)| var).collect()
     }
 
-    /// Computes the unsatisfiable core on this solver.
-    pub fn unsat_core(&mut self, f: &FormulaFactory) -> UnsatCore {
-        compute_unsat_core(self, f)
-    }
-
     /// Adds a cardinality constraint and returns its incremental data in order
     /// to refine the constraint on the solver.
     ///
@@ -297,16 +306,16 @@ impl MiniSat {
         });
     }
 
-    fn add_clause_set(&mut self, cnf: EncodedFormula, proposition: &Option<Proposition>, f: &FormulaFactory) {
+    fn add_clause_set(&mut self, cnf: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) {
         match cnf.unpack(f) {
             Formula::True => {}
             Formula::False | Formula::Or(_) | Formula::Lit(_) => self.add_clause(cnf, proposition, f),
-            Formula::And(ops) => ops.for_each(|op| self.add_clause(op, proposition, f)),
+            Formula::And(ops) => ops.for_each(|op| self.add_clause(op, proposition.clone(), f)),
             _ => panic_unexpected_formula_type(cnf, Some(f)),
         }
     }
 
-    fn add_clause(&mut self, clause: EncodedFormula, proposition: &Option<Proposition>, f: &FormulaFactory) {
+    fn add_clause(&mut self, clause: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) {
         self.result = Undef;
         let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f));
         self.underlying_solver.add_clause(clause_vec, proposition);
@@ -364,6 +373,22 @@ impl MiniSat {
             Variable::FF(_) => true,
             Variable::Aux(_, _) => self.config.auxiliary_variables_in_models,
         }
+    }
+
+    pub(crate) fn add_literal(&mut self, lit: &Literal) -> MsLit {
+        let index = self.underlying_solver.idx_for_variable(lit.variable()).unwrap_or_else(|| {
+            let new_index = self.underlying_solver.new_var(!self.config.initial_phase, true);
+            self.underlying_solver.add_variable(lit.variable(), new_index);
+            new_index
+        });
+        mk_lit(index, !lit.phase())
+    }
+}
+
+impl<B: PartialEq> MiniSat<B> {
+    /// Computes the unsatisfiable core on this solver.
+    pub fn unsat_core(&mut self, f: &FormulaFactory) -> UnsatCore<B> {
+        compute_unsat_core(self, f)
     }
 }
 

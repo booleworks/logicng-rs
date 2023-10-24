@@ -16,13 +16,11 @@ use std::io::{BufRead, BufReader};
 
 fn solvers() -> [MiniSat; 5] {
     [
-        MiniSat::new_with_config(MiniSatConfig::default().initial_phase(true)),
-        MiniSat::new_with_config(MiniSatConfig::default().initial_phase(false)),
-        MiniSat::new_with_config(MiniSatConfig::default().initial_phase(true).cnf_method(SolverCnfMethod::PgOnSolver)),
-        MiniSat::new_with_config(
-            MiniSatConfig::default().initial_phase(true).cnf_method(SolverCnfMethod::PgOnSolver).proof_generation(true),
-        ),
-        MiniSat::new_with_config(MiniSatConfig::default().incremental(false)),
+        MiniSat::from_config(MiniSatConfig::default().initial_phase(true)),
+        MiniSat::from_config(MiniSatConfig::default().initial_phase(false)),
+        MiniSat::from_config(MiniSatConfig::default().initial_phase(true).cnf_method(SolverCnfMethod::PgOnSolver)),
+        MiniSat::from_config(MiniSatConfig::default().initial_phase(true).cnf_method(SolverCnfMethod::PgOnSolver).proof_generation(true)),
+        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
     ]
 }
 
