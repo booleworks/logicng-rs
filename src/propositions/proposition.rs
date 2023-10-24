@@ -2,6 +2,9 @@ use std::rc::Rc;
 
 use crate::formulas::EncodedFormula;
 
+/// A proposition holding a string as backpack.
+pub type StandardProposition = Proposition<String>;
+
 /// A proposition in LogicNG. A proposition is a formula with an additional
 /// textual description.
 #[derive(Eq, PartialEq, Hash, Debug)]
@@ -34,5 +37,12 @@ impl<T> Proposition<T> {
     pub fn backpack(mut self, backpack: T) -> Self {
         self.backpack = Some(Rc::new(backpack));
         self
+    }
+}
+
+impl StandardProposition {
+    /// Constructs a new `StandardProposition` with a description.
+    pub fn standard_proposition(formula: EncodedFormula, description: &str) -> Self {
+        Self::with_backpack(formula, description.into())
     }
 }
