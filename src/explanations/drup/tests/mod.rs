@@ -2,7 +2,7 @@ mod drup_tests {
     use crate::explanations::unsat_core::UnsatCore;
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
-    use crate::propositions::Proposition;
+    use crate::propositions::{Proposition, StandardProposition};
     use crate::solver::minisat::sat::Tristate::{False, True};
     use crate::solver::minisat::SolverCnfMethod::{FactoryCnf, PgOnSolver};
     use crate::solver::minisat::{MiniSat, MiniSatConfig, SatBuilder};
@@ -89,15 +89,15 @@ mod drup_tests {
     pub fn test_proposition_handling() {
         let f = &FormulaFactory::new();
         let propositions = [
-            Proposition::with_backpack("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1".into()),
-            Proposition::with_backpack("(c & d) <=> ~e".to_formula(f), "P2".into()),
-            Proposition::with_backpack("~e => f | g".to_formula(f), "P3".into()),
-            Proposition::with_backpack("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4".into()),
-            Proposition::with_backpack("a => b".to_formula(f), "P5".into()),
-            Proposition::with_backpack("a".to_formula(f), "P6".into()),
-            Proposition::with_backpack("g | h".to_formula(f), "P7".into()),
-            Proposition::with_backpack("(x => ~y | z) & (z | w)".to_formula(f), "P8".into()),
-            Proposition::with_backpack("a1 | a2".to_formula(f), "P9".into()),
+            Proposition::standard_proposition("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1"),
+            Proposition::standard_proposition("(c & d) <=> ~e".to_formula(f), "P2"),
+            Proposition::standard_proposition("~e => f | g".to_formula(f), "P3"),
+            Proposition::standard_proposition("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4"),
+            Proposition::standard_proposition("a => b".to_formula(f), "P5"),
+            Proposition::standard_proposition("a".to_formula(f), "P6"),
+            Proposition::standard_proposition("g | h".to_formula(f), "P7"),
+            Proposition::standard_proposition("(x => ~y | z) & (z | w)".to_formula(f), "P8"),
+            Proposition::standard_proposition("a1 | a2".to_formula(f), "P9"),
         ];
 
         for mut solver in solvers() {
@@ -120,17 +120,17 @@ mod drup_tests {
     #[test]
     pub fn test_proposition_inc_dec() {
         let f = &FormulaFactory::new();
-        let p1 = Proposition::with_backpack("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1".into());
-        let p2 = Proposition::with_backpack("(c & d) <=> ~e".to_formula(f), "P2".into());
-        let p3 = Proposition::with_backpack("~e => f | g".to_formula(f), "P3".into());
-        let p4 = Proposition::with_backpack("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4".into());
-        let p5 = Proposition::with_backpack("a => b".to_formula(f), "P5".into());
-        let p6 = Proposition::with_backpack("a".to_formula(f), "P6".into());
-        let p7 = Proposition::with_backpack("g | h".to_formula(f), "P7".into());
-        let p8 = Proposition::with_backpack("(x => ~y | z) & (z | w)".to_formula(f), "P8".into());
-        let p9 = Proposition::with_backpack("a & b".to_formula(f), "P9".into());
-        let p10 = Proposition::with_backpack("(p => q) & p".to_formula(f), "P10".into());
-        let p11 = Proposition::with_backpack("a & ~q".to_formula(f), "P11".into());
+        let p1 = Proposition::standard_proposition("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1");
+        let p2 = Proposition::standard_proposition("(c & d) <=> ~e".to_formula(f), "P2");
+        let p3 = Proposition::standard_proposition("~e => f | g".to_formula(f), "P3");
+        let p4 = Proposition::standard_proposition("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4");
+        let p5 = Proposition::standard_proposition("a => b".to_formula(f), "P5");
+        let p6 = Proposition::standard_proposition("a".to_formula(f), "P6");
+        let p7 = Proposition::standard_proposition("g | h".to_formula(f), "P7");
+        let p8 = Proposition::standard_proposition("(x => ~y | z) & (z | w)".to_formula(f), "P8");
+        let p9 = Proposition::standard_proposition("a & b".to_formula(f), "P9");
+        let p10 = Proposition::standard_proposition("(p => q) & p".to_formula(f), "P10");
+        let p11 = Proposition::standard_proposition("a & ~q".to_formula(f), "P11");
 
         let solver = &mut solvers()[0];
         solver.add_propositions([p1.clone(), p2.clone(), p3.clone(), p4.clone()], f);
@@ -164,16 +164,16 @@ mod drup_tests {
         let f = &FormulaFactory::new();
         for mut solver in solvers() {
             assert_eq!(solver.sat(), True);
-            let p1 = Proposition::with_backpack(f.falsum(), "P1".into());
+            let p1 = Proposition::standard_proposition(f.falsum(), "P1");
             solver.add_proposition(p1.clone(), f);
             assert_unsat_core(&mut solver, &[p1], f);
 
             solver.reset();
             assert_eq!(solver.sat(), True);
-            let p2 = Proposition::with_backpack(f.variable("a"), "P2".into());
+            let p2 = Proposition::standard_proposition(f.variable("a"), "P2");
             solver.add_proposition(p2.clone(), f);
             assert_eq!(solver.sat(), True);
-            let p3 = Proposition::with_backpack(f.literal("a", false), "P3".into());
+            let p3 = Proposition::standard_proposition(f.literal("a", false), "P3");
             solver.add_proposition(p3.clone(), f);
             assert_unsat_core(&mut solver, &[p2, p3], f);
         }
@@ -291,10 +291,10 @@ mod drup_tests {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::from_config_with_backpack(MiniSatConfig::default().proof_generation(true).cnf_method(PgOnSolver));
 
-        let p1 = Proposition::with_backpack("A + B + C <= 1".to_formula(f), Some(String::from("CC")));
-        let p2 = Proposition::with_backpack("A".to_formula(f), None);
-        let p3 = Proposition::with_backpack("B".to_formula(f), None);
-        let p4 = Proposition::with_backpack("X & Y".to_formula(f), None);
+        let p1 = Proposition::standard_proposition("A + B + C <= 1".to_formula(f), "CC");
+        let p2 = StandardProposition::new("A".to_formula(f));
+        let p3 = StandardProposition::new("B".to_formula(f));
+        let p4 = StandardProposition::new("X & Y".to_formula(f));
         solver.add_proposition(p1.clone(), f);
         solver.add_proposition(p2.clone(), f);
         solver.add_proposition(p3.clone(), f);
