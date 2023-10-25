@@ -227,113 +227,6 @@ fn test_unknown_variable_not_occurring_in_model() {
     );
 }
 
-// @Test
-//     public void testModelEnumerationHandler() {
-//         for (final SATSolver s : this.solvers) {
-//             s.add(this.IMP3);
-//             try {
-//                 final ModelEnumerationHandler handler = new ModelEnumerationHandler() {
-//                     private boolean aborted;
-//
-//                     @Override
-//                     public boolean aborted() {
-//                         return this.aborted;
-//                     }
-//
-//                     @Override
-//                     public void started() {
-//                         this.aborted = false;
-//                     }
-//
-//                     @Override
-//                     public SATHandler satHandler() {
-//                         return null;
-//                     }
-//
-//                     @Override
-//                     public boolean foundModel(final Assignment assignment) {
-//                         this.aborted = assignment.negativeLiterals().isEmpty();
-//                         return !this.aborted;
-//                     }
-//                 };
-//                 final List<Assignment> models = s.execute(ModelEnumerationFunction.builder().handler(handler).build());
-//                 assertThat(models.isEmpty()).isFalse();
-//                 assertThat(models.get(models.size() - 1).negativeLiterals().isEmpty()).isTrue();
-//                 models.remove(models.size() - 1);
-//                 for (final Assignment model : models) {
-//                     assertThat(model.negativeLiterals().isEmpty()).isFalse();
-//                 }
-//             } catch (final Exception e) {
-//                 assertThat(e instanceof UnsupportedOperationException).isTrue();
-//             }
-//
-//             s.reset();
-//         }
-//     }
-//
-//     @Test
-//     @SuppressWarnings("deprecation")
-//     public void testWithRelaxation() throws ParserException {
-//         final PropositionalParser parser = new PropositionalParser(this.f);
-//         final Formula one = parser.parse("a & b & (c | ~d)");
-//         final Formula two = parser.parse("~a | ~c");
-//
-//         for (final SATSolver s : this.solvers) {
-//             s.add(one);
-//             s.addWithRelaxation(this.f.variable("d"), two);
-//             assertSolverSat(s);
-//             try {
-//                 assertThat(s.enumerateAllModels().size()).isEqualTo(2);
-//             } catch (final Exception e) {
-//                 assertThat(e instanceof UnsupportedOperationException).isTrue();
-//             }
-//             s.reset();
-//
-//             s.add(one);
-//             s.addWithRelaxation(this.f.variable("d"), new StandardProposition(two));
-//             assertSolverSat(s);
-//             try {
-//                 assertThat(s.enumerateAllModels().size()).isEqualTo(2);
-//             } catch (final Exception e) {
-//                 assertThat(e instanceof UnsupportedOperationException).isTrue();
-//             }
-//             s.reset();
-//
-//             s.add(one);
-//             s.addWithRelaxation(this.f.variable("d"), two);
-//             assertSolverSat(s);
-//             try {
-//                 assertThat(s.enumerateAllModels().size()).isEqualTo(2);
-//             } catch (final Exception e) {
-//                 assertThat(e instanceof UnsupportedOperationException).isTrue();
-//             }
-//             s.reset();
-//
-//             s.add(one);
-//             s.addWithRelaxation(this.f.variable("d"), Arrays.asList(two, this.f.verum()));
-//             assertSolverSat(s);
-//             try {
-//                 assertThat(s.enumerateAllModels().size()).isEqualTo(2);
-//             } catch (final Exception e) {
-//                 assertThat(e instanceof UnsupportedOperationException).isTrue();
-//             }
-//             s.reset();
-//         }
-//     }
-//
-//     @Test
-//     public void testRelaxationFormulas() throws ParserException {
-//         for (final SATSolver s : this.solvers) {
-//             s.add(this.f.parse("a & (b | c)"));
-//             assertSolverSat(s);
-//             s.addWithRelaxation(this.f.variable("x"), this.f.parse("~a & ~b"));
-//             assertSolverSat(s);
-//             assertThat(s.model().positiveVariables()).contains(this.f.variable("x"));
-//             s.add(this.f.variable("x").negate());
-//             assertSolverUnsat(s);
-//         }
-//     }
-
 #[test]
 fn test_pigeon_hole() {
     let f = &FormulaFactory::new();
@@ -382,30 +275,6 @@ fn test_different_clause_minimizations() {
     }
 }
 
-// @Test
-//     public void testTimeoutSATHandlerSmall() {
-//         for (final SATSolver s : this.solvers) {
-//             s.add(this.IMP1);
-//             final TimeoutSATHandler handler = new TimeoutSATHandler(1000L);
-//             final Tristate result = s.sat(handler);
-//             assertThat(handler.aborted()).isFalse();
-//             assertThat(result).isEqualTo(Tristate.TRUE);
-//             s.reset();
-//         }
-//     }
-//
-//     @Test
-//     public void testTimeoutSATHandlerLarge() {
-//         for (final SATSolver s : this.solvers) {
-//             s.add(this.pg.generate(10));
-//             final TimeoutSATHandler handler = new TimeoutSATHandler(1000L);
-//             final Tristate result = s.sat(handler);
-//             assertThat(handler.aborted()).isTrue();
-//             assertThat(result).isEqualTo(UNDEF);
-//             s.reset();
-//         }
-//     }
-
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
@@ -431,41 +300,6 @@ fn test_dimacs_files() {
     }
 }
 
-// @Test
-//     public void testTimeoutModelEnumerationHandlerWithUNSATInstance() {
-//         for (final SATSolver solver : this.solvers) {
-//             solver.add(this.pg.generate(10));
-//             final TimeoutModelEnumerationHandler handler = new TimeoutModelEnumerationHandler(1000L);
-//             final List<Assignment> assignments = solver.execute(ModelEnumerationFunction.builder().handler(handler).build());
-//             assertThat(assignments).isEmpty();
-//             assertThat(handler.aborted()).isTrue();
-//             solver.reset();
-//         }
-//     }
-//
-//     @Test
-//     public void testTimeoutModelEnumerationHandlerWithSATInstance() {
-//         for (final SATSolver solver : this.solvers) {
-//             final List<Variable> variables = new ArrayList<>();
-//             for (int i = 0; i < 1000; i++) {
-//                 variables.add(this.f.variable("x" + i));
-//             }
-//
-//             solver.add(this.f.exo(variables));
-//             TimeoutModelEnumerationHandler handler = new TimeoutModelEnumerationHandler(50L);
-//             solver.execute(ModelEnumerationFunction.builder().handler(handler).build());
-//             assertThat(handler.aborted()).isTrue();
-//             solver.reset();
-//
-//             solver.add(this.f.exo(variables.subList(0, 5)));
-//             handler = new TimeoutModelEnumerationHandler(1000L);
-//             final List<Assignment> assignments = solver.execute(ModelEnumerationFunction.builder().handler(handler).build());
-//             assertThat(assignments).hasSize(5);
-//             assertThat(handler.aborted()).isFalse();
-//             solver.reset();
-//         }
-//     }
-
 #[test]
 fn test_model_enumeration() {
     let f = &FormulaFactory::new();
@@ -487,62 +321,6 @@ fn test_model_enumeration() {
         }
     }
 }
-
-// @Test
-//     public void testModelEnumerationWithHandler01() {
-//         for (int i = 0; i < this.solvers.length - 1; i++) {
-//             final SATSolver s = this.solvers[i];
-//             final SortedSet<Variable> lits = new TreeSet<>();
-//             final SortedSet<Variable> firstFive = new TreeSet<>();
-//             for (int j = 0; j < 20; j++) {
-//                 final Variable lit = this.f.variable("x" + j);
-//                 lits.add(lit);
-//                 if (j < 5) {
-//                     firstFive.add(lit);
-//                 }
-//             }
-//             s.add(this.f.cc(CType.GE, 1, lits));
-//
-//             final NumberOfModelsHandler handler = new NumberOfModelsHandler(29);
-//             final List<Assignment> modelsWithHandler = s.execute(ModelEnumerationFunction.builder().variables(firstFive).additionalVariables(lits).handler(handler).build());
-//             assertThat(handler.aborted()).isTrue();
-//             assertThat(modelsWithHandler.size()).isEqualTo(29);
-//             for (final Assignment model : modelsWithHandler) {
-//                 for (final Variable lit : lits) {
-//                     assertThat(model.positiveVariables().contains(lit) || model.negativeVariables().contains(lit)).isTrue();
-//                 }
-//             }
-//             s.reset();
-//         }
-//     }
-//
-//     @Test
-//     public void testModelEnumerationWithHandler02() {
-//         for (int i = 0; i < this.solvers.length - 1; i++) {
-//             final SATSolver s = this.solvers[i];
-//             final SortedSet<Variable> lits = new TreeSet<>();
-//             final SortedSet<Variable> firstFive = new TreeSet<>();
-//             for (int j = 0; j < 20; j++) {
-//                 final Variable lit = this.f.variable("x" + j);
-//                 lits.add(lit);
-//                 if (j < 5) {
-//                     firstFive.add(lit);
-//                 }
-//             }
-//             s.add(this.f.cc(CType.GE, 1, lits));
-//
-//             final NumberOfModelsHandler handler = new NumberOfModelsHandler(29);
-//             final List<Assignment> modelsWithHandler = s.execute(ModelEnumerationFunction.builder().additionalVariables(Collections.singletonList(firstFive.first())).handler(handler).build());
-//             assertThat(handler.aborted()).isTrue();
-//             assertThat(modelsWithHandler.size()).isEqualTo(29);
-//             for (final Assignment model : modelsWithHandler) {
-//                 for (final Variable lit : lits) {
-//                     assertThat(model.positiveVariables().contains(lit) || model.negativeVariables().contains(lit)).isTrue();
-//                 }
-//             }
-//             s.reset();
-//         }
-//     }
 
 #[test]
 fn test_empty_enumeration() {
