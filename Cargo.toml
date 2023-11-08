@@ -30,12 +30,14 @@ pest = "2.7.3"
 pest_derive = "2.7.3"
 dashmap = "5.5.3"
 logicng-open-wbo-sys = { version = "0.1.0-alpha.3", path = "lib/open_wbo_ffi", optional = true }
+logicng-sharp-sat-sys = {version = "0.1.0-alpha.1", path = "lib/sharp_sat_ffi", optional = true }
 
 [features]
 default = []
 # these tests should only be executed with the release profile, otherwise they take too much time
 long_running_tests = []
 open_wbo = ["dep:logicng-open-wbo-sys"]
+sharp_sat = ["dep:logicng-sharp-sat-sys"]
 
 [profile.release]
 debug = true # no runtime costs involved
@@ -68,7 +70,7 @@ path = "examples/benches/parse.rs"
 [[example]]
 name = "bench_overview"
 path = "examples/benches/overview.rs"
-required-features = ["open_wbo"]
+required-features = ["open_wbo", "sharp_sat"]
 
 [[test]]
 name = "test"

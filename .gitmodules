@@ -1,3 +1,6 @@
 [submodule "lib/open_wbo_ffi/open_wbo/logicng-open-wbo"]
 	path = lib/open_wbo_ffi/open_wbo/logicng-open-wbo
 	url = https://github.com/booleworks/logicng-open-wbo.git
+[submodule "lib/sharp_sat_ffi/sharp_sat/sharpSAT"]
+	path = lib/sharp_sat_ffi/sharp_sat/sharpSAT
+	url = https://github.com/marcthurley/sharpSAT.git

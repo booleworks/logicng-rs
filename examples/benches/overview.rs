@@ -7,12 +7,14 @@ use logicng::knowledge_compilation::dnnf::{compile_dnnf, count};
 use logicng::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
 use logicng::solver::maxsat::{Algorithm, MaxSatSolver};
 use logicng::solver::minisat::MiniSat;
+use logicng::solver::sharpsat::SharpSatSolver;
 
 fn main() {
     parse();
     parse();
     sat();
     model_counting();
+    model_counting_sharpsat();
     maximize_maxsat();
 }
 
@@ -64,6 +66,22 @@ fn model_counting() {
         count(&dnnf, &f);
     }
     println!("Rust Model Counting (Dnnf): {}s", start.elapsed().as_secs_f32());
+}
+
+fn model_counting_sharpsat() {
+    let f = FormulaFactory::new();
+    let formulas = fs::read_dir("./resources/formula_suite_1/")
+        .unwrap()
+        .map(|p| read_formula(&String::from(p.unwrap().path().to_str().unwrap()), &f).unwrap())
+        .collect_vec();
+
+    let start = std::time::Instant::now();
+    for formula in formulas {
+        let mut solver = SharpSatSolver::new();
+        solver.add_formula(formula, &f);
+        solver.solve();
+    }
+    println!("Rust Model Counting (SharpSAT): {}s", start.elapsed().as_secs_f32());
 }
 
 fn maximize_maxsat() {

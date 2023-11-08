@@ -1,0 +1,21 @@
+[package]
+name = "logicng-sharp-sat-sys"
+version = "0.1.0-alpha.1"
+authors = ["BooleWorks GmbH <info@booleworks.com>"]
+edition = "2021"
+# build = "build.rs"
+
+description = "LogicNG Bindings for SharpSAT"
+license = "MIT OR Apache-2.0"
+keywords = ["FFI", "solver", "MaxSAT"]
+categories = ["external-ffi-bindings"]
+
+[lib]
+crate-type = ["lib"]
+
+[build-dependencies]
+cxx-build = "1.0.107"
+cmake = "0.1"
+
+[dependencies]
+cxx = "1.0.107"

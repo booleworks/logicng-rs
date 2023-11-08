@@ -367,6 +367,9 @@ pub mod maxsat {
     pub use super::maxsat_solver::*;
 }
 
+#[cfg(feature = "sharp_sat")]
+pub mod sharpsat;
+
 /// We deviate from the convention of putting unit tests in the source file in this case,
 /// s.t. the file don't become too large
 #[cfg(test)]
