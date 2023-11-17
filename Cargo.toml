@@ -51,6 +51,11 @@ name = "model_counting"
 path = "examples/benches/model_counting.rs"
 
 [[example]]
+name = "model_counting_sharpsat"
+path = "examples/benches/model_counting_sharpsat.rs"
+required-features = ["sharp_sat"]
+
+[[example]]
 name = "maximize"
 path = "examples/benches/maximize.rs"
 
