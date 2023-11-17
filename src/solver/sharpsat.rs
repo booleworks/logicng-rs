@@ -51,15 +51,36 @@ impl SharpSatSolver {
             CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
         let cnf_formula = cnf_encoder.transform(expanded, f);
         match cnf_formula.unpack(f) {
-            Formula::Or(ops) => self.add_clause(&ops.map(|formula| formula.as_literal().expect("invalid cnf")).collect::<Box<_>>()),
+            Formula::Or(ops) => {
+                self.add_clause(&ops.map(|formula| formula.as_literal().expect("SharpSat FFI: invalid cnf")).collect::<Box<_>>());
+            }
             Formula::And(ops) => {
                 for op in ops {
                     match op.unpack(f) {
                         Formula::Or(or_ops) => {
-                            self.add_clause(&or_ops.map(|formula| formula.as_literal().expect("invalid cnf")).collect::<Box<_>>());
+                            let mut constant_true = false;
+                            let clause = or_ops
+                                .filter_map(|formula| match formula.unpack(f) {
+                                    Formula::Lit(lit) => Some(lit),
+                                    Formula::True => {
+                                        constant_true = true;
+                                        None
+                                    }
+                                    Formula::False => None,
+                                    _ => panic!("SharpSat FFI: invalid cnf"),
+                                })
+                                .collect::<Box<_>>();
+                            if !constant_true {
+                                self.add_clause(&clause);
+                            }
                         }
                         Formula::And(_) => panic!("FF invariant broken: Nested And statement"),
                         Formula::Lit(lit) => self.add_clause(&[lit]),
+                        Formula::False => {
+                            self.constant = Some(false);
+                            break;
+                        }
+                        Formula::True => {}
                         _ => panic!("invalid cnf"),
                     }
                 }
@@ -71,7 +92,7 @@ impl SharpSatSolver {
         }
     }
 
-    pub fn solve(&mut self) -> BigUint {
+    pub fn solve(self) -> BigUint {
         match self.constant {
             Some(true) => BigUint::from(1_u64),
             Some(false) => BigUint::from(0_u64),
