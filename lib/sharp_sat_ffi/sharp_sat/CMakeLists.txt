@@ -23,7 +23,7 @@ ENDIF(UNIX)
 find_library(GMP_LIB gmp)
 find_library(GMPXX_LIB gmpxx)
 
-SET(SHARPSATSRCDIR "sharpSAT/src")
+SET(SHARPSATSRCDIR "logicng-sharp-sat/src")
 SET(SOURCES ${SHARPSATSRCDIR}/alt_component_analyzer.cpp ${SHARPSATSRCDIR}/alt_component_analyzer.h
         ${SHARPSATSRCDIR}/component_analyzer.cpp ${SHARPSATSRCDIR}/component_analyzer.h
         ${SHARPSATSRCDIR}/component_cache.cpp ${SHARPSATSRCDIR}/component_cache.h ${SHARPSATSRCDIR}/component_cache-inl.h

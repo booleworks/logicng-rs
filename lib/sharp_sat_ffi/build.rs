@@ -41,7 +41,7 @@ fn main() {
 }
 
 fn build_sharp_sat(sharp_sat_path: &std::path::Path) -> PathBuf {
-    let sharp_sat_src_path = sharp_sat_path.join("sharpSAT");
+    let sharp_sat_src_path = sharp_sat_path.join("logicng-sharp-sat");
     if !sharp_sat_src_path.exists() {
         panic!("Cannot build SharpSAT, because the source code is missing.");
     }
