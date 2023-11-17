@@ -17,10 +17,10 @@
 class SimpleUnpackedComponent : public BasePackedComponent {
 public:
 
-  SimpleUnpackedComponent() {
+  SimpleUnpackedComponent(StaticState* state): BasePackedComponent(state) {
   }
 
-  inline SimpleUnpackedComponent(Component &rComp);
+  inline SimpleUnpackedComponent(Component &rComp, StaticState* state);
 
   unsigned num_variables() {
       return *(data_+1);
@@ -53,7 +53,7 @@ public:
 };
 
 
-SimpleUnpackedComponent::SimpleUnpackedComponent(Component &rComp) {
+SimpleUnpackedComponent::SimpleUnpackedComponent(Component &rComp, StaticState* state): BasePackedComponent(state) {
 
   unsigned data_size = rComp.num_variables() +  rComp.numLongClauses() + 2;
 

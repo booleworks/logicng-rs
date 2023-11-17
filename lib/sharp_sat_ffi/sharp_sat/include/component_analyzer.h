@@ -42,8 +42,9 @@ struct CAClauseHeader {
 class STDComponentAnalyzer {
 public:
   STDComponentAnalyzer(DataAndStatistics &statistics,
-        LiteralIndexedVector<TriValue> & lit_values) :
-        statistics_(statistics), literal_values_(lit_values) {
+        LiteralIndexedVector<TriValue> & lit_values, ComponentArchetypeState* arche_state) :
+        statistics_(statistics), literal_values_(lit_values), archetype_(arche_state) {
+      static_state = arche_state;
   }
 
   unsigned scoreOf(VariableIndex v) {
@@ -71,7 +72,7 @@ public:
 
 
   void setupAnalysisContext(StackLevel &top, Component & super_comp){
-     archetype_.reInitialize(top,super_comp);
+     archetype_.reInitialize(top,super_comp, static_state);
 
      for (auto vt = super_comp.varsBegin(); *vt != varsSENTINEL; vt++)
        if (isActive(*vt)) {
@@ -159,6 +160,7 @@ private:
   ComponentArchetype  archetype_;
 
   vector<VariableIndex> search_stack_;
+  ComponentArchetypeState* static_state;
 
   bool isResolved(const LiteralID lit) {
     return literal_values_[lit] == F_TRI;

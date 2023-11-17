@@ -45,8 +45,9 @@ class NewComponentAnalyzer;
 class NewComponentAnalyzer {
 public:
 	NewComponentAnalyzer(DataAndStatistics &statistics,
-        LiteralIndexedVector<TriValue> & lit_values) :
-        statistics_(statistics), literal_values_(lit_values) {
+        LiteralIndexedVector<TriValue> & lit_values, ComponentArchetypeState* state) :
+        statistics_(statistics), literal_values_(lit_values), archetype_{state} {
+        static_state =state;
   }
 
   unsigned scoreOf(VariableIndex v) {
@@ -74,7 +75,7 @@ public:
 
 
   void setupAnalysisContext(StackLevel &top, Component & super_comp){
-     archetype_.reInitialize(top,super_comp);
+     archetype_.reInitialize(top,super_comp, static_state);
 
      for (auto vt = super_comp.varsBegin(); *vt != varsSENTINEL; vt++)
        if (isActive(*vt)) {
@@ -162,6 +163,8 @@ private:
   ComponentArchetype  archetype_;
 
   vector<VariableIndex> search_stack_;
+
+  ComponentArchetypeState* static_state;
 
   bool isResolved(const LiteralID lit) {
     return literal_values_[lit] == F_TRI;

@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <gmpxx.h>
 #include <iostream>
+#include "../static_state.h"
 
 using namespace std;
 
@@ -61,28 +62,28 @@ template <class T>
 
 class BasePackedComponent {
 public:
-  static unsigned bits_per_variable() {
-    return _bits_per_variable;
+  unsigned bits_per_variable() const {
+    return s_state->_bits_per_variable;
   }
-  static unsigned variable_mask() {
-      return _variable_mask;
+  unsigned variable_mask() const {
+      return s_state->_variable_mask;
   }
-  static unsigned bits_per_clause() {
-    return _bits_per_clause;
-  }
-
-  static unsigned bits_per_block(){
-	  return _bits_per_block;
+  unsigned bits_per_clause() const {
+    return s_state->_bits_per_clause;
   }
 
-  static unsigned bits_of_data_size(){
-    return _bits_of_data_size;
+  unsigned bits_per_block() const {
+	  return s_state->_bits_per_block;
   }
 
-  static void adjustPackSize(unsigned int maxVarId, unsigned int maxClId);
+  unsigned bits_of_data_size() const {
+    return s_state->_bits_of_data_size;
+  }
 
-  BasePackedComponent() {}
-  BasePackedComponent(unsigned creation_time): creation_time_(creation_time) {}
+  void adjustPackSize(unsigned int maxVarId, unsigned int maxClId);
+
+  BasePackedComponent(StaticState* state) {s_state = state;}
+  BasePackedComponent(unsigned creation_time, StaticState* state): creation_time_(creation_time) {s_state = state;}
 
   ~BasePackedComponent() {
     if (data_)
@@ -176,7 +177,9 @@ public:
   static unsigned _debug_static_val;
 
 protected:
-  // data_ contains in packed form the variable indices
+  StaticState* s_state;
+
+    // data_ contains in packed form the variable indices
   // and clause indices of the component ordered
   // structure is
   // var var ... clause clause ...
@@ -189,7 +192,6 @@ protected:
 
   unsigned creation_time_ = 1;
 
-
   // this is:  length_solution_period = length_solution_period_and_flags_ >> 1
   // length_solution_period == 0 means unsolved
   // and the first bit is "delete_permitted"
@@ -199,13 +201,6 @@ protected:
   // the copy of this component in the stack
   // does not exist anymore
 
-
-protected:
-  static unsigned _bits_per_clause, _bits_per_variable; // bitsperentry
-  static unsigned _bits_of_data_size; // number of bits needed to store the data size
-  static unsigned _data_size_mask;
-  static unsigned _variable_mask, _clause_mask;
-  static const unsigned _bits_per_block= (sizeof(unsigned) << 3);
 
 };
 

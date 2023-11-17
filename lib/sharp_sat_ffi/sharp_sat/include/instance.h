@@ -102,6 +102,7 @@ protected:
 
   vector<Variable> variables_;
   LiteralIndexedVector<TriValue> literal_values_;
+  ComponentArchetypeState archetype_state;
 
   void decayActivities() {
     for (auto l_it = literals_.begin(); l_it != literals_.end(); l_it++)

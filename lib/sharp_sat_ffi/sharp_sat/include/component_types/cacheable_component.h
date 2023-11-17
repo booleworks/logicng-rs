@@ -33,11 +33,11 @@ class ComponentArchetype;
 template< class T_Component>
 class GenericCacheableComponent: public T_Component {
 public:
-  GenericCacheableComponent() {
+  GenericCacheableComponent(StaticState* state): T_Component(state) {
   }
 
-  GenericCacheableComponent(Component &comp) :
-      T_Component(comp) {
+  GenericCacheableComponent(Component &comp, StaticState* state) :
+      T_Component(comp, state) {
   }
 
   unsigned long SizeInBytes() const {

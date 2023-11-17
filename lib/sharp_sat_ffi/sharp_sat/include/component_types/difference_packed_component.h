@@ -18,10 +18,10 @@
 class DifferencePackedComponent:public BasePackedComponent {
 public:
 
-  DifferencePackedComponent() {
+  DifferencePackedComponent(StaticState* state): BasePackedComponent(state) {
   }
 
-  inline DifferencePackedComponent(Component &rComp);
+  inline DifferencePackedComponent(Component &rComp, StaticState* state);
 
   unsigned num_variables() const{
     uint64_t *p = (uint64_t *) data_;
@@ -30,7 +30,7 @@ public:
   }
 
   unsigned data_size() const {
-         return *data_ & _data_size_mask;
+         return *data_ & s_state->_data_size_mask;
     }
 
   unsigned data_only_byte_size() const {
@@ -73,7 +73,7 @@ private:
 
 
 
-DifferencePackedComponent::DifferencePackedComponent(Component &rComp) {
+DifferencePackedComponent::DifferencePackedComponent(Component &rComp, StaticState* state): BasePackedComponent(state) {
 
   unsigned max_var_diff = 0;
   unsigned hashkey_vars = *rComp.varsBegin();

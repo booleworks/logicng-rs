@@ -1,6 +1,7 @@
 #include "instance.h"
 #include "solver.h"
 #include "statistics.h"
+#include <deque>
 
 class InteractiveSolver : Instance {
 protected:
@@ -8,7 +9,7 @@ protected:
     DecisionStack stack_;
     vector<LiteralID> literal_stack_;
     StopWatch stopwatch_;
-    ComponentManager comp_manager_{config_, statistics_, literal_values_};
+    ComponentManager comp_manager_{config_, statistics_, literal_values_, &archetype_state};
     unsigned long last_ccl_deletion_time_{0};
     unsigned long last_ccl_cleanup_time_{0};
     vector<LiteralID> violated_clause;
@@ -16,7 +17,11 @@ protected:
     int assertion_level_{0};
     unsigned int clauses_added{0};
     unsigned nVars{0};
-
+    vector<LiteralID> implicitBCP_test_lits;
+    LiteralIndexedVector<unsigned char> implicitBCP_viewed_lits;
+    deque<LiteralID> minimizeAndStoreUIPClause_clause;
+    vector<LiteralID> recordLastUIPCauses_tmp_clause;
+    vector<LiteralID> recordAllUIPCauses_tmp_clause;
 public:
     std::string last_result;
 

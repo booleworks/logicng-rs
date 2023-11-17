@@ -1,4 +1,3 @@
-#include <deque>
 #include <memory>
 #include "include/library.h"
 
@@ -81,6 +80,8 @@ void InteractiveSolver::solve() {
     literal_values_.resize(nVars + 1, X_TRI);
     // occurrence_lists_.resize(nVars + 1);
     // literals_.resize(nVars + 1);
+    implicitBCP_test_lits = vector<LiteralID>(num_variables());
+    implicitBCP_viewed_lits = LiteralIndexedVector<unsigned char>(num_variables() + 1, 0);
 
     conflict_clauses_.reserve(2*clauses_added);
 
@@ -305,33 +306,30 @@ bool InteractiveSolver::bcp() {
 }
 
 bool InteractiveSolver::implicitBCP() {
-    static vector<LiteralID> test_lits(num_variables());
-    static LiteralIndexedVector<unsigned char> viewed_lits(num_variables() + 1, 0);
-
     unsigned stack_ofs = stack_.top().literal_stack_ofs();
     unsigned num_curr_lits = 0;
     while (stack_ofs < literal_stack_.size()) {
-        test_lits.clear();
+        implicitBCP_test_lits.clear();
         for (auto it = literal_stack_.begin() + stack_ofs;
              it != literal_stack_.end(); it++) {
             for (auto cl_ofs : occurrence_lists_[it->neg()])
                 if (!isSatisfied(cl_ofs)) {
                     for (auto lt = beginOf(cl_ofs); *lt != SENTINEL_LIT; lt++)
-                        if (isActive(*lt) && !viewed_lits[lt->neg()]) {
-                            test_lits.push_back(lt->neg());
-                            viewed_lits[lt->neg()] = true;
+                        if (isActive(*lt) && !implicitBCP_viewed_lits[lt->neg()]) {
+                            implicitBCP_test_lits.push_back(lt->neg());
+                            implicitBCP_viewed_lits[lt->neg()] = true;
 
                         }
                 }
         }
         num_curr_lits = literal_stack_.size() - stack_ofs;
         stack_ofs = literal_stack_.size();
-        for (auto jt = test_lits.begin(); jt != test_lits.end(); jt++)
-            viewed_lits[*jt] = false;
+        for (auto jt = implicitBCP_test_lits.begin(); jt != implicitBCP_test_lits.end(); jt++)
+            implicitBCP_viewed_lits[*jt] = false;
 
         vector<float> scores;
         scores.clear();
-        for (auto jt = test_lits.begin(); jt != test_lits.end(); jt++) {
+        for (auto jt = implicitBCP_test_lits.begin(); jt != implicitBCP_test_lits.end(); jt++) {
             scores.push_back(literal(*jt).activity_score_);
         }
         sort(scores.begin(), scores.end());
@@ -341,9 +339,9 @@ bool InteractiveSolver::implicitBCP() {
             threshold = scores[scores.size() - num_curr_lits];
         }
 
-        statistics_.num_failed_literal_tests_ += test_lits.size();
+        statistics_.num_failed_literal_tests_ += implicitBCP_test_lits.size();
 
-        for (auto lit : test_lits)
+        for (auto lit : implicitBCP_test_lits)
             if (isActive(lit) && threshold <= literal(lit).activity_score_) {
                 unsigned sz = literal_stack_.size();
                 // we increase the decLev artificially
@@ -504,8 +502,7 @@ void InteractiveSolver::recordLastUIPCauses() {
     bool seen[num_variables() + 1];
     memset(seen, false, sizeof(bool) * (num_variables() + 1));
 
-    static vector<LiteralID> tmp_clause;
-    tmp_clause.clear();
+    recordLastUIPCauses_tmp_clause.clear();
 
     assertion_level_ = 0;
     uip_clauses_.clear();
@@ -518,7 +515,7 @@ void InteractiveSolver::recordLastUIPCauses() {
         if (var(l).decision_level == 0 || existsUnitClauseOf(l.var()))
             continue;
         if (var(l).decision_level < DL)
-            tmp_clause.push_back(l);
+            recordLastUIPCauses_tmp_clause.push_back(l);
         else
             lits_at_current_dl++;
         literal(l).increaseActivity();
@@ -560,7 +557,7 @@ void InteractiveSolver::recordLastUIPCauses() {
                     || existsUnitClauseOf(it->var()))
                     continue;
                 if (var(*it).decision_level < DL)
-                    tmp_clause.push_back(*it);
+                    recordLastUIPCauses_tmp_clause.push_back(*it);
                 else
                     lits_at_current_dl++;
                 seen[it->var()] = true;
@@ -572,7 +569,7 @@ void InteractiveSolver::recordLastUIPCauses() {
             if (!seen[alit.var()] && !(var(alit).decision_level == 0)
                 && !existsUnitClauseOf(alit.var())) {
                 if (var(alit).decision_level < DL)
-                    tmp_clause.push_back(alit);
+                    recordLastUIPCauses_tmp_clause.push_back(alit);
                 else
                     lits_at_current_dl++;
                 seen[alit.var()] = true;
@@ -584,7 +581,7 @@ void InteractiveSolver::recordLastUIPCauses() {
 //	cout << "T" << curr_lit.toInt() << "U "
 //     << var(curr_lit).decision_level << ", " << stack_.get_decision_level() << endl;
 //	cout << "V"  << var(curr_lit).ante.isAnt() << " "  << endl;
-    minimizeAndStoreUIPClause(curr_lit.neg(), tmp_clause, seen);
+    minimizeAndStoreUIPClause(curr_lit.neg(), recordLastUIPCauses_tmp_clause, seen);
 
 //	if (var(curr_lit).decision_level > assertion_level_)
 //		assertion_level_ = var(curr_lit).decision_level;
@@ -598,8 +595,7 @@ void InteractiveSolver::recordAllUIPCauses() {
     bool seen[num_variables() + 1];
     memset(seen, false, sizeof(bool) * (num_variables() + 1));
 
-    static vector<LiteralID> tmp_clause;
-    tmp_clause.clear();
+    recordAllUIPCauses_tmp_clause.clear();
 
     assertion_level_ = 0;
     uip_clauses_.clear();
@@ -612,7 +608,7 @@ void InteractiveSolver::recordAllUIPCauses() {
         if (var(l).decision_level == 0 || existsUnitClauseOf(l.var()))
             continue;
         if (var(l).decision_level < DL)
-            tmp_clause.push_back(l);
+            recordAllUIPCauses_tmp_clause.push_back(l);
         else
             lits_at_current_dl++;
         literal(l).increaseActivity();
@@ -638,7 +634,7 @@ void InteractiveSolver::recordAllUIPCauses() {
                 break;
             }
             // perform UIP stuff
-            minimizeAndStoreUIPClause(curr_lit.neg(), tmp_clause, seen);
+            minimizeAndStoreUIPClause(curr_lit.neg(), recordAllUIPCauses_tmp_clause, seen);
         }
 
         assert(hasAntecedent(curr_lit));
@@ -653,7 +649,7 @@ void InteractiveSolver::recordAllUIPCauses() {
                     || existsUnitClauseOf(it->var()))
                     continue;
                 if (var(*it).decision_level < DL)
-                    tmp_clause.push_back(*it);
+                    recordAllUIPCauses_tmp_clause.push_back(*it);
                 else
                     lits_at_current_dl++;
                 seen[it->var()] = true;
@@ -665,7 +661,7 @@ void InteractiveSolver::recordAllUIPCauses() {
             if (!seen[alit.var()] && !(var(alit).decision_level == 0)
                 && !existsUnitClauseOf(alit.var())) {
                 if (var(alit).decision_level < DL)
-                    tmp_clause.push_back(alit);
+                    recordAllUIPCauses_tmp_clause.push_back(alit);
                 else
                     lits_at_current_dl++;
                 seen[alit.var()] = true;
@@ -673,13 +669,12 @@ void InteractiveSolver::recordAllUIPCauses() {
         }
     }
     if (!hasAntecedent(curr_lit)) {
-        minimizeAndStoreUIPClause(curr_lit.neg(), tmp_clause, seen);
+        minimizeAndStoreUIPClause(curr_lit.neg(), recordAllUIPCauses_tmp_clause, seen);
     }
 }
 
 void InteractiveSolver::minimizeAndStoreUIPClause(LiteralID uipLit, vector<LiteralID> &tmp_clause, bool seen[]) {
-    static deque<LiteralID> clause;
-    clause.clear();
+    minimizeAndStoreUIPClause_clause.clear();
     assertion_level_ = 0;
     for (auto lit : tmp_clause) {
         if (existsUnitClauseOf(lit.var()))
@@ -703,9 +698,9 @@ void InteractiveSolver::minimizeAndStoreUIPClause(LiteralID uipLit, vector<Liter
             // uipLit should be the sole literal of this Decision Level
             if (var(lit).decision_level >= assertion_level_) {
                 assertion_level_ = var(lit).decision_level;
-                clause.push_front(lit);
+                minimizeAndStoreUIPClause_clause.push_front(lit);
             } else
-                clause.push_back(lit);
+                minimizeAndStoreUIPClause_clause.push_back(lit);
         }
     }
 
@@ -714,6 +709,6 @@ void InteractiveSolver::minimizeAndStoreUIPClause(LiteralID uipLit, vector<Liter
 
     //assert(uipLit.var() != 0);
     if (uipLit.var() != 0)
-        clause.push_front(uipLit);
-    uip_clauses_.push_back(vector<LiteralID>(clause.begin(), clause.end()));
+        minimizeAndStoreUIPClause_clause.push_front(uipLit);
+    uip_clauses_.push_back(vector<LiteralID>(minimizeAndStoreUIPClause_clause.begin(), minimizeAndStoreUIPClause_clause.end()));
 }

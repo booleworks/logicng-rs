@@ -46,16 +46,19 @@ class StackLevel;
 
 class ComponentArchetype {
 public:
-  ComponentArchetype() {
+  ComponentArchetype(ComponentArchetypeState* state) {
+      static_state = state;
   }
-  ComponentArchetype(StackLevel &stack_level, Component &super_comp) :
+  ComponentArchetype(StackLevel &stack_level, Component &super_comp, ComponentArchetypeState* state) :
       p_super_comp_(&super_comp), p_stack_level_(&stack_level) {
+      static_state = state;
   }
 
-  void reInitialize(StackLevel &stack_level, Component &super_comp) {
+  void reInitialize(StackLevel &stack_level, Component &super_comp, ComponentArchetypeState* state) {
+    static_state = state;
     p_super_comp_ = &super_comp;
     p_stack_level_ = &stack_level;
-    clearArrays();
+    clearArrays(static_state);
     current_comp_for_caching_.reserveSpace(super_comp.num_variables(),super_comp.numLongClauses());
   }
 
@@ -68,92 +71,92 @@ public:
   }
 
   void setVar_in_sup_comp_unseen(VariableIndex v) {
-    seen_[v] = CA_VAR_IN_SUP_COMP_UNSEEN | (seen_[v] & CA_CL_MASK);
+    static_state->seen_[v] = CA_VAR_IN_SUP_COMP_UNSEEN | (static_state->seen_[v] & CA_CL_MASK);
   }
 
   void setClause_in_sup_comp_unseen(ClauseIndex cl) {
-    seen_[cl] = CA_CL_IN_SUP_COMP_UNSEEN | (seen_[cl] & CA_VAR_MASK);
+      static_state->seen_[cl] = CA_CL_IN_SUP_COMP_UNSEEN | (static_state->seen_[cl] & CA_VAR_MASK);
   }
 
   void setVar_nil(VariableIndex v) {
-    seen_[v] &= CA_CL_MASK;
+      static_state->seen_[v] &= CA_CL_MASK;
   }
 
   void setClause_nil(ClauseIndex cl) {
-    seen_[cl] &= CA_VAR_MASK;
+      static_state->seen_[cl] &= CA_VAR_MASK;
   }
 
   void setVar_seen(VariableIndex v) {
-    seen_[v] = CA_VAR_SEEN | (seen_[v] & CA_CL_MASK);
+      static_state->seen_[v] = CA_VAR_SEEN | (static_state->seen_[v] & CA_CL_MASK);
   }
 
   void setClause_seen(ClauseIndex cl) {
     setClause_nil(cl);
-    seen_[cl] = CA_CL_SEEN | (seen_[cl] & CA_VAR_MASK);
+      static_state->seen_[cl] = CA_CL_SEEN | (static_state->seen_[cl] & CA_VAR_MASK);
   }
 
   void setClause_seen(ClauseIndex cl, bool all_lits_act) {
       setClause_nil(cl);
-      seen_[cl] = CA_CL_SEEN | (all_lits_act?CA_CL_ALL_LITS_ACTIVE:0) | (seen_[cl] & CA_VAR_MASK);
+      static_state->seen_[cl] = CA_CL_SEEN | (all_lits_act?CA_CL_ALL_LITS_ACTIVE:0) | (static_state->seen_[cl] & CA_VAR_MASK);
     }
 
   void setVar_in_other_comp(VariableIndex v) {
-    seen_[v] = CA_VAR_IN_OTHER_COMP | (seen_[v] & CA_CL_MASK);
+      static_state->seen_[v] = CA_VAR_IN_OTHER_COMP | (static_state->seen_[v] & CA_CL_MASK);
   }
 
   void setClause_in_other_comp(ClauseIndex cl) {
-    seen_[cl] = CA_CL_IN_OTHER_COMP | (seen_[cl] & CA_VAR_MASK);
+      static_state->seen_[cl] = CA_CL_IN_OTHER_COMP | (static_state->seen_[cl] & CA_VAR_MASK);
   }
 
   bool var_seen(VariableIndex v) {
-    return seen_[v] & CA_VAR_SEEN;
+    return static_state->seen_[v] & CA_VAR_SEEN;
   }
 
   bool clause_seen(ClauseIndex cl) {
-    return seen_[cl] & CA_CL_SEEN;
+    return static_state->seen_[cl] & CA_CL_SEEN;
   }
 
   bool clause_all_lits_active(ClauseIndex cl) {
-    return seen_[cl] & CA_CL_ALL_LITS_ACTIVE;
+    return static_state->seen_[cl] & CA_CL_ALL_LITS_ACTIVE;
   }
   void setClause_all_lits_active(ClauseIndex cl) {
-    seen_[cl] |= CA_CL_ALL_LITS_ACTIVE;
+      static_state->seen_[cl] |= CA_CL_ALL_LITS_ACTIVE;
   }
 
   bool var_nil(VariableIndex v) {
-    return (seen_[v] & CA_VAR_MASK) == 0;
+    return (static_state->seen_[v] & CA_VAR_MASK) == 0;
   }
 
   bool clause_nil(ClauseIndex cl) {
-    return (seen_[cl] & CA_CL_MASK) == 0;
+    return (static_state->seen_[cl] & CA_CL_MASK) == 0;
   }
 
   bool var_unseen_in_sup_comp(VariableIndex v) {
-    return seen_[v] & CA_VAR_IN_SUP_COMP_UNSEEN;
+    return static_state->seen_[v] & CA_VAR_IN_SUP_COMP_UNSEEN;
   }
 
   bool clause_unseen_in_sup_comp(ClauseIndex cl) {
-    return seen_[cl] & CA_CL_IN_SUP_COMP_UNSEEN;
+    return static_state->seen_[cl] & CA_CL_IN_SUP_COMP_UNSEEN;
   }
 
   bool var_seen_in_peer_comp(VariableIndex v) {
-    return seen_[v] & CA_VAR_IN_OTHER_COMP;
+    return static_state->seen_[v] & CA_VAR_IN_OTHER_COMP;
   }
 
   bool clause_seen_in_peer_comp(ClauseIndex cl) {
-    return seen_[cl] & CA_CL_IN_OTHER_COMP;
+    return static_state->seen_[cl] & CA_CL_IN_OTHER_COMP;
   }
 
-  static void initArrays(unsigned max_variable_id, unsigned max_clause_id) {
+  static void initArrays(unsigned max_variable_id, unsigned max_clause_id, ComponentArchetypeState* s) {
     unsigned seen_size = std::max(max_variable_id,max_clause_id)  + 1;
-    seen_ = new CA_SearchState[seen_size];
-    seen_byte_size_ = sizeof(CA_SearchState) * (seen_size);
-    clearArrays();
+    s->seen_ = new CA_SearchState[seen_size];
+      s->seen_byte_size_ = sizeof(CA_SearchState) * (seen_size);
+    clearArrays(s);
 
   }
 
-  static void clearArrays() {
-    memset(seen_, CA_NIL, seen_byte_size_);
+  static void clearArrays(ComponentArchetypeState* s) {
+    memset(s->seen_, CA_NIL, s->seen_byte_size_);
   }
 
 
@@ -210,8 +213,9 @@ private:
   Component *p_super_comp_;
   StackLevel *p_stack_level_;
 
-  static CA_SearchState *seen_;
-  static unsigned seen_byte_size_;
+  ComponentArchetypeState* static_state;
+  // static CA_SearchState *seen_;
+  // static unsigned seen_byte_size_;
 
 };
 

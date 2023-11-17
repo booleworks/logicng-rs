@@ -22,7 +22,7 @@
 class ComponentCache {
 public:
 
-  ComponentCache(DataAndStatistics &statistics);
+  ComponentCache(DataAndStatistics &statistics, StaticState* state);
 
   ~ComponentCache() {
    // debug_dump_data();
@@ -165,6 +165,8 @@ private:
   DataAndStatistics &statistics_;
 
   unsigned long my_time_ = 0;
+
+  StaticState* static_state;
 };
 
 

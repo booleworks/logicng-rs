@@ -19,6 +19,8 @@
 #include <gmpxx.h>
 #include "containers.h"
 #include "stack.h"
+#include "static_state.h"
+
 
 #include "solver_config.h"
 using namespace std;
@@ -28,9 +30,9 @@ typedef AltComponentAnalyzer ComponentAnalyzer;
 class ComponentManager {
 public:
   ComponentManager(SolverConfiguration &config, DataAndStatistics &statistics,
-        LiteralIndexedVector<TriValue> & lit_values) :
-        config_(config), statistics_(statistics), cache_(statistics),
-        ana_(statistics,lit_values) {
+        LiteralIndexedVector<TriValue> & lit_values, ComponentArchetypeState* arche_state) :
+        config_(config), statistics_(statistics), cache_(statistics, &static_state),
+        ana_(statistics,lit_values, arche_state) {
   }
 
   void initialize(LiteralIndexedVector<Literal> & literals,
@@ -95,6 +97,25 @@ private:
   vector<Component *> component_stack_;
   ComponentCache cache_;
   ComponentAnalyzer ana_;
+  StaticState static_state;
+
+    void adjustPackSize(unsigned int maxVarId,
+                                             unsigned int maxClId) {
+
+        static_state._bits_per_variable = log2(maxVarId) + 1;
+        static_state._bits_per_clause   = log2(maxClId) + 1;
+
+        static_state._bits_of_data_size = log2(maxVarId + maxClId) + 1;
+
+        static_state._variable_mask = static_state._clause_mask = static_state._data_size_mask = 0;
+        for (unsigned int i = 0; i < static_state._bits_per_variable; i++)
+            static_state._variable_mask = (static_state._variable_mask << 1) + 1;
+        for (unsigned int i = 0; i < static_state._bits_per_clause; i++)
+            static_state._clause_mask = (static_state._clause_mask << 1) + 1;
+        for (unsigned int i = 0; i < static_state._bits_of_data_size; i++)
+            static_state._data_size_mask = (static_state._data_size_mask << 1) + 1;
+    }
+
 };
 
 
@@ -134,7 +155,7 @@ void ComponentManager::recordRemainingCompsFor(StackLevel &top) {
          ana_.exploreRemainingCompOf(*vt)){
 
        Component *p_new_comp = ana_.makeComponentFromArcheType();
-       CacheableComponent *packed_comp = new CacheableComponent(ana_.getArchetype().current_comp_for_caching_);
+       CacheableComponent *packed_comp = new CacheableComponent(ana_.getArchetype().current_comp_for_caching_, &static_state);
          if (!cache_.manageNewComponent(top, *packed_comp)){
             component_stack_.push_back(p_new_comp);
             p_new_comp->set_id(cache_.storeAsEntry(*packed_comp, super_comp.id()));

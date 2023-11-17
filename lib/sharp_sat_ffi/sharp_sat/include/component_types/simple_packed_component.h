@@ -17,10 +17,10 @@
 class SimplePackedComponent : public BasePackedComponent {
 public:
 
-  SimplePackedComponent() {
+  SimplePackedComponent(StaticState* state): BasePackedComponent(state) {
   }
 
-  inline SimplePackedComponent(Component &rComp);
+  inline SimplePackedComponent(Component &rComp, StaticState* state);
 
   unsigned num_variables() const{
     uint64_t *p = (uint64_t *) data_;
@@ -54,7 +54,7 @@ public:
 
 };
 
-SimplePackedComponent::SimplePackedComponent(Component &rComp) {
+SimplePackedComponent::SimplePackedComponent(Component &rComp, StaticState* state): BasePackedComponent(state) {
   unsigned data_size_vars = bits_of_data_size() + bits_per_variable() + rComp.num_variables() * bits_per_variable();
   unsigned data_size_clauses = rComp.numLongClauses() * bits_per_clause();
   unsigned data_size = (data_size_vars + data_size_clauses)/bits_per_block();
