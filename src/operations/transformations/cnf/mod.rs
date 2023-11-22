@@ -40,6 +40,9 @@ pub enum CnfAlgorithm {
 impl CnfAlgorithm {
     /// Transform the given formula into a _CNF_ formula.
     fn transform(&self, formula: EncodedFormula, f: &FormulaFactory, state: &mut CnfEncoder) -> EncodedFormula {
+        if formula.is_cnf(f) {
+            return formula;
+        }
         match self {
             Self::Factorization => factorization_cnf(formula, f),
             Self::Tseitin => tseitin_cnf_with_boundary(

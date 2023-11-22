@@ -1,7 +1,7 @@
 mod formula_factory_tests {
     use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
     use crate::formulas::FormulaType::{And, Equiv, False, Impl, Lit, Not, Or, True};
-    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, VarType};
+    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType};
     use crate::util::test_util::string_vars;
     use std::collections::BTreeSet;
 
@@ -240,6 +240,35 @@ mod formula_factory_tests {
         assert_ne!(f.implication(a, b), f.implication(b, a));
         assert_ne!(f.implication(abc, b_c_a), f.implication(a_b_c, bca));
         assert_eq!(f.implication(abc, b_c_a), f.implication(bca, a_b_c));
+    }
+
+    #[test]
+    fn test_cnf_cache() {
+        let f = FormulaFactory::new();
+
+        let formula1 = "a".to_formula(&f);
+        assert!(f.caches.is_cnf.get(formula1).is_none());
+        assert!(formula1.is_cnf(&f));
+
+        let formula2 = "a => (b & c)".to_formula(&f);
+        assert!(f.caches.is_cnf.get(formula2).is_none());
+        assert!(!formula2.is_cnf(&f));
+
+        let formula3 = "(a | b | c) & (d | c)".to_formula(&f);
+        assert!(f.caches.is_cnf.get(formula3).is_some());
+        assert!(formula3.is_cnf(&f));
+        assert!(f.caches.is_cnf.get("a | b | c".to_formula(&f)).is_some());
+        assert!(f.caches.is_cnf.get("d | c".to_formula(&f)).is_some());
+        assert!("a | b | c".to_formula(&f).is_cnf(&f));
+        assert!("d | c".to_formula(&f).is_cnf(&f));
+
+        let formula4 = f.and(vec!["a".to_formula(&f)]);
+        assert!(f.caches.is_cnf.get(formula4).is_none());
+        assert!(formula4.is_cnf(&f));
+
+        let formula5 = f.or(vec!["a".to_formula(&f)]);
+        assert!(f.caches.is_cnf.get(formula5).is_none());
+        assert!(formula5.is_cnf(&f));
     }
 
     fn ff_lit(n: u64, phase: bool) -> EncodedFormula {

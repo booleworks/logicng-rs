@@ -1,5 +1,4 @@
-use crate::formulas::{EncodedFormula, Formula, FormulaFactory};
-use crate::operations::predicates::term::is_clause;
+use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType};
 
 /// CNF predicate. Indicates whether a formula is in CNF or not.
 ///
@@ -26,20 +25,12 @@ use crate::operations::predicates::term::is_clause;
 /// assert_eq!(is_cnf(formula4, &f), false);
 /// ```
 pub fn is_cnf(formula: EncodedFormula, f: &FormulaFactory) -> bool {
-    f.caches.is_cnf.get(formula).unwrap_or_else(|| {
-        use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
-        let res = match formula.unpack(f) {
-            Lit(_) | True | False => true,
-            Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => false,
-            Or(mut ops) => ops.all(EncodedFormula::is_literal),
-            And(mut ops) => ops.all(|op| is_clause(op, f)),
-        };
-
-        if f.config.caches.is_cnf {
-            f.caches.is_cnf.insert(formula, res);
-        }
-        res
-    })
+    use FormulaType as FT;
+    match formula.formula_type() {
+        FT::Lit(_) | FT::True | FT::False => true,
+        FT::Pbc | FT::Cc | FT::Equiv | FT::Impl | FT::Not => false,
+        FT::And | FT::Or => f.caches.is_cnf.get(formula).is_some(),
+    }
 }
 
 #[cfg(test)]

@@ -49,9 +49,6 @@ fn apply_rec(
         } else {
             local_cache.as_mut().unwrap().insert(formula, result);
         }
-        if f.config.caches.is_cnf {
-            f.caches.is_cnf.insert(result, true);
-        }
         result
     })
 }

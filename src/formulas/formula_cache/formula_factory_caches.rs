@@ -18,7 +18,7 @@ pub struct FormulaFactoryCaches {
     pub sat: OperationCache<bool>,
     pub is_nnf: OperationCache<bool>,
     pub is_dnf: OperationCache<bool>,
-    pub is_cnf: OperationCache<bool>,
+    pub is_cnf: OperationCache<()>,
     pub contains_pbc: OperationCache<bool>,
     pub backbone_simps: OperationCache<EncodedFormula>,
 }
@@ -526,40 +526,6 @@ mod test {
             assert_eq!(f.caches.is_dnf.len(), 0);
             assert!(predicates::is_dnf(formula2, &f));
             assert_eq!(f.caches.is_dnf.len(), 0);
-        }
-
-        #[test]
-        fn enable_is_cnf() {
-            let mut f = FormulaFactory::new();
-            f.config.caches.is_cnf = true;
-
-            let formula1 = "~(a | b)".to_formula(&f);
-
-            assert!(!predicates::is_cnf(formula1, &f));
-            let s1 = f.caches.is_cnf.len();
-            assert!(s1 > 0);
-
-            let formula2 = transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f);
-            let s2 = f.caches.is_cnf.len();
-            assert!(s2 > s1);
-            assert!(predicates::is_cnf(formula2, &f));
-            assert_eq!(f.caches.is_cnf.len(), s2);
-        }
-
-        #[test]
-        fn disable_is_cnf() {
-            let mut f = FormulaFactory::new();
-            f.config.caches.is_cnf = false;
-
-            let formula1 = "~(a | b)".to_formula(&f);
-
-            assert!(!predicates::is_cnf(formula1, &f));
-            assert_eq!(f.caches.is_cnf.len(), 0);
-
-            let formula2 = transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f);
-            assert_eq!(f.caches.is_cnf.len(), 0);
-            assert!(predicates::is_cnf(formula2, &f));
-            assert_eq!(f.caches.is_cnf.len(), 0);
         }
 
         #[test]

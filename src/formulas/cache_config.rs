@@ -36,9 +36,6 @@ pub struct CacheConfig {
     /// Used by [`predicates::is_nnf`](crate::operations::predicates::is_nnf) and
     /// [`transformations::nnf`](crate::operations::transformations::nnf).
     pub is_nnf: bool,
-    /// Used by [`predicates::is_cnf`](crate::operations::predicates::is_cnf) and
-    /// [`CnfAlgorithm::Factorization`](crate::operations::transformations::CnfAlgorithm).
-    pub is_cnf: bool,
     /// Used by [`predicates::is_dnf`](crate::operations::predicates::is_dnf) and
     /// [`transformations::factorization_dnf`](crate::operations::transformations::factorization_dnf).
     pub is_dnf: bool,
@@ -75,7 +72,6 @@ impl CacheConfig {
             dnf: false,
             sat: false,
             is_nnf: false,
-            is_cnf: false,
             is_dnf: false,
             contains_pbc: false,
             factorization_cnf: false,
@@ -99,7 +95,6 @@ impl Default for CacheConfig {
             dnf: true,
             sat: false,
             is_nnf: true,
-            is_cnf: true,
             is_dnf: true,
             contains_pbc: true,
             factorization_cnf: true,
