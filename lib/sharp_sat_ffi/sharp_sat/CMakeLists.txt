@@ -47,6 +47,7 @@ SET(SOURCES ${SHARPSATSRCDIR}/alt_component_analyzer.cpp ${SHARPSATSRCDIR}/alt_c
         ${SHARPSATSRCDIR}/component_types/difference_packed_component.h
         ${SHARPSATSRCDIR}/component_types/simple_packed_component.h
         ${SHARPSATSRCDIR}/component_types/simple_unpacked_component.h
+        ${SHARPSATSRCDIR}/interactive_solver.cpp ${SHARPSATSRCDIR}/interactive_solver.h
 )
 
 add_library(_sharp_sat STATIC ${SOURCES})
