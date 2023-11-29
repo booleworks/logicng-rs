@@ -756,7 +756,7 @@ impl EncodedFormula {
     /// assert_eq!(formula.literals(&f).as_ref(), &expected);
     /// ```
     pub fn literals(self, f: &FormulaFactory) -> Arc<BTreeSet<Literal>> {
-        functions::literals(self, f)
+        functions::literals_reduced_caching(self, f)
     }
 
     /// Returns a set with all names of the variables in this formula.

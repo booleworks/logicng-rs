@@ -282,9 +282,14 @@ fn handle_nary<B>(
     }
 }
 
-fn add_clause<B>(solver: &mut MiniSat2Solver<B>, clause: &[Literal], proposition: Option<Proposition<B>>, config: PgOnSolverConfig) {
+fn add_clause<'a, B, L: IntoIterator<Item = &'a Literal>>(
+    solver: &mut MiniSat2Solver<B>,
+    clause: L,
+    proposition: Option<Proposition<B>>,
+    config: PgOnSolverConfig,
+) {
     let clause_vec = clause
-        .iter()
+        .into_iter()
         .map(|lit| {
             let variable = lit.variable();
             let index = solver.idx_for_variable(variable).unwrap_or_else(|| {

@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::sync::Arc;
 
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, StringLiteral, Variable};
@@ -138,6 +138,76 @@ pub fn variables(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Va
     })
 }
 
+pub fn variables2(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Variable>> {
+    let mut result = BTreeSet::new();
+    let mut subresult = Vec::new();
+    let mut stack = Vec::new();
+    let mut visited = HashSet::new();
+    stack.push(formula);
+
+    while let Some(current) = stack.pop() {
+        if let Some(cached) = f.caches.variables.get(current) {
+            subresult.push(cached);
+        } else {
+            match current.unpack(f) {
+                Formula::Lit(l) => {
+                    result.insert(l.variable());
+                }
+                Formula::And(ops) | Formula::Or(ops) => {
+                    let vars = ops.map(|op| variables(op, f)).fold(BTreeSet::new(), |mut akk, vs| {
+                        akk.extend((*vs).clone());
+                        akk
+                    });
+
+                    let rc = Arc::new(vars);
+                    if f.config.caches.variables {
+                        f.caches.variables.insert(current, Arc::clone(&rc));
+                    }
+                    subresult.push(rc);
+                }
+                Formula::Equiv((left, right)) | Formula::Impl((left, right)) => {
+                    if visited.insert(left) {
+                        stack.push(left);
+                    }
+                    if visited.insert(right) {
+                        stack.push(right);
+                    }
+                }
+                Formula::Not(op) => {
+                    if visited.insert(op) {
+                        stack.push(op);
+                    }
+                }
+                Formula::Cc(cc) => {
+                    for &v in &*cc.variables {
+                        result.insert(v);
+                    }
+                }
+                Formula::Pbc(pbc) => {
+                    for &l in &*pbc.literals {
+                        result.insert(l.variable());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let rc = if result.is_empty() {
+        Arc::clone(&subresult[0])
+    } else {
+        for sub in subresult {
+            result.extend((*sub).clone());
+        }
+        Arc::new(result)
+    };
+
+    if f.config.caches.variables {
+        f.caches.variables.insert(formula, Arc::clone(&rc));
+    }
+    rc
+}
+
 /// Returns a set with all names of the variables in this formula.
 ///
 /// # Example
@@ -210,4 +280,63 @@ pub fn literals(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Lit
         }
         rc
     })
+}
+
+pub fn literals_reduced_caching(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Literal>> {
+    if let Some(cached) = f.caches.literals.get(formula) {
+        return cached;
+    }
+
+    let mut result = BTreeSet::new();
+    let mut stack = Vec::new();
+    let mut visited = HashSet::new();
+    stack.push(formula);
+
+    while let Some(current) = stack.pop() {
+        if let Some(cached) = f.caches.literals.get(current) {
+            result.extend((*cached).clone());
+        } else {
+            match current.unpack(f) {
+                Formula::Lit(l) => {
+                    result.insert(l);
+                }
+                Formula::And(ops) | Formula::Or(ops) => {
+                    for op in ops {
+                        if visited.insert(op) {
+                            stack.push(op);
+                        }
+                    }
+                }
+                Formula::Equiv((left, right)) | Formula::Impl((left, right)) => {
+                    if visited.insert(left) {
+                        stack.push(left);
+                    }
+                    if visited.insert(right) {
+                        stack.push(right);
+                    }
+                }
+                Formula::Not(op) => {
+                    if visited.insert(op) {
+                        stack.push(op);
+                    }
+                }
+                Formula::Cc(cc) => {
+                    for &v in &*cc.variables {
+                        result.insert(v.pos_lit());
+                    }
+                }
+                Formula::Pbc(pbc) => {
+                    for &l in &*pbc.literals {
+                        result.insert(l);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let rc = Arc::new(result);
+    if f.config.caches.literals {
+        f.caches.literals.insert(formula, rc.clone());
+    }
+    rc
 }

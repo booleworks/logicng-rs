@@ -23,6 +23,10 @@ pub fn nnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
 
 fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> EncodedFormula {
     if polarity {
+        if f.caches.is_nnf.get(formula) == Some(true) || f.caches.is_cnf.get(formula).is_some() || f.caches.is_dnf.get(formula).is_some() {
+            return formula;
+        }
+
         if let Some(nnf) = f.caches.nnf.get(formula) {
             return nnf;
         }
