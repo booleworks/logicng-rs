@@ -15,13 +15,13 @@ pub fn encode_swc(lits: &[Literal], coeffs: &[i64], rhs: u64, f: &FormulaFactory
         assert!(wi <= (rhs as isize));
         for j in 0..rhs {
             if i >= 1 {
-                result.push(f.clause(&[seq_auxiliary[i - 1][j].neg_lit(), seq_auxiliary[i][j].pos_lit()]));
+                result.push(f.clause([seq_auxiliary[i - 1][j].neg_lit(), seq_auxiliary[i][j].pos_lit()]));
             }
             if (j as isize) < wi {
-                result.push(f.clause(&[lits[i].negate(), seq_auxiliary[i][j].pos_lit()]));
+                result.push(f.clause([lits[i].negate(), seq_auxiliary[i][j].pos_lit()]));
             }
             if i >= 1 && (j as isize) < (rhs as isize) - wi {
-                result.push(f.clause(&[
+                result.push(f.clause([
                     seq_auxiliary[i - 1][j].neg_lit(),
                     lits[i].negate(),
                     seq_auxiliary[i][(j as isize + wi) as usize].pos_lit(),
@@ -29,7 +29,7 @@ pub fn encode_swc(lits: &[Literal], coeffs: &[i64], rhs: u64, f: &FormulaFactory
             }
         }
         if i >= 1 {
-            result.push(f.clause(&[seq_auxiliary[i - 1][(rhs as isize - wi) as usize].neg_lit(), lits[i].negate()]));
+            result.push(f.clause([seq_auxiliary[i - 1][(rhs as isize - wi) as usize].neg_lit(), lits[i].negate()]));
         }
     }
     result

@@ -70,14 +70,14 @@ fn fa_sum(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, V
     (
         x,
         vec![
-            f.clause(&[a, b, c, x.negate()]),
-            f.clause(&[a, b.negate(), c.negate(), x.negate()]),
-            f.clause(&[a.negate(), b, c.negate(), x.negate()]),
-            f.clause(&[a.negate(), b.negate(), c, x.negate()]),
-            f.clause(&[a.negate(), b.negate(), c.negate(), x]),
-            f.clause(&[a.negate(), b, c, x]),
-            f.clause(&[a, b.negate(), c, x]),
-            f.clause(&[a, b, c.negate(), x]),
+            f.clause([a, b, c, x.negate()]),
+            f.clause([a, b.negate(), c.negate(), x.negate()]),
+            f.clause([a.negate(), b, c.negate(), x.negate()]),
+            f.clause([a.negate(), b.negate(), c, x.negate()]),
+            f.clause([a.negate(), b.negate(), c.negate(), x]),
+            f.clause([a.negate(), b, c, x]),
+            f.clause([a, b.negate(), c, x]),
+            f.clause([a, b, c.negate(), x]),
         ],
     )
 }
@@ -88,24 +88,24 @@ fn fa_carry(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal,
     (
         x,
         vec![
-            f.clause(&[b, c, x.negate()]),
-            f.clause(&[a, c, x.negate()]),
-            f.clause(&[a, b, x.negate()]),
-            f.clause(&[b.negate(), c.negate(), x]),
-            f.clause(&[a.negate(), c.negate(), x]),
-            f.clause(&[a.negate(), b.negate(), x]),
+            f.clause([b, c, x.negate()]),
+            f.clause([a, c, x.negate()]),
+            f.clause([a, b, x.negate()]),
+            f.clause([b.negate(), c.negate(), x]),
+            f.clause([a.negate(), c.negate(), x]),
+            f.clause([a.negate(), b.negate(), x]),
         ],
     )
 }
 
 fn fa_extra(xs: Literal, xc: Literal, a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> Vec<EncodedFormula> {
     vec![
-        f.clause(&[xc.negate(), xs.negate(), a]),
-        f.clause(&[xc.negate(), xs.negate(), b]),
-        f.clause(&[xc.negate(), xs.negate(), c]),
-        f.clause(&[xc, xs, a.negate()]),
-        f.clause(&[xc, xs, b.negate()]),
-        f.clause(&[xc, xs, c.negate()]),
+        f.clause([xc.negate(), xs.negate(), a]),
+        f.clause([xc.negate(), xs.negate(), b]),
+        f.clause([xc.negate(), xs.negate(), c]),
+        f.clause([xc, xs, a.negate()]),
+        f.clause([xc, xs, b.negate()]),
+        f.clause([xc, xs, c.negate()]),
     ]
 }
 
@@ -114,17 +114,17 @@ fn ha_sum(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFo
     (
         x,
         vec![
-            f.clause(&[a.negate(), b.negate(), x.negate()]),
-            f.clause(&[a, b, x.negate()]),
-            f.clause(&[a.negate(), b, x]),
-            f.clause(&[a, b.negate(), x]),
+            f.clause([a.negate(), b.negate(), x.negate()]),
+            f.clause([a, b, x.negate()]),
+            f.clause([a.negate(), b, x]),
+            f.clause([a, b.negate(), x]),
         ],
     )
 }
 
 fn ha_carry(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
     let x = f.new_pb_variable().pos_lit();
-    (x, vec![f.clause(&[a, x.negate()]), f.clause(&[b, x.negate()]), f.clause(&[a.negate(), b.negate(), x])])
+    (x, vec![f.clause([a, x.negate()]), f.clause([b, x.negate()]), f.clause([a.negate(), b.negate(), x])])
 }
 
 fn less_than_or_equal(xs: &[Option<Literal>], rhs: usize, f: &FormulaFactory) -> Vec<EncodedFormula> {

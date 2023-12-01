@@ -45,7 +45,7 @@ pub fn encode_binary_merge(
                     let mw = *coeffs.iter().max().unwrap();
                     if rhs as i64 <= tmp_coeff {
                         for lit in &lits {
-                            formula.push(f.clause(&[tmp_lit.negate(), lit.negate()]));
+                            formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
                     } else {
                         formula.extend(binary_merge(
@@ -62,7 +62,7 @@ pub fn encode_binary_merge(
                 } else {
                     if rhs as i64 <= tmp_coeff {
                         for lit in &lits {
-                            formula.push(f.clause(&[tmp_lit.negate(), lit.negate()]));
+                            formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
                     }
                     formula.extend(binary_merge(
@@ -123,7 +123,7 @@ fn binary_merge(
             if coeff_j & bit != 0 {
                 let lit_j = literals[j];
                 if let (Some(gac), true) = (gac_lit, coeff_j >= less_then as i64) {
-                    formula.push(f.clause(&[gac, lit_j.negate()]));
+                    formula.push(f.clause([gac, lit_j.negate()]));
                 } else {
                     bucket.push(lit_j);
                 }
@@ -148,7 +148,7 @@ fn binary_merge(
         if k <= bucket_i.len() {
             assert!(k == bucket_card_i.len() || config.binary_merge_use_watch_dog);
             if let Some(gac) = gac_lit {
-                formula.push(f.clause(&[gac, bucket_card_i[k - 1].negate()]));
+                formula.push(f.clause([gac, bucket_card_i[k - 1].negate()]));
             } else {
                 formula.push(bucket_card_i[k - 1].negate().into());
             }
@@ -170,7 +170,7 @@ fn binary_merge(
                     }
                     if k == bucket_merge_i.len() || config.binary_merge_use_watch_dog && k <= bucket_merge_i.len() {
                         if let Some(gac) = gac_lit {
-                            formula.push(f.clause(&[gac, bucket_merge_i[k - 1].negate()]));
+                            formula.push(f.clause([gac, bucket_merge_i[k - 1].negate()]));
                         } else {
                             formula.push(bucket_merge_i[k - 1].negate().into());
                         }
@@ -223,14 +223,14 @@ fn unary_adder(u: Vec<Literal>, v: Vec<Literal>, f: &FormulaFactory) -> (Vec<Enc
         }
         for a in 0..u.len() {
             for b in 0..v.len() {
-                formula.push(f.clause(&[u[a].negate(), v[b].negate(), w[a + b + 1]]));
+                formula.push(f.clause([u[a].negate(), v[b].negate(), w[a + b + 1]]));
             }
         }
         for i in 0..v.len() {
-            formula.push(f.clause(&[v[i].negate(), w[i]]));
+            formula.push(f.clause([v[i].negate(), w[i]]));
         }
         for i in 0..u.len() {
-            formula.push(f.clause(&[u[i].negate(), w[i]]));
+            formula.push(f.clause([u[i].negate(), w[i]]));
         }
         (formula, w)
     }
