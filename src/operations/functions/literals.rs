@@ -194,7 +194,7 @@ pub fn literals(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Lit
                 result.insert(l);
             }
             Equiv(_) | Impl(_) | Or(_) | And(_) | Not(_) => {
-                formula.operands(f).iter().for_each(|&op| result.append(&mut (*literals(op, f)).clone()));
+                formula.operands(f).iter().for_each(|&op| result.extend((*literals(op, f)).clone()));
             }
             Cc(cc) => cc.variables.iter().for_each(|v| {
                 result.insert(v.pos_lit());

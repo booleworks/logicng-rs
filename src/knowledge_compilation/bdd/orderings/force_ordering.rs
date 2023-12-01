@@ -12,7 +12,7 @@ use super::dfs_ordering::dfs_ordering;
 pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variable> {
     let mut original_variables = (*formula.variables(f)).clone();
     let nnf = f.nnf_of(formula);
-    original_variables.append(&mut (*nnf.variables(f)).clone());
+    original_variables.extend((*nnf.variables(f)).clone());
     let cnf = f.cnf_of(nnf);
     let hypergraph = hypergraph_from_cnf(cnf, f);
     let mut node_map = HashMap::new();

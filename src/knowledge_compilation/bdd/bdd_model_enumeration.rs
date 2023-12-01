@@ -21,7 +21,7 @@ pub fn enumerate_all_models(index: usize, variables: Option<&[Variable]>, kernel
     for mut model in models {
         let mut all_models = Vec::new();
         generate_all_models(&mut all_models, &mut model, &relevant_indices, 0, kernel);
-        res.append(&mut all_models);
+        res.extend(all_models);
     }
     res
 }

@@ -525,7 +525,7 @@ impl Assignment {
                 .collect()
         } else {
             let mut ops: Vec<EncodedFormula> = self.pos.iter().map(|v| EncodedFormula::from(v.neg_lit())).collect();
-            ops.append(&mut self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())).collect());
+            ops.extend(self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())));
             ops
         };
         f.or(ops)
