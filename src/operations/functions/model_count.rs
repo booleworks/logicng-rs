@@ -9,6 +9,9 @@ use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
 use crate::knowledge_compilation::dnnf::compile_dnnf;
 use crate::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
 
+#[cfg(feature = "sharp_sat")]
+use crate::solver::sharpsat::SharpSatSolver;
+
 /// Algorithms available for model counting.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ModelCountAlgorithm {
@@ -22,6 +25,9 @@ pub enum ModelCountAlgorithm {
         /// Cache size of the Bdd kernel.
         cache_size: usize,
     },
+    #[cfg(feature = "sharp_sat")]
+    /// Model counting using the sharp-sat libary. Requires `sharp_sat` feature to be activiated.
+    SharpSat,
 }
 
 /// Computes the model count for a given formula.
@@ -115,6 +121,12 @@ fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &Fo
         ModelCountAlgorithm::Bdd { node_size, cache_size } => {
             let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f), node_size, cache_size);
             Bdd::from_formula(formula, f, &mut kernel).model_count(&mut kernel)
+        }
+        #[cfg(feature = "sharp_sat")]
+        ModelCountAlgorithm::SharpSat => {
+            let mut solver = SharpSatSolver::new();
+            solver.add_formula(formula, f);
+            solver.solve()
         }
     }
 }

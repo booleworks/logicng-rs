@@ -5,7 +5,6 @@ use logicng_sharp_sat_sys::ffi;
 use num_bigint::BigUint;
 
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
-use crate::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
 
 pub struct SharpSatSolver {
     solver: *mut ffi::Solver,
@@ -45,11 +44,7 @@ impl SharpSatSolver {
         }
     }
 
-    pub fn add_formula(&mut self, formula: EncodedFormula, f: &FormulaFactory) {
-        let expanded = pure_expansion(formula, f);
-        let mut cnf_encoder =
-            CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
-        let cnf_formula = cnf_encoder.transform(expanded, f);
+    pub fn add_formula(&mut self, cnf_formula: EncodedFormula, f: &FormulaFactory) {
         match cnf_formula.unpack(f) {
             Formula::Or(ops) => {
                 self.add_clause(&ops.map(|formula| formula.as_literal().expect("SharpSat FFI: invalid cnf")).collect::<Box<_>>());
