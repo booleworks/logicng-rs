@@ -171,9 +171,9 @@ impl BddKernel {
     }
 
     /// Constructs a new BDD kernel with the given variable ordering
-    pub fn new_with_var_ordering(ordering: Vec<Variable>, node_size: usize, cache_size: usize) -> Self {
+    pub fn new_with_var_ordering(ordering: &[Variable], node_size: usize, cache_size: usize) -> Self {
         let mut kernel = Self::new_with_num_vars(ordering.len(), node_size, cache_size);
-        for var in ordering {
+        for &var in ordering {
             kernel.get_or_add_var_index(var);
         }
         kernel

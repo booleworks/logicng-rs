@@ -66,13 +66,11 @@ fn add_cnf<B>(
     match cnf.unpack(f) {
         True => {}
         False | Lit(_) | Or(_) => {
-            let clause_vec = (*cnf.literals(f)).iter().copied().collect::<Vec<Literal>>();
-            add_clause(solver, &clause_vec, proposition, config);
+            add_clause(solver, &*cnf.literals(f), proposition, config);
         }
         And(operands) => {
             for clause in operands {
-                let clause_vec = (*clause.literals(f)).iter().copied().collect::<Vec<Literal>>();
-                add_clause(solver, &clause_vec, proposition.clone(), config);
+                add_clause(solver, &*clause.literals(f), proposition.clone(), config);
             }
         }
         _ => panic!("Unexpected formula type: {}", cnf.to_string(f)),
@@ -282,9 +280,10 @@ fn handle_nary<B>(
     }
 }
 
-fn add_clause<B>(solver: &mut MiniSat2Solver<B>, clause: &[Literal], proposition: Option<Proposition<B>>, config: PgOnSolverConfig) {
+fn add_clause<'a, B, L>(solver: &mut MiniSat2Solver<B>, clause: L, proposition: Option<Proposition<B>>, config: PgOnSolverConfig)
+where L: IntoIterator<Item = &'a Literal> {
     let clause_vec = clause
-        .iter()
+        .into_iter()
         .map(|lit| {
             let variable = lit.variable();
             let index = solver.idx_for_variable(variable).unwrap_or_else(|| {

@@ -292,7 +292,7 @@ mod tests {
             FormulaType::True => 1.to_biguint().unwrap(),
             FormulaType::False => 0.to_biguint().unwrap(),
             _ => {
-                let kernel = &mut BddKernel::new_with_var_ordering(force_ordering(formula, f), 10000, 10000);
+                let kernel = &mut BddKernel::new_with_var_ordering(&force_ordering(formula, f), 10000, 10000);
                 Bdd::from_formula(formula, f, kernel).model_count(kernel)
             }
         }

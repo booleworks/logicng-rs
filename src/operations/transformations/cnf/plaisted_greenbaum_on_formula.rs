@@ -49,7 +49,7 @@ fn compute_pos_polarity(formula: EncodedFormula, f: &FormulaFactory, state: &mut
             let mut nops = Vec::with_capacity(formula.number_of_operands(f));
             for op in ops {
                 let op_pg = pg_variable(op, f, state);
-                nops.push(f.clause(&[pg_var.negate(), op_pg]));
+                nops.push(f.clause([pg_var.negate(), op_pg]));
             }
             f.and(&nops)
         }

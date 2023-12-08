@@ -39,7 +39,7 @@ pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE
 
 static AUX_REGEX_LOCK: OnceLock<Regex> = OnceLock::new(); // TODO replace with LazyLock once available
 
-type FilterResult = (Vec<SmallFormulaEncoding>, HashSet<SmallFormulaEncoding>, Vec<FormulaEncoding>, HashSet<FormulaEncoding>);
+type FilterResult = (Vec<SmallFormulaEncoding>, HashSet<SmallFormulaEncoding>, Vec<FormulaEncoding>, HashSet<FormulaEncoding>, bool);
 
 /// The formula factory is the central concept of LogicNG and is always required
 /// when working with LogicNG.  A formula factory is an object consisting of two
@@ -616,8 +616,8 @@ impl FormulaFactory {
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
-            Some((new_ops32, new_set32, new_ops64, new_set64)) => {
-                if new_ops32.is_empty() && new_ops64.is_empty() {
+            Some((new_ops32, new_set32, new_ops64, new_set64, is_cnf)) => {
+                let res = if new_ops32.is_empty() && new_ops64.is_empty() {
                     self.verum()
                 } else if new_ops32.len() == 1 && new_ops64.is_empty() {
                     new_ops32[0].to_formula()
@@ -625,7 +625,11 @@ impl FormulaFactory {
                     new_ops64[0].to_formula()
                 } else {
                     EncodedFormula::from(self.ands.get_or_insert(new_ops32, new_set32, new_ops64, new_set64))
+                };
+                if is_cnf && res.is_nary_operator() {
+                    self.caches.is_cnf.insert(res, ());
                 }
+                res
             }
         }
     }
@@ -655,8 +659,8 @@ impl FormulaFactory {
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
-            Some((new_ops32, new_set32, new_ops64, new_set64)) => {
-                if new_ops32.is_empty() && new_ops64.is_empty() {
+            Some((new_ops32, new_set32, new_ops64, new_set64, is_cnf)) => {
+                let res = if new_ops32.is_empty() && new_ops64.is_empty() {
                     self.falsum()
                 } else if new_ops32.len() == 1 && new_ops64.is_empty() {
                     new_ops32[0].to_formula()
@@ -664,7 +668,11 @@ impl FormulaFactory {
                     new_ops64[0].to_formula()
                 } else {
                     EncodedFormula::from(self.ors.get_or_insert(new_ops32, new_set32, new_ops64, new_set64))
+                };
+                if is_cnf && res.is_nary_operator() {
+                    self.caches.is_cnf.insert(res, ());
                 }
+                res
             }
         }
     }
@@ -1323,7 +1331,17 @@ impl FormulaFactory {
         let mut reduced64 = Vec::new();
         let mut reduced_set64 = HashSet::new();
         let mut is_large = false;
+        let mut is_cnf = true;
         for &op in flattened_ops {
+            if is_cnf {
+                if op_type == FormulaType::And {
+                    if !op.is_cnf(self) {
+                        is_cnf = false;
+                    }
+                } else if !op.is_literal() && !op.is_constant() {
+                    is_cnf = false;
+                }
+            }
             if op.is_verum() {
                 if op_type == FormulaType::Or {
                     return None;
@@ -1348,7 +1366,7 @@ impl FormulaFactory {
                 }
             };
         }
-        Some((reduced32, reduced_set32, reduced64, reduced_set64))
+        Some((reduced32, reduced_set32, reduced64, reduced_set64, is_cnf))
     }
 
     fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType, flattened: &mut Vec<EncodedFormula>)

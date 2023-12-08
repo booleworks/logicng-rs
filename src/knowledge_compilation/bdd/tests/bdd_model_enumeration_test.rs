@@ -69,7 +69,7 @@ mod tests {
             let orderings = vec![dfs, bfs, min2max, max2min, force];
 
             for ordering in orderings {
-                let mut kernel = BddKernel::new_with_var_ordering(ordering, 10_000, 10_000);
+                let mut kernel = BddKernel::new_with_var_ordering(&ordering, 10_000, 10_000);
 
                 let start = Instant::now();
                 let bdd = Bdd::from_formula(n_queens, &f, &mut kernel);

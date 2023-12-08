@@ -234,6 +234,42 @@ impl Assignment {
         Ok(Self { pos, neg })
     }
 
+    /// Adds a single literal to this assignment.
+    ///
+    /// Returns true iff the literal previously was not contained in the
+    /// assignment.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use logicng::datastructures::Assignment;
+    /// # use logicng::formulas::FormulaFactory;
+    /// let f = FormulaFactory::new();
+    /// let mut assignment = Assignment::from_lit(f.lit("a", true));
+    ///
+    /// assignment.add_literal(f.lit("b", false));
+    /// assert!(assignment.contains(f.lit("a", true)));
+    /// assert!(assignment.contains(f.lit("b", false)));
+    /// ```
+    ///
+    /// Returns true if a new values is added:
+    /// ```
+    /// # use logicng::datastructures::Assignment;
+    /// # use logicng::formulas::FormulaFactory;
+    /// let f = FormulaFactory::new();
+    /// let mut assignment = Assignment::from_lit(f.lit("a", true));
+    ///
+    /// assert_eq!(assignment.add_literal(f.lit("a", true)), false);
+    /// assert_eq!(assignment.add_literal(f.lit("b", true)), true);
+    /// ```
+    pub fn add_literal(&mut self, lit: Literal) -> bool {
+        match lit {
+            Literal::Pos(var) => self.pos.insert(var),
+            Literal::Neg(var) => self.neg.insert(var),
+        }
+    }
+
     /// Returns all positive variables of this assignment.
     ///
     /// # Examples
@@ -525,7 +561,7 @@ impl Assignment {
                 .collect()
         } else {
             let mut ops: Vec<EncodedFormula> = self.pos.iter().map(|v| EncodedFormula::from(v.neg_lit())).collect();
-            ops.append(&mut self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())).collect());
+            ops.extend(self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())));
             ops
         };
         f.or(ops)
