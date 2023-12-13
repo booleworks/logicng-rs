@@ -125,7 +125,7 @@ fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &Fo
         #[cfg(feature = "sharp_sat")]
         ModelCountAlgorithm::SharpSat => {
             let mut solver = SharpSatSolver::new();
-            solver.add_formula(formula, f);
+            solver.add_cnf(formula, f);
             solver.solve()
         }
     }
