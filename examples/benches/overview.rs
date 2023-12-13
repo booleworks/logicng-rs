@@ -4,10 +4,10 @@ use itertools::Itertools;
 use logicng::formulas::{EncodedFormula, FormulaFactory};
 use logicng::io::read_formula;
 use logicng::knowledge_compilation::dnnf::{compile_dnnf, count};
+use logicng::operations::functions::{count_models, ModelCountAlgorithm};
 use logicng::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
 use logicng::solver::maxsat::{Algorithm, MaxSatSolver};
 use logicng::solver::minisat::MiniSat;
-use logicng::solver::sharpsat::SharpSatSolver;
 
 fn main() {
     parse();
@@ -77,9 +77,7 @@ fn model_counting_sharpsat() {
 
     let start = std::time::Instant::now();
     for formula in formulas {
-        let mut solver = SharpSatSolver::new();
-        solver.add_formula(formula, &f);
-        solver.solve();
+        count_models(formula, ModelCountAlgorithm::SharpSat, &f);
     }
     println!("Rust Model Counting (SharpSAT): {}s", start.elapsed().as_secs_f32());
 }

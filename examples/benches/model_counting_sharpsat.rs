@@ -5,7 +5,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::sharpsat::SharpSatSolver;
+use logicng::operations::functions::{count_models, ModelCountAlgorithm};
 
 pub fn main() {
     for threads in &[1, 2, 4, 6, 8, 10] {
@@ -32,9 +32,7 @@ pub fn parallel(thread_count: usize) {
                 break;
             }
             let formula = read_formula(&paths_l[c], &f_l).unwrap();
-            let mut solver = SharpSatSolver::new();
-            solver.add_formula(formula, &f_l);
-            solver.solve();
+            count_models(formula, ModelCountAlgorithm::SharpSat, &f_l);
         });
         threads.push(handle);
     }
