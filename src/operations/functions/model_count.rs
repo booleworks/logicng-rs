@@ -253,5 +253,47 @@ mod tests {
                 assert_eq!(count, expected);
             }
         }
+
+        #[cfg(feature = "sharp_sat")]
+        mod sharp_sat {
+            use crate::formulas::FormulaFactory;
+            use crate::operations::functions::{count_models, ModelCountAlgorithm};
+            use crate::util::read_model_counting_examples::{read_cnf, read_normal};
+            use num_bigint::BigUint;
+
+            #[test]
+            fn test_verum() {
+                let f = FormulaFactory::new();
+                let count = count_models(f.verum(), ModelCountAlgorithm::SharpSat, &f);
+                assert_eq!(count, BigUint::from(1_u64));
+            }
+
+            #[test]
+            fn test_falsum() {
+                let f = FormulaFactory::new();
+                let count = count_models(f.falsum(), ModelCountAlgorithm::SharpSat, &f);
+                assert_eq!(count, BigUint::from(0_u64));
+            }
+
+            #[test]
+            fn test_normal_formulas() {
+                let f = FormulaFactory::new();
+                let tests = read_normal(&f);
+                for (formula, expected) in tests {
+                    let count = count_models(formula, ModelCountAlgorithm::SharpSat, &f);
+                    assert_eq!(count, expected);
+                }
+            }
+
+            #[test]
+            fn test_cnf_formulas() {
+                let f = FormulaFactory::new();
+                let tests = read_cnf(&f);
+                for (formula, expected) in tests {
+                    let count = count_models(formula, ModelCountAlgorithm::SharpSat, &f);
+                    assert_eq!(count, expected);
+                }
+            }
+        }
     }
 }

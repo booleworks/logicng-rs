@@ -119,3 +119,51 @@ impl Drop for SharpSatSolver {
         unsafe { ffi::drop_solver(self.solver) };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use num_bigint::BigUint;
+
+    use crate::formulas::{FormulaFactory, ToFormula};
+    use crate::util::read_model_counting_examples::read_cnf;
+
+    use super::SharpSatSolver;
+
+
+    #[test]
+    fn empty_solver() {
+        let solver = SharpSatSolver::new();
+        let count = solver.solve();
+        assert_eq!(count, BigUint::from(1_u64));
+    }
+
+    #[test]
+    fn add_empty_clause() {
+        let mut solver = SharpSatSolver::new();
+        solver.add_clause(&[]);
+        let count = solver.solve();
+        assert_eq!(count, BigUint::from(0_u64));
+    }
+
+    #[test]
+    fn with_empty_clause() {
+        let f = FormulaFactory::new();
+        let mut solver = SharpSatSolver::new();
+        solver.add_cnf("(a | b) & (b | c)".to_formula(&f), &f);
+        solver.add_clause(&[]);
+        let count = solver.solve();
+        assert_eq!(count, BigUint::from(0_u64));
+    }
+
+    #[test]
+    fn test_cnf_formulas() {
+        let f = FormulaFactory::new();
+        let tests = read_cnf(&f);
+        for (formula, expected) in tests {
+            let mut solver = SharpSatSolver::new();
+            solver.add_cnf(formula, &f);
+            let count = solver.solve();
+            assert_eq!(count, expected);
+        }
+    }
+}
