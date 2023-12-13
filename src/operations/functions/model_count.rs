@@ -173,48 +173,85 @@ fn simplify(formulas: &[EncodedFormula], f: &FormulaFactory) -> (BTreeSet<Variab
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
-    use crate::io::read_cnf;
-    use crate::operations::functions::{count_models, ModelCountAlgorithm};
+    mod dnnf {
+        use crate::formulas::FormulaFactory;
+        use crate::operations::functions::{count_models, ModelCountAlgorithm};
+        use crate::util::read_model_counting_examples::{read_cnf, read_normal};
+        use num_bigint::BigUint;
 
-    #[test]
-    fn test_trivial_formulas() {
-        let f = &FormulaFactory::new();
-        test_formula("$true".to_formula(f), f);
-        test_formula("$false".to_formula(f), f);
-        test_formula("a".to_formula(f), f);
-        test_formula("~a".to_formula(f), f);
-        test_formula("a & b".to_formula(f), f);
-        test_formula("a | b".to_formula(f), f);
-        test_formula("a => b".to_formula(f), f);
-        test_formula("a <=> b".to_formula(f), f);
-        test_formula("a | b | c".to_formula(f), f);
-        test_formula("a & b & c".to_formula(f), f);
-        test_formula("f & ((~b | c) <=> ~a & ~c)".to_formula(f), f);
-        test_formula("a | ((b & ~c) | (c & (~d | ~a & b)) & e)".to_formula(f), f);
-        test_formula("a + b + c + d <= 1".to_formula(f), f);
-        test_formula("~a & (~a | b | c | d)".to_formula(f), f);
+        #[test]
+        fn test_verum() {
+            let f = FormulaFactory::new();
+            let count = count_models(f.verum(), ModelCountAlgorithm::Dnnf, &f);
+            assert_eq!(count, BigUint::from(1_u64));
+        }
+
+        #[test]
+        fn test_falsum() {
+            let f = FormulaFactory::new();
+            let count = count_models(f.falsum(), ModelCountAlgorithm::Dnnf, &f);
+            assert_eq!(count, BigUint::from(0_u64));
+        }
+
+        #[test]
+        fn test_normal_formulas() {
+            let f = FormulaFactory::new();
+            let tests = read_normal(&f);
+            for (formula, expected) in tests {
+                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
+                assert_eq!(count, expected);
+            }
+        }
+
+        #[test]
+        fn test_cnf_formulas() {
+            let f = FormulaFactory::new();
+            let tests = read_cnf(&f);
+            for (formula, expected) in tests {
+                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
+                assert_eq!(count, expected);
+            }
+        }
     }
 
-    #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
-    fn test_large_formulas() {
-        let f = &FormulaFactory::new();
-        let cnf1 = read_cnf("resources/dnnf/both_bdd_dnnf_1.cnf", f).unwrap();
-        let cnf2 = read_cnf("resources/dnnf/both_bdd_dnnf_2.cnf", f).unwrap();
-        let cnf3 = read_cnf("resources/dnnf/both_bdd_dnnf_3.cnf", f).unwrap();
-        let cnf4 = read_cnf("resources/dnnf/both_bdd_dnnf_4.cnf", f).unwrap();
-        let cnf5 = read_cnf("resources/dnnf/both_bdd_dnnf_5.cnf", f).unwrap();
-        test_formula(f.and(cnf1), f);
-        test_formula(f.and(cnf2), f);
-        test_formula(f.and(cnf3), f);
-        test_formula(f.and(cnf4), f);
-        test_formula(f.and(cnf5), f);
-    }
+    mod bdd {
+        use crate::formulas::FormulaFactory;
+        use crate::operations::functions::{count_models, ModelCountAlgorithm};
+        use crate::util::read_model_counting_examples::{read_cnf, read_normal};
+        use num_bigint::BigUint;
 
-    fn test_formula(formula: EncodedFormula, f: &FormulaFactory) {
-        let count_dnnf = count_models(formula, ModelCountAlgorithm::Dnnf, f);
-        let count_bdd = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 10000, cache_size: 10000 }, f);
-        assert_eq!(count_dnnf, count_bdd);
+        #[test]
+        fn test_verum() {
+            let f = FormulaFactory::new();
+            let count = count_models(f.verum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+            assert_eq!(count, BigUint::from(1_u64));
+        }
+
+        #[test]
+        fn test_falsum() {
+            let f = FormulaFactory::new();
+            let count = count_models(f.falsum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+            assert_eq!(count, BigUint::from(0_u64));
+        }
+
+        #[test]
+        fn test_normal_formulas() {
+            let f = FormulaFactory::new();
+            let tests = read_normal(&f);
+            for (formula, expected) in tests {
+                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+                assert_eq!(count, expected);
+            }
+        }
+
+        #[test]
+        fn test_cnf_formulas() {
+            let f = FormulaFactory::new();
+            let tests = read_cnf(&f);
+            for (formula, expected) in tests {
+                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+                assert_eq!(count, expected);
+            }
+        }
     }
 }
