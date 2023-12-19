@@ -735,6 +735,8 @@ impl FormulaFactory {
             self.not(left)
         } else if left == right {
             self.verum()
+        } else if left == self.negate(right) {
+            right
         } else {
             EncodedFormula::from(self.impls.get_or_insert((left, right)))
         }
