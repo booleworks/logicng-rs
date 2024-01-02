@@ -9,12 +9,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 endif ()
 
 IF(UNIX)
-    IF(APPLE)
-        # include_directories(/opt/local/include)
-        include_directories(/usr/local/Cellar/gmp/6.3.0/include)
-    ELSE(APPLE)
-
-    ENDIF(APPLE)
+  IF(APPLE)
+    IF(CMAKE_APPLE_SILICON_PROCESSOR)
+      include_directories(/opt/homebrew/include/Cellar/gmp/6.3.0/include)
+    ELSE(CMAKE_APPLE_SILICON_PROCESSOR)
+      include_directories(/usr/local/Cellar/gmp/6.3.0/include)
+    ENDIF(CMAKE_APPLE_SILICON_PROCESSOR)
+  ELSE(APPLE)
+    
+  ENDIF(APPLE)
 ELSE(UNIX)
 
 ENDIF(UNIX)

@@ -14,19 +14,17 @@ fn main() {
     //Link SharpSat
     println!("cargo:rustc-link-search={}", build_dst.join("build").display());
     println!("cargo:rustc-link-lib=static={lib_name}");
+    if os == "macos" && arch == "aarch64" {
+        println!("cargo:rustc-link-search=/opt/homebrew/include/Cellar/gmp/6.3.0/include");
+    }
 
     //Link other stuff
-
     println!("cargo:rustc-link-lib=gmpxx");
     println!("cargo:rustc-link-lib=gmp");
 
-
     //Build Bridge between SharpSAT Wrapper and LogicNG
     let mut build = cxx_build::bridge("src/lib.rs");
-    build
-        .include(sharp_sat_path.join("include/"))
-        // .flag("-w")
-        .file("sharp_sat_wrapper/library.cpp");
+    build.include(sharp_sat_path.join("include/")).flag("-w").file("sharp_sat_wrapper/library.cpp");
 
     if os == "macos" && arch == "aarch64" {
         build.include("/opt/homebrew/include");
