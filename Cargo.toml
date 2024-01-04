@@ -75,7 +75,6 @@ path = "examples/benches/parse.rs"
 [[example]]
 name = "bench_overview"
 path = "examples/benches/overview.rs"
-required-features = ["open_wbo", "sharp_sat"]
 
 [[test]]
 name = "test"
