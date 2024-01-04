@@ -27,6 +27,10 @@ mod implication_test {
         assert_eq!(f.implication(ff.TRUE, ff.A), ff.A);
         assert_eq!(f.implication(ff.A, ff.FALSE), ff.NA);
         assert_eq!(f.implication(ff.A, ff.A), ff.TRUE);
+        assert_eq!(f.implication(ff.A, ff.NA), ff.NA);
+        assert_eq!(f.implication(ff.NA, ff.A), ff.A);
+        assert_eq!(f.implication(ff.IMP4, f.negate(ff.IMP4)), f.negate(ff.IMP4));
+        assert_eq!(f.implication(f.negate(ff.IMP4), ff.IMP4), ff.IMP4);
         assert_eq!(f.implication(ff.AND1, ff.OR1), ff.IMP3);
     }
 
