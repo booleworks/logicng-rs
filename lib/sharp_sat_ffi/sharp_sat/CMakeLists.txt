@@ -9,11 +9,13 @@ set(CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O3 -g -DNDEBUG -Wal
 
 IF(UNIX)
   IF(APPLE)
-    # include_directories(/opt/local/include)
-    include_directories(/usr/local/Cellar/gmp/6.3.0/include)
+    IF(CMAKE_APPLE_SILICON_PROCESSOR)
+      include_directories(/opt/homebrew/Cellar/gmp/6.3.0/include)
+    ELSE(CMAKE_APPLE_SILICON_PROCESSOR)
+      include_directories(/usr/local/include)
+    ENDIF(CMAKE_APPLE_SILICON_PROCESSOR)
   ELSE(APPLE)
-    
-    
+
   ENDIF(APPLE)
 ELSE(UNIX)
 
