@@ -15,7 +15,7 @@ fn main() {
     println!("cargo:rustc-link-search={}", build_dst.join("build").display());
     println!("cargo:rustc-link-lib=static={lib_name}");
     if os == "macos" && arch == "aarch64" {
-        println!("cargo:rustc-link-search=/opt/homebrew/Cellar/gmp/6.3.0/include");
+        println!("cargo:rustc-link-search=/opt/homebrew/lib");
     }
 
     //Link other stuff
