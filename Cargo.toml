@@ -32,6 +32,9 @@ dashmap = "5.5.3"
 logicng-open-wbo-sys = { version = "0.1.0-alpha.3", path = "lib/open_wbo_ffi", optional = true }
 logicng-sharp-sat-sys = {version = "0.1.0-alpha.1", path = "lib/sharp_sat_ffi", optional = true }
 
+[dev-dependencies]
+criterion = "0.5.1"
+
 [features]
 default = []
 # these tests should only be executed with the release profile, otherwise they take too much time
@@ -83,3 +86,11 @@ path = "tests/sat/dimacs_tests.rs"
 [[test]]
 name = "concurrency_tests"
 path = "tests/concurrency.rs"
+
+[[bench]]
+name = "formula_factory"
+harness = false
+
+[[bench]]
+name = "solver"
+harness = false
