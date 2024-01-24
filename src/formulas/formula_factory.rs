@@ -5,7 +5,7 @@
 //! and commutativity) are hold exactly once in memory.
 
 
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -30,7 +30,8 @@ use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFor
 use super::formula_cache::implication_cache::ImplicationCache;
 use super::formula_cache::nary_formula_cache::NaryFormulaCache;
 use super::formula_cache::not_cache::NotCache;
-use super::{Formula, FormulaType, LitType, VarType};
+use super::formula_cache::var_cache::VariableCache;
+use super::{Formula, FormulaType};
 
 const FF_ID_LENGTH: i32 = 4;
 
@@ -225,7 +226,7 @@ pub struct FormulaFactory {
     pub(crate) id: String,
     /// Configuration
     pub config: FormulaFactoryConfig,
-    pub(crate) variables: SimpleCache<String>,
+    pub(crate) variables: VariableCache,
     pub(crate) ands: NaryFormulaCache,
     pub(crate) ors: NaryFormulaCache,
     pub(crate) nots: NotCache,
@@ -289,7 +290,7 @@ impl FormulaFactory {
         Self {
             id: id.into(),
             config: FormulaFactoryConfig::new(),
-            variables: SimpleCache::new(),
+            variables: VariableCache::new(),
             ands: NaryFormulaCache::new(FormulaType::And),
             ors: NaryFormulaCache::new(FormulaType::Or),
             nots: NotCache::new(),
@@ -443,7 +444,7 @@ impl FormulaFactory {
     ///
     /// assert_eq!(var.name(&f).into_owned(), "MyVar");
     /// ```
-    pub fn var(&self, name: &str) -> Variable {
+    pub fn var<'a, S: Into<Cow<'a, str>>>(&self, name: S) -> Variable {
         Variable::try_from(self.variable(name)).unwrap()
     }
 
@@ -474,8 +475,8 @@ impl FormulaFactory {
     /// assert_eq!(formula.to_string(&f), "MyVar");
     /// assert_eq!(formula, EncodedFormula::from(f.var("MyVar")));
     /// ```
-    pub fn variable(&self, name: &str) -> EncodedFormula {
-        EncodedFormula::from(self.variables.get_or_insert(name.into(), FormulaType::Lit(LitType::Pos(VarType::FF))))
+    pub fn variable<'a, S: Into<Cow<'a, str>>>(&self, name: S) -> EncodedFormula {
+        EncodedFormula::from(self.variables.get_or_insert(name.into()))
     }
 
     /// Creates a new variable with the given name and returns the variable as a

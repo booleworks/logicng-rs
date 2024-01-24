@@ -141,7 +141,7 @@ mod pure_maxsat_tests {
         assert_eq!(model.pos.len(), 1);
         assert!(model.contains_pos(f.var("y")));
         assert_eq!(model.neg.len(), 7);
-        for n in &["a", "b", "c", "d", "e", "x", "z"] {
+        for n in ["a", "b", "c", "d", "e", "x", "z"] {
             assert!(model.contains_neg(f.var(n)));
         }
     }

@@ -3,6 +3,7 @@ pub mod implication_cache;
 pub mod nary_formula_cache;
 pub mod not_cache;
 pub mod simple_cache;
+pub mod var_cache;
 
 pub mod formula_encoding;
 pub mod formula_factory_caches;
