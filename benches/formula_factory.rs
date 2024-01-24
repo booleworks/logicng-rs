@@ -3,8 +3,7 @@ use std::time::Duration;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use fastrand::shuffle;
-use logicng::formulas::{EncodedFormula, FormulaFactory};
-use logicng::util::formula_randomizer::{FormulaRandomizer, FormulaRandomizerConfig};
+use logicng::formulas::FormulaFactory;
 
 pub fn factory_benchmarks(c: &mut Criterion) {
     bench_vars(c);
