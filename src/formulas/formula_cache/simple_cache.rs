@@ -44,7 +44,7 @@ impl<T: Hash + Eq + Clone + Debug> SimpleCache<T> {
         self.reverse_map.get(element).map(|v| *v)
     }
 
-    pub fn shrink_to_fix(&self) {
+    pub fn shrink_to_fit(&self) {
         self.reverse_map.shrink_to_fit();
     }
 

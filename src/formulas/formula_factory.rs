@@ -1203,12 +1203,14 @@ impl FormulaFactory {
     /// //...
     /// ```
     pub fn shrink_to_fit(&self) {
-        self.variables.shrink_to_fix();
+        self.variables.shrink_to_fit();
         self.ands.shrink_to_fit();
         self.ors.shrink_to_fit();
         self.nots.shrink_to_fit();
         self.impls.shrink_to_fit();
         self.equivs.shrink_to_fit();
+        self.ccs.shrink_to_fit();
+        self.pbcs.shrink_to_fit();
     }
 
     /// Returns the number of nodes that are currently cached in this `FormulaFactory`.
@@ -1224,7 +1226,14 @@ impl FormulaFactory {
     /// println!("{}", f.number_of_cached_nodes());
     /// ```
     pub fn number_of_cached_nodes(&self) -> usize {
-        self.variables.len() + self.ands.len() + self.ors.len() + self.nots.len() + self.impls.len() + self.equivs.len()
+        self.variables.len()
+            + self.ands.len()
+            + self.ors.len()
+            + self.nots.len()
+            + self.impls.len()
+            + self.equivs.len()
+            + self.ccs.len()
+            + self.pbcs.len()
     }
 
     /// Returns the ID of this `FormulaFactory`.
