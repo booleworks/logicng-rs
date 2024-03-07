@@ -15,6 +15,29 @@ mod pb_constraint_tests {
     }
 
     #[test]
+    fn maximal_value_pb_and_cc() {
+        let f = FormulaFactory::new();
+
+        let formula = f.cc(GE, 4_294_967_295, vec![]);
+        assert!(formula.is_falsum());
+
+        let formula = f.pbc(GE, 4_294_967_295, vec![], vec![]);
+        assert!(formula.is_falsum());
+
+        let formula = f.cc(GE, 4_294_967_295, vec![f.var("a"), f.var("b")]);
+        assert!(formula.is_cc());
+        assert_eq!(formula.as_cc(&f).unwrap().rhs, 4_294_967_295);
+
+        let formula = f.pbc(GT, 4_294_967_295, vec![f.lit("a", true), f.lit("b", true)], vec![1, 1]);
+        assert!(formula.is_cc());
+        assert_eq!(formula.as_cc(&f).unwrap().rhs, 4_294_967_295);
+
+        let formula = f.pbc(GT, 4_294_967_295, vec![f.lit("a", true), f.lit("b", true)], vec![2, 1]);
+        assert!(formula.is_pbc());
+        assert_eq!(formula.as_pbc(&f).unwrap().rhs, 4_294_967_295);
+    }
+
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_type_and_getters() {
         let f = &FormulaFactory::new();

@@ -883,10 +883,9 @@ impl FormulaFactory {
     /// assert_eq!(cc1.to_string(&f), "a + b + c = 2");
     /// assert_eq!(cc2.to_string(&f), "a + c < 1");
     /// ```
-    #[allow(clippy::cast_possible_wrap)]
-    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u64, variables: V) -> EncodedFormula {
-        assert!(is_cc(comparator, rhs as i64), "Given values do not represent a cardinality constraint.");
-        self.construct_cc_unsafe(comparator, rhs as i64, variables.into())
+    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> EncodedFormula {
+        assert!(is_cc(comparator, rhs.into()), "Given values do not represent a cardinality constraint.");
+        self.construct_cc_unsafe(comparator, rhs.into(), variables.into())
     }
 
     /// Creates a new _exactly-one_ cardinality constraint.
@@ -1318,13 +1317,13 @@ impl FormulaFactory {
         &self.variables[index]
     }
 
-    #[allow(clippy::cast_sign_loss)]
     fn construct_cc_unsafe(&self, comparator: CType, rhs: i64, variables: Box<[Variable]>) -> EncodedFormula {
         if variables.is_empty() {
             self.constant(evaluate_trivial_pb_constraint(comparator, rhs))
         } else {
-            let (comp, r): (CType, u64) = if rhs >= 0 {
-                (comparator, rhs as u64)
+            let (comp, r): (CType, u32) = if rhs >= 0 {
+                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)] //Value is greate-equal 0
+                (comparator, rhs as u32)
             } else {
                 assert_eq!(comparator, GT);
                 (GE, 0)

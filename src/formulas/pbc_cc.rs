@@ -103,7 +103,7 @@ pub struct CardinalityConstraint {
     /// comparator of the cardinality constraint.
     pub comparator: CType,
     /// value on the right side of the cardinality constraint.
-    pub rhs: u64,
+    pub rhs: u32,
 }
 
 /// A pseudo-boolean constraint [`PbConstraint`] is a generalization of a
@@ -177,7 +177,7 @@ impl Display for CType {
 }
 
 impl CardinalityConstraint {
-    pub(crate) fn new(variables: Box<[Variable]>, comparator: CType, rhs: u64) -> Self {
+    pub(crate) fn new(variables: Box<[Variable]>, comparator: CType, rhs: u32) -> Self {
         Self { variables, comparator, rhs }
     }
 
@@ -281,7 +281,7 @@ impl CardinalityConstraint {
     /// [`restrict`]: CardinalityConstraint::restrict
     pub fn evaluate(&self, assignment: &Assignment) -> bool {
         let lhs = self.variables.iter().map(|v| assignment.evaluate_lit(v.pos_lit())).filter(|b| *b).count();
-        evaluate_comparator(lhs as i64, self.comparator, self.rhs as i64)
+        evaluate_comparator(lhs as i64, self.comparator, self.rhs.into())
     }
 
     /// Restricts this constraint with the give assignment.
@@ -320,13 +320,13 @@ impl CardinalityConstraint {
             EQ => {
                 let lt = f.pbc(
                     LT,
-                    self.rhs as i64,
+                    self.rhs.into(),
                     self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                     vec![1; self.variables.len()],
                 );
                 let gt = f.pbc(
                     GT,
-                    self.rhs as i64,
+                    self.rhs.into(),
                     self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                     vec![1; self.variables.len()],
                 );
@@ -334,25 +334,25 @@ impl CardinalityConstraint {
             }
             GT => f.pbc(
                 LE,
-                self.rhs as i64,
+                self.rhs.into(),
                 self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                 vec![1; self.variables.len()],
             ),
             GE => f.pbc(
                 LT,
-                self.rhs as i64,
+                self.rhs.into(),
                 self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                 vec![1; self.variables.len()],
             ),
             LT => f.pbc(
                 GE,
-                self.rhs as i64,
+                self.rhs.into(),
                 self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                 vec![1; self.variables.len()],
             ),
             LE => f.pbc(
                 GT,
-                self.rhs as i64,
+                self.rhs.into(),
                 self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
                 vec![1; self.variables.len()],
             ),

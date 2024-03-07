@@ -28,7 +28,7 @@ fn test_exk() {
     }
 }
 
-fn test_cc(num_lits: u64, rhs: u64, expected: u64, f: &FormulaFactory) {
+fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(CType::EQ, rhs, problem_vars.clone());

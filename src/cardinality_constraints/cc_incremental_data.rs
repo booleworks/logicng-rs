@@ -53,7 +53,7 @@ impl CcIncrementalData {
 
 
     /// Tightens the upper bound of an at-most-k constraint and returns the resulting formula.
-    pub fn new_upper_bound(&mut self, f: &FormulaFactory, rhs: u64) -> Vec<EncodedFormula> {
+    pub fn new_upper_bound(&mut self, f: &FormulaFactory, rhs: u32) -> Vec<EncodedFormula> {
         let mut result = vec![];
         self.compute_ub_constraint(&mut result, f, rhs);
         result
@@ -64,11 +64,11 @@ impl CcIncrementalData {
     /// Usage constraints:
     /// - New right-hand side must be smaller than current right-hand side.
     /// - Cannot be used for at-least-k constraints.
-    pub fn new_upper_bound_for_solver(&mut self, solver: &mut MiniSat, f: &FormulaFactory, rhs: u64) {
+    pub fn new_upper_bound_for_solver(&mut self, solver: &mut MiniSat, f: &FormulaFactory, rhs: u32) {
         self.compute_ub_constraint(solver, f, rhs);
     }
 
-    fn compute_ub_constraint(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: u64) {
+    fn compute_ub_constraint(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: u32) {
         let rhs = rhs.try_into().unwrap_or_else(|_| panic!("Can only constrain to bounds up to {} on this architecture", usize::MAX));
         assert!(rhs < self.current_rhs, "New upper bound {rhs} does not tighten the current bound of {}", self.current_rhs);
         self.current_rhs = rhs;
@@ -93,7 +93,7 @@ impl CcIncrementalData {
     }
 
     /// Tightens the lower bound of an at-most-k constraint and returns the resulting formula.
-    pub fn new_lower_bound(&mut self, f: &FormulaFactory, rhs: u64) -> Vec<EncodedFormula> {
+    pub fn new_lower_bound(&mut self, f: &FormulaFactory, rhs: u32) -> Vec<EncodedFormula> {
         let mut result = vec![];
         self.compute_lb_constraint(&mut result, f, rhs);
         result
@@ -104,11 +104,11 @@ impl CcIncrementalData {
     /// Usage constraints:
     /// - New right-hand side must be greater than current right-hand side.
     /// - Cannot be used for at-most-k constraints.
-    pub fn new_lower_bound_for_solver<B>(&mut self, solver: &mut MiniSat<B>, f: &FormulaFactory, rhs: u64) {
+    pub fn new_lower_bound_for_solver<B>(&mut self, solver: &mut MiniSat<B>, f: &FormulaFactory, rhs: u32) {
         self.compute_lb_constraint(solver, f, rhs);
     }
 
-    fn compute_lb_constraint(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: u64) {
+    fn compute_lb_constraint(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: u32) {
         let rhs = rhs.try_into().unwrap_or_else(|_| panic!("Can only constrain to bounds up to {} on this architecture", usize::MAX));
         assert!(rhs > self.current_rhs, "New lower bound {rhs} does not tighten the current bound of {}", self.current_rhs);
         self.current_rhs = rhs;
@@ -133,7 +133,6 @@ impl CcIncrementalData {
         };
     }
 
-    #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
     fn add_modular_totalizer_constraints(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: usize) {
         let vector2 = self.vector2.as_ref().expect("Vector 2 must be initialized for modular totalizer");
         let u_limit = (rhs + 1) / self.md;

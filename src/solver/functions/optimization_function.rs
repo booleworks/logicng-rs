@@ -84,7 +84,7 @@ impl OptimizationFunction {
         } else if current_bound == selectors.len() {
             return Some(self.mk_result_model(&internal_model, solver));
         }
-        let cc = f.cc(GE, current_bound as u64 + 1, selectors.clone()).as_cc(f).unwrap();
+        let cc = f.cc(GE, u32::try_from(current_bound).expect("rhs of cc too large") + 1, selectors.clone()).as_cc(f).unwrap();
         let mut incremental_data = solver.add_incremental_cc(&cc, f);
         while solver.sat() == True {
             internal_model = solver.underlying_solver.model.clone();
@@ -93,7 +93,11 @@ impl OptimizationFunction {
             if current_bound == selectors.len() {
                 return Some(self.mk_result_model(&internal_model, solver));
             }
-            incremental_data.as_mut().unwrap().new_lower_bound_for_solver(solver, f, current_bound as u64 + 1);
+            incremental_data.as_mut().unwrap().new_lower_bound_for_solver(
+                solver,
+                f,
+                u32::try_from(current_bound).expect("rhs of cc too large") + 1,
+            );
         }
         Some(self.mk_result_model(&internal_model, solver))
     }

@@ -293,7 +293,7 @@ fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, lit
         solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f);
         assert_eq!(solver.sat(), True);
         solver.load_state(&with_formula);
-        let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals).len() as u64;
+        let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals).len().try_into().unwrap();
         let sel_vars = literals
             .iter()
             .enumerate()

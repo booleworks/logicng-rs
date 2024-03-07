@@ -990,9 +990,11 @@ impl FormulaRandomizer {
     pub fn cc(&mut self, f: &FormulaFactory) -> EncodedFormula {
         let variables = self.cc_variables(f);
         let c_type = self.c_type();
-        let rhs_bound = if c_type == GT || c_type == LT { variables.len() + 1 } else { variables.len() };
-        let rhs_offset = u64::from(c_type == LT);
-        let rhs = rhs_offset + self.random.u64(0..rhs_bound as u64);
+        let rhs_bound = if c_type == GT || c_type == LT { variables.len() + 1 } else { variables.len() }
+            .try_into()
+            .expect("too many variables for a cardinality constraint");
+        let rhs_offset = u32::from(c_type == LT);
+        let rhs = rhs_offset + self.random.u32(0..rhs_bound);
         let cc = f.cc(c_type, rhs, variables);
         if cc.is_constant() {
             self.cc(f)
@@ -1365,7 +1367,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_possible_wrap)]
+    //#[allow(clippy::cast_lossless)]
     fn test_pbc() {
         let f = &FormulaFactory::new();
         let mut random = FormulaRandomizer::new(
@@ -1391,7 +1393,7 @@ mod tests {
                 (pbc.coefficients, pbc.literals, pbc.rhs, pbc.comparator)
             } else {
                 let cc = formula.as_cc(f).unwrap();
-                (Box::from(vec![1; cc.variables.len()]), cc.variables.iter().map(Variable::pos_lit).collect(), cc.rhs as i64, cc.comparator)
+                (Box::from(vec![1; cc.variables.len()]), cc.variables.iter().map(Variable::pos_lit).collect(), cc.rhs.into(), cc.comparator)
             };
             let (mut pos_sum, mut neg_sum) = (0, 0);
             assert!(coeffs.len() <= 10);

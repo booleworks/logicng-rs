@@ -84,10 +84,10 @@ fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &Formul
     }
     #[allow(clippy::cast_possible_wrap)]
     if new_lits.is_empty() {
-        f.constant(evaluate_comparator(lhs_fixed, cc.comparator, cc.rhs as i64))
+        f.constant(evaluate_comparator(lhs_fixed, cc.comparator, cc.rhs.into()))
     } else {
         let coeffs = vec![1; new_lits.len()];
-        f.pbc(cc.comparator, cc.rhs as i64 - lhs_fixed, new_lits, coeffs)
+        f.pbc(cc.comparator, i64::from(cc.rhs) - lhs_fixed, new_lits, coeffs)
     }
 }
 
