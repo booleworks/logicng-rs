@@ -40,7 +40,13 @@ pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE
 
 static AUX_REGEX_LOCK: OnceLock<Regex> = OnceLock::new(); // TODO replace with LazyLock once available
 
-type FilterResult = (Vec<SmallFormulaEncoding>, HashSet<SmallFormulaEncoding>, Vec<FormulaEncoding>, HashSet<FormulaEncoding>, bool);
+struct FilterResult {
+    reduced32: Vec<SmallFormulaEncoding>,
+    reduced_set32: HashSet<SmallFormulaEncoding>,
+    reduced64: Vec<FormulaEncoding>,
+    reduced_set64: HashSet<FormulaEncoding>,
+    is_cnf: bool,
+}
 
 /// The formula factory is the central concept of LogicNG and is always required
 /// when working with LogicNG.  A formula factory is an object consisting of two
@@ -617,15 +623,15 @@ impl FormulaFactory {
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
-            Some((new_ops32, new_set32, new_ops64, new_set64, is_cnf)) => {
-                let res = if new_ops32.is_empty() && new_ops64.is_empty() {
+            Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
+                let res = if reduced32.is_empty() && reduced64.is_empty() {
                     self.verum()
-                } else if new_ops32.len() == 1 && new_ops64.is_empty() {
-                    new_ops32[0].to_formula()
-                } else if new_ops32.is_empty() && new_ops64.len() == 1 {
-                    new_ops64[0].to_formula()
+                } else if reduced32.len() == 1 && reduced64.is_empty() {
+                    reduced32[0].to_formula()
+                } else if reduced32.is_empty() && reduced64.len() == 1 {
+                    reduced64[0].to_formula()
                 } else {
-                    EncodedFormula::from(self.ands.get_or_insert(new_ops32, new_set32, new_ops64, new_set64))
+                    EncodedFormula::from(self.ands.get_or_insert(reduced32, reduced_set32, reduced64, reduced_set64))
                 };
                 if is_cnf && res.is_nary_operator() {
                     self.caches.is_cnf.insert(res, ());
@@ -660,15 +666,15 @@ impl FormulaFactory {
         Ops: IntoIterator<Item = E>, {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
-            Some((new_ops32, new_set32, new_ops64, new_set64, is_cnf)) => {
-                let res = if new_ops32.is_empty() && new_ops64.is_empty() {
+            Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
+                let res = if reduced32.is_empty() && reduced64.is_empty() {
                     self.falsum()
-                } else if new_ops32.len() == 1 && new_ops64.is_empty() {
-                    new_ops32[0].to_formula()
-                } else if new_ops32.is_empty() && new_ops64.len() == 1 {
-                    new_ops64[0].to_formula()
+                } else if reduced32.len() == 1 && reduced64.is_empty() {
+                    reduced32[0].to_formula()
+                } else if reduced32.is_empty() && reduced64.len() == 1 {
+                    reduced64[0].to_formula()
                 } else {
-                    EncodedFormula::from(self.ors.get_or_insert(new_ops32, new_set32, new_ops64, new_set64))
+                    EncodedFormula::from(self.ors.get_or_insert(reduced32, reduced_set32, reduced64, reduced_set64))
                 };
                 if is_cnf && res.is_nary_operator() {
                     self.caches.is_cnf.insert(res, ());
@@ -1332,67 +1338,67 @@ impl FormulaFactory {
     where
         E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
-        let mut flattened_ops = Vec::new();
-        self.flatten_ops(ops, op_type, &mut flattened_ops);
-        self.filter(&flattened_ops, op_type)
-    }
-
-    fn filter(&self, flattened_ops: &[EncodedFormula], op_type: FormulaType) -> Option<FilterResult> {
-        let mut reduced32 = Vec::new();
-        let mut reduced_set32 = HashSet::new();
-        let mut reduced64 = Vec::new();
-        let mut reduced_set64 = HashSet::new();
-        let mut is_large = false;
-        let mut is_cnf = true;
-        for &op in flattened_ops {
-            if is_cnf {
-                if op_type == FormulaType::And {
-                    if !op.is_cnf(self) {
-                        is_cnf = false;
-                    }
-                } else if !op.is_literal() && !op.is_constant() {
-                    is_cnf = false;
-                }
-            }
-            if op.is_verum() {
-                if op_type == FormulaType::Or {
-                    return None;
-                }
-            } else if op.is_falsum() {
-                if op_type == FormulaType::And {
-                    return None;
-                }
-            } else if self.contains_complement(&reduced_set32, &reduced_set64, op) {
-                return None;
-            } else {
-                let op_encoded = op.encoding;
-                if op_encoded.is_large() {
-                    is_large = true;
-                }
-                if is_large {
-                    if !reduced_set32.contains(&op_encoded.as_32()) && reduced_set64.insert(op_encoded) {
-                        reduced64.push(op_encoded);
-                    }
-                } else if reduced_set32.insert(op_encoded.as_32()) {
-                    reduced32.push(op_encoded.as_32());
-                }
-            };
+        let mut filter_result = FilterResult {
+            reduced32: Vec::new(),
+            reduced_set32: HashSet::default(),
+            reduced64: Vec::new(),
+            reduced_set64: HashSet::default(),
+            is_cnf: true,
+        };
+        if self.filter_flatten(ops, op_type, &mut filter_result) {
+            Some(filter_result)
+        } else {
+            None
         }
-        Some((reduced32, reduced_set32, reduced64, reduced_set64, is_cnf))
     }
 
-    fn flatten_ops<E, Ops>(&self, ops: Ops, op_type: FormulaType, flattened: &mut Vec<EncodedFormula>)
+    fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
     where
         E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>, {
+        let mut is_large = false;
         for op in ops {
             let owned = *op.borrow();
             if owned.is_type(op_type) {
-                self.flatten_ops(&owned.operands(self), op_type, flattened);
+                if !self.filter_flatten(&owned.operands(self), op_type, result) {
+                    return false;
+                }
             } else {
-                flattened.push(owned);
+                if result.is_cnf {
+                    if op_type == FormulaType::And {
+                        if !owned.is_cnf(self) {
+                            result.is_cnf = false;
+                        }
+                    } else if !owned.is_literal() && !owned.is_constant() {
+                        result.is_cnf = false;
+                    }
+                }
+                if owned.is_verum() {
+                    if op_type == FormulaType::Or {
+                        return false;
+                    }
+                } else if owned.is_falsum() {
+                    if op_type == FormulaType::And {
+                        return false;
+                    }
+                } else if self.contains_complement(&result.reduced_set32, &result.reduced_set64, owned) {
+                    return false;
+                } else {
+                    let op_encoded = owned.encoding;
+                    if op_encoded.is_large() {
+                        is_large = true;
+                    }
+                    if is_large {
+                        if !result.reduced_set32.contains(&op_encoded.as_32()) && result.reduced_set64.insert(op_encoded) {
+                            result.reduced64.push(op_encoded);
+                        }
+                    } else if result.reduced_set32.insert(op_encoded.as_32()) {
+                        result.reduced32.push(op_encoded.as_32());
+                    }
+                };
             }
         }
+        true
     }
 
     fn contains_complement(
