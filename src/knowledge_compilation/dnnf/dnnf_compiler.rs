@@ -132,7 +132,7 @@ impl<'a> DnnfCompiler<'a> {
         self.solver.newly_implied(known_variables, self.f)
     }
 
-    fn leaf2ddnnf(&mut self, leaf_index: DTreeIndex) -> EncodedFormula {
+    fn leaf2ddnnf(&self, leaf_index: DTreeIndex) -> EncodedFormula {
         let leaf = &self.df.leaf_literals[leaf_index as usize];
         let mut leaf_result_operands = Vec::with_capacity(leaf.len());
         let mut leaf_current_literals = Vec::with_capacity(leaf.len());
