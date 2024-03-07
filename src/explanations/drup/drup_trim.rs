@@ -125,7 +125,7 @@ impl Solver {
             let hash = get_hash(&mut marks, mark, &buffer);
             if del {
                 if self.delete {
-                    let match_clause = self.match_clause(hash_table.get_mut(&hash).unwrap(), &mut marks, mark, &buffer);
+                    let match_clause = self.match_clause(hash_table.get_mut(&hash).unwrap(), &marks, mark, &buffer);
                     hash_table.get_mut(&hash).unwrap().pop();
                     self.adlist.push((match_clause << 1) + 1);
                 }
@@ -371,7 +371,7 @@ impl Solver {
         self.core
     }
 
-    fn match_clause(&self, clause_list: &mut Vec<isize>, marks: &mut [isize], mark: isize, input: &Vec<isize>) -> isize {
+    fn match_clause(&self, clause_list: &mut [isize], marks: &[isize], mark: isize, input: &[isize]) -> isize {
         for i in 0..clause_list.len() {
             let mut match_size = 0;
             let mut aborted = false;

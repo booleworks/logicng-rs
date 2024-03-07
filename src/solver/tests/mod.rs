@@ -18,8 +18,8 @@ pub fn generate_pigeon_hole_with_prefix(n: usize, prefix: &str, f: &FormulaFacto
 
 fn place_in_some_hole(n: usize, prefix: &str, f: &FormulaFactory) -> EncodedFormula {
     if n == 1 {
-        let v1 = f.variable(&format!("{prefix}1"));
-        let v2 = f.variable(&format!("{prefix}2"));
+        let v1 = f.variable(format!("{prefix}1"));
+        let v2 = f.variable(format!("{prefix}2"));
         f.and([v1, v2])
     } else {
         let mut ors = Vec::with_capacity(n + 1);

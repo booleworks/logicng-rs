@@ -265,7 +265,7 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
 }
 
 #[allow(clippy::option_if_let_else)] // proposed change does not improve readability
-fn generate_blocking_clause(model_from_solver: &Vec<bool>, relevant_vars: &Option<Vec<MsVar>>) -> Vec<MsLit> {
+fn generate_blocking_clause(model_from_solver: &[bool], relevant_vars: &Option<Vec<MsVar>>) -> Vec<MsLit> {
     if let Some(relevant) = relevant_vars {
         let mut blocking_clause = Vec::<MsLit>::with_capacity(relevant.len());
         for &var_index in relevant {

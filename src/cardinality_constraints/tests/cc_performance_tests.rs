@@ -23,7 +23,7 @@ fn test_amk_performance() {
 }
 
 fn test_build_amk(num_lits: u32, f: &FormulaFactory) {
-    let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+    let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut solver = MiniSat::new();
     for i in (10..100).step_by(10) {
         let cc = f.cc(LE, i, problem_lits.clone());

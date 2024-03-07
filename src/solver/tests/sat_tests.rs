@@ -162,7 +162,7 @@ fn test_cc1() {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
         if solver.config.incremental {
-            let vars = (0..100).map(|i| f.var(&format!("x{i}"))).collect::<Box<[_]>>();
+            let vars = (0..100).map(|i| f.var(format!("x{i}"))).collect::<Box<[_]>>();
             solver.add(f.exo(vars), f);
             let models = enumerate_models(&mut solver);
             assert_eq!(models.len(), 100);
@@ -303,7 +303,7 @@ fn test_dimacs_files() {
 #[test]
 fn test_model_enumeration() {
     let f = &FormulaFactory::new();
-    let vars: Box<[Variable]> = (0..20).map(|i| f.var(&format!("x{i}"))).collect();
+    let vars: Box<[Variable]> = (0..20).map(|i| f.var(format!("x{i}"))).collect();
     let first_five = &vars[..5];
     for mut solver in solvers() {
         if solver.config.incremental {
@@ -336,7 +336,7 @@ fn test_empty_enumeration() {
 #[test]
 fn test_number_of_models_handler() {
     let f = &FormulaFactory::new();
-    let vars: Box<[Variable]> = (0..100).map(|i| f.var(&format!("x{i}"))).collect();
+    let vars: Box<[Variable]> = (0..100).map(|i| f.var(format!("x{i}"))).collect();
     for mut solver in solvers() {
         if solver.config.incremental {
             solver.add(f.exo(vars.clone()), f);
@@ -501,7 +501,7 @@ fn test_selection_order_simple01() {
 fn test_selection_order_simple02() {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        let vars: Box<[Variable]> = (0..5).map(|i| f.var(&format!("x{i}"))).collect();
+        let vars: Box<[Variable]> = (0..5).map(|i| f.var(format!("x{i}"))).collect();
         let selection_order: Vec<Literal> = vars.iter().map(Variable::pos_lit).collect();
         let cc = f.cc(EQ, 2, vars);
         solver.add(cc, f);

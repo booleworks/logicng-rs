@@ -1197,15 +1197,15 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn init_backbone_ds(&mut self) -> BackboneComputationState {
-        BackboneComputationState { backbone_candidates: vec![], backbone_assumptions: vec![], backbone_map: vec![Undef; self.vars.len()] }
+        BackboneComputationState { candidates: vec![], assumptions: vec![], map: vec![Undef; self.vars.len()] }
     }
 
     fn backbone_impl(&mut self, state: &mut BackboneComputationState, variables: &Vec<MsVar>, backbone_type: BackboneType) {
         self.create_initial_candidates(state, variables, backbone_type);
-        while let Some(lit) = state.backbone_candidates.pop() {
-            state.backbone_assumptions.push(not(lit));
-            let sat = self.solve_with_assumptions(state.backbone_assumptions.clone()) == True;
-            state.backbone_assumptions.pop();
+        while let Some(lit) = state.candidates.pop() {
+            state.assumptions.push(not(lit));
+            let sat = self.solve_with_assumptions(state.assumptions.clone()) == True;
+            state.assumptions.pop();
             if sat {
                 self.refine_upper_bound(state);
             } else {
@@ -1223,7 +1223,7 @@ impl<B> MiniSat2Solver<B> {
             } else if backbone_type.matches_phase(model_phase)
                 && (!self.config.bb_initial_ubcheck_for_rotatable_literals || !self.is_rotatable(lit))
             {
-                state.backbone_candidates.push(lit);
+                state.candidates.push(lit);
             }
         }
     }
@@ -1231,7 +1231,7 @@ impl<B> MiniSat2Solver<B> {
     fn refine_upper_bound(&mut self, state: &mut BackboneComputationState) {
         let mut new_candidates = vec![];
         let mut new_backbone_lits = vec![];
-        for &lit in &state.backbone_candidates {
+        for &lit in &state.candidates {
             let var = var(lit);
             if self.vars[var.0].level == Some(0) {
                 new_backbone_lits.push(lit);
@@ -1242,7 +1242,7 @@ impl<B> MiniSat2Solver<B> {
             }
         }
         new_backbone_lits.iter().for_each(|&lit| state.add_backbone_literal(lit));
-        state.backbone_candidates = new_candidates;
+        state.candidates = new_candidates;
     }
 
     fn build_backbone(&self, state: &BackboneComputationState, variables: Vec<Variable>, backbone_type: BackboneType) -> Backbone {
@@ -1251,7 +1251,7 @@ impl<B> MiniSat2Solver<B> {
         let mut opt = if backbone_type == PositiveAndNegative { Some(BTreeSet::new()) } else { None };
         for var in variables {
             if let Some(&ms_var) = self.name2idx.get(&var) {
-                match state.backbone_map.get(ms_var.0).unwrap() {
+                match state.map.get(ms_var.0).unwrap() {
                     True => {
                         if let Some(pos) = pos.as_mut() {
                             pos.insert(var);
@@ -1321,14 +1321,14 @@ pub const fn var(lit: MsLit) -> MsVar {
 }
 
 struct BackboneComputationState {
-    backbone_candidates: Vec<MsLit>,
-    backbone_assumptions: Vec<MsLit>,
-    backbone_map: Vec<Tristate>,
+    candidates: Vec<MsLit>,
+    assumptions: Vec<MsLit>,
+    map: Vec<Tristate>,
 }
 
 impl BackboneComputationState {
     pub fn add_backbone_literal(&mut self, lit: MsLit) {
-        self.backbone_map[var(lit).0] = Tristate::from_bool(!sign(lit));
-        self.backbone_assumptions.push(lit);
+        self.map[var(lit).0] = Tristate::from_bool(!sign(lit));
+        self.assumptions.push(lit);
     }
 }

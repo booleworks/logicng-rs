@@ -335,7 +335,7 @@ impl<B> MiniSat<B> {
         mk_lit(index, !literal.phase())
     }
 
-    pub(crate) fn create_assignment(&self, model: &Vec<bool>, relevant_indices: &Option<Vec<MsVar>>) -> Model {
+    pub(crate) fn create_assignment(&self, model: &[bool], relevant_indices: &Option<Vec<MsVar>>) -> Model {
         let capacity = relevant_indices.as_ref().map_or(model.len(), Vec::len);
         let mut pos = Vec::with_capacity(capacity);
         let mut neg = Vec::with_capacity(capacity);

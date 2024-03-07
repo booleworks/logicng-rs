@@ -6,32 +6,32 @@ const CACHEID_RESTRICT: usize = 0x1;
 const CACHEID_FORALL: usize = 0x1;
 
 /// Returns a BDD representing the i-th variable (one node with the children true and false).
-pub fn ith_var(i: usize, kernel: &mut BddKernel) -> usize {
+pub fn ith_var(i: usize, kernel: &BddKernel) -> usize {
     assert!(i < kernel.varnum, "Illegal variable number: {i}");
     kernel.vars[i * 2]
 }
 
 /// Returns a BDD representing the negation of the i-th variable (one node with the children
 /// true and false).
-pub fn nith_var(i: usize, kernel: &mut BddKernel) -> usize {
+pub fn nith_var(i: usize, kernel: &BddKernel) -> usize {
     assert!(i < kernel.varnum, "Illegal variable number: {i}");
     kernel.vars[i * 2 + 1]
 }
 
 ///Returns the variable index labeling the given root node.
-pub fn bdd_var(root: usize, kernel: &mut BddKernel) -> usize {
+pub fn bdd_var(root: usize, kernel: &BddKernel) -> usize {
     assert!(root >= 2, "Illegal node number: {root}");
     kernel.level2var[kernel.level(root)]
 }
 
 ///Returns the false branch of the given root node.
-pub fn bdd_low(root: usize, kernel: &mut BddKernel) -> usize {
+pub fn bdd_low(root: usize, kernel: &BddKernel) -> usize {
     assert!(root >= 2, "Illegal node number: {root}");
     kernel.low(root).unwrap()
 }
 
 ///Returns the true branch of the given root node.
-pub fn bdd_high(root: usize, kernel: &mut BddKernel) -> usize {
+pub fn bdd_high(root: usize, kernel: &BddKernel) -> usize {
     assert!(root >= 2, "Illegal node number: {root}");
     kernel.high(root)
 }
@@ -207,11 +207,11 @@ mod tests {
 
     #[test]
     fn test_simple_methods() {
-        let mut kernel = BddKernel::new_with_num_vars(3, 1000, 1000);
-        assert_eq!(ith_var(0, &mut kernel), 2);
-        assert_eq!(nith_var(0, &mut kernel), 3);
-        assert_eq!(bdd_var(2, &mut kernel), 0);
-        assert_eq!(bdd_low(2, &mut kernel), 0);
-        assert_eq!(bdd_high(2, &mut kernel), 1);
+        let kernel = BddKernel::new_with_num_vars(3, 1000, 1000);
+        assert_eq!(ith_var(0, &kernel), 2);
+        assert_eq!(nith_var(0, &kernel), 3);
+        assert_eq!(bdd_var(2, &kernel), 0);
+        assert_eq!(bdd_low(2, &kernel), 0);
+        assert_eq!(bdd_high(2, &kernel), 1);
     }
 }

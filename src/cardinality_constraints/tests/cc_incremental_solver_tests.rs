@@ -22,7 +22,7 @@ fn test_simple_incremental_amk() {
         for solver in &mut solvers() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
-            let vars: Box<[Variable]> = (0..10).map(|i| f.var(&format!("v{i}"))).collect();
+            let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
             solver.add(f.cc(GE, 4, vars.clone()), f);
             solver.add(f.cc(LE, 7, vars.clone()), f);
             f.config.cc_config = config.clone();
@@ -59,7 +59,7 @@ fn test_simple_incremental_alk() {
         for solver in &mut solvers() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
-            let vars: Box<[Variable]> = (0..10).map(|i| f.var(&format!("v{i}"))).collect();
+            let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
             solver.add(f.cc(GE, 4, vars.clone()), f);
             solver.add(f.cc(LE, 7, vars.clone()), f);
             f.config.cc_config = config.clone();
@@ -98,7 +98,7 @@ fn test_large_upper_bound_amk() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
             let num_lits = 100;
-            let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+            let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
             let mut current_bound = num_lits - 1;
             solver.add(f.cc(GE, 42, vars.clone()), f);
             f.config.cc_config = config.clone();
@@ -120,7 +120,7 @@ fn test_large_lower_bound_alk() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
             let num_lits = 100;
-            let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+            let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
             let mut current_bound = 2;
             solver.add(f.cc(LE, 87, vars.clone()), f);
             f.config.cc_config = config.clone();
@@ -140,7 +140,7 @@ fn test_very_large_modular_totalizer_amk() {
     let f = &mut FormulaFactory::new();
     f.config.cc_config = configs()[2].clone();
     let num_lits = 300;
-    let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+    let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
     let mut solver = MiniSat::new();
     solver.add(f.cc(GE, 234, vars.clone()), f);

@@ -298,7 +298,7 @@ fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, lit
             .iter()
             .enumerate()
             .map(|(i, &lit)| {
-                let sel_var = f.variable(&format!("SEL_VAR_{i}"));
+                let sel_var = f.variable(format!("SEL_VAR_{i}"));
                 solver.add(f.equivalence(sel_var, lit.into()), f);
                 sel_var.as_variable().unwrap()
             })

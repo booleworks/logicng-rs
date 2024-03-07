@@ -36,7 +36,7 @@ fn test_amk() {
 }
 
 fn test_cc(num_lits: u64, rhs: u64, expected: u64, f: &FormulaFactory) {
-    let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(&format!("v{i}")).as_variable().unwrap()).collect();
+    let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let cc = f.cc(CType::LE, rhs, problem_vars.clone());
     let mut solver = MiniSat::new();
     solver.add(cc, f);

@@ -59,7 +59,7 @@ fn test_exo_k() {
 }
 
 fn test_exo(num_lits: usize, f: &FormulaFactory) {
-    let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(&format!("v{i}")).as_variable().unwrap()).collect();
+    let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(EQ, 1, problem_lits.clone());
     solver.add(cc, f);

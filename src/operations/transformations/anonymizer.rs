@@ -34,7 +34,7 @@ impl<'a> Anonymizer<'a> {
             self.substitution.entry(*variable).or_insert_with(|| {
                 let c = self.counter;
                 self.counter += 1;
-                self.factory.variable(&format!("{}{}", self.prefix, c))
+                self.factory.variable(format!("{}{}", self.prefix, c))
             });
         }
         self.factory.substitute(formula, &self.substitution)

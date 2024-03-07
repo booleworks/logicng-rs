@@ -692,7 +692,7 @@ fn var_hash(var: Variable) -> Wrapping<u64> {
 fn names_to_indices(names: &[&str], f: &FormulaFactory) -> Result<HashSet<Variable>, String> {
     let mut result = HashSet::with_capacity(names.len());
     for name in names {
-        let index = match f.variables.lookup(&(*name).to_string()) {
+        let index = match f.variables.lookup(name) {
             Some(i) => Variable::FF(i),
             None => {
                 return Err(format!("Variable {} is not known in the given FormulaFactory", *name));

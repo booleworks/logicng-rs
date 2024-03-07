@@ -40,6 +40,7 @@ where H: Hash {
     hasher.finish()
 }
 
+#[allow(clippy::struct_field_names)]
 pub struct F {
     pub(crate) f: FormulaFactory,
     pub(crate) g: FormulaFactory,

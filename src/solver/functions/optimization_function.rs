@@ -50,7 +50,7 @@ impl OptimizationFunction {
 
     fn compute<B>(&self, solver: &mut MiniSat<B>, f: &FormulaFactory) -> Option<Model> {
         let selector_map: BTreeMap<Variable, Literal> =
-            self.literals.iter().enumerate().map(|(i, &l)| (f.var(&format!("{SEL_PREFIX}{i}")), l)).collect();
+            self.literals.iter().enumerate().map(|(i, &l)| (f.var(format!("{SEL_PREFIX}{i}")), l)).collect();
         if self.maximize {
             selector_map
                 .iter()
@@ -98,7 +98,7 @@ impl OptimizationFunction {
         Some(self.mk_result_model(&internal_model, solver))
     }
 
-    fn mk_result_model<B>(&self, internal_model: &Vec<bool>, solver: &MiniSat<B>) -> Model {
+    fn mk_result_model<B>(&self, internal_model: &[bool], solver: &MiniSat<B>) -> Model {
         let relevant_indices: Vec<MsVar> =
             self.result_model_variables.iter().filter_map(|&v| solver.underlying_solver.idx_for_variable(v)).collect();
         solver.create_assignment(internal_model, &Some(relevant_indices))

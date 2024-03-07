@@ -59,7 +59,7 @@ fn test_amo_k() {
 }
 
 fn test_amo(num_lits: usize, f: &FormulaFactory) {
-    let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(&format!("v{i}")).as_variable().unwrap()).collect();
+    let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(LE, 1, problem_vars.clone());
     solver.add(cc, f);

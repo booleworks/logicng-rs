@@ -18,7 +18,7 @@ fn test_incremental_data() {
     for encoder in encoders() {
         let f = &FormulaFactory::new();
         let num_lits = 10;
-        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
 
         let inc_data = encoder.encode_incremental(&f.cc(LT, num_lits, vars.clone()).as_cc(f).unwrap(), f).1.unwrap();
         assert_eq!(inc_data.current_rhs, 9);
@@ -51,7 +51,7 @@ fn test_incremental_data() {
 fn test_simple_incremental_amk() {
     for encoder in encoders() {
         let f = &FormulaFactory::new();
-        let vars: Box<[Variable]> = (0..10).map(|i| f.var(&format!("v{i}"))).collect();
+        let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
         solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f), f);
         solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f), f);
@@ -86,7 +86,7 @@ fn test_simple_incremental_amk() {
 fn test_simple_incremental_alk() {
     for encoder in encoders() {
         let f = &FormulaFactory::new();
-        let vars: Box<[Variable]> = (0..10).map(|i| f.var(&format!("v{i}"))).collect();
+        let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
         solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f), f);
         solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f), f);
@@ -125,7 +125,7 @@ fn test_large_upper_bound_amk() {
     for encoder in [&encoders()[0], &encoders()[2]] {
         let f = &FormulaFactory::new();
         let num_lits = 100;
-        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = num_lits - 1;
         let mut solver = MiniSat::new();
         solver.add_all(&f.cc(GE, 42, vars.clone()).as_cc(f).unwrap().encode(f), f);
@@ -148,7 +148,7 @@ fn test_large_lower_bound_alk() {
     for encoder in [&encoders()[0], &encoders()[2]] {
         let f = &FormulaFactory::new();
         let num_lits = 100;
-        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+        let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = 2;
         let mut solver = MiniSat::new();
         solver.add_all(&f.cc(LE, 87, vars.clone()).as_cc(f).unwrap().encode(f), f);
@@ -171,7 +171,7 @@ fn test_very_large_modular_totalizer_amk() {
     let encoder = encoders()[2].clone();
     let f = &FormulaFactory::new();
     let num_lits = 300;
-    let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(&format!("v{i}"))).collect();
+    let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
     let mut solver = MiniSat::new();
     solver.add(f.cc(GE, 234, vars.clone()), f);

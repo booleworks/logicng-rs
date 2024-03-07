@@ -80,7 +80,7 @@ fn initialize_constraint(result: &mut dyn EncodingResult, f: &FormulaFactory, va
 
 fn to_cnf(
     cardinality_invars: &mut Vec<Variable>,
-    vars: &Vec<Variable>,
+    vars: &[Variable],
     result: &mut dyn EncodingResult,
     f: &FormulaFactory,
     rhs: usize,
@@ -106,10 +106,10 @@ fn to_cnf(
         }
     }
     if bound == Upper || bound == Both {
-        adder_amk(&mut left, &mut right, vars, rhs, result, f);
+        adder_amk(&left, &right, vars, rhs, result, f);
     }
     if bound == Lower || bound == Both {
-        adder_alk(&mut left, &mut right, vars, result, f);
+        adder_alk(&left, &right, vars, result, f);
     }
     if left.len() > 1 {
         to_cnf(cardinality_invars, &left, result, f, rhs, bound);
@@ -119,14 +119,7 @@ fn to_cnf(
     }
 }
 
-fn adder_amk(
-    left: &mut Vec<Variable>,
-    right: &mut Vec<Variable>,
-    output: &Vec<Variable>,
-    rhs: usize,
-    result: &mut dyn EncodingResult,
-    f: &FormulaFactory,
-) {
+fn adder_amk(left: &[Variable], right: &[Variable], output: &[Variable], rhs: usize, result: &mut dyn EncodingResult, f: &FormulaFactory) {
     debug_assert!(output.len() == left.len() + right.len());
     for i in 0..=left.len() {
         for j in 0..=right.len() {
@@ -149,13 +142,7 @@ fn adder_amk(
     }
 }
 
-fn adder_alk(
-    left: &mut Vec<Variable>,
-    right: &mut Vec<Variable>,
-    output: &Vec<Variable>,
-    result: &mut dyn EncodingResult,
-    f: &FormulaFactory,
-) {
+fn adder_alk(left: &[Variable], right: &[Variable], output: &[Variable], result: &mut dyn EncodingResult, f: &FormulaFactory) {
     debug_assert!(output.len() == left.len() + right.len());
     for i in 0..=left.len() {
         for j in 0..=right.len() {

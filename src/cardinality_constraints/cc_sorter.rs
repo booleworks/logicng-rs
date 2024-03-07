@@ -118,7 +118,7 @@ fn comparator2(
 
 fn recursive_sorter(
     m: usize,
-    input: &Vec<Literal>,
+    input: &[Literal],
     result: &mut dyn EncodingResult,
     f: &FormulaFactory,
     direction: ImplicationDirection,
@@ -145,7 +145,7 @@ fn recursive_sorter(
 
 fn counter_sorter(
     k: usize,
-    x: &Vec<Literal>,
+    x: &[Literal],
     result: &mut dyn EncodingResult,
     f: &FormulaFactory,
     direction: ImplicationDirection,
@@ -182,7 +182,7 @@ fn counter_sorter(
     aux_vars[n - 1].clone()
 }
 
-fn direct_sorter(m: usize, input: &Vec<Literal>, result: &mut dyn EncodingResult, f: &FormulaFactory) -> Vec<Literal> {
+fn direct_sorter(m: usize, input: &[Literal], result: &mut dyn EncodingResult, f: &FormulaFactory) -> Vec<Literal> {
     let n = input.len();
     assert!(n < 20);
     let mut bitmask = 1;
@@ -216,8 +216,8 @@ fn direct_sorter(m: usize, input: &Vec<Literal>, result: &mut dyn EncodingResult
 
 fn recursive_merger(
     c: usize,
-    input_a: &Vec<Literal>,
-    input_b: &Vec<Literal>,
+    input_a: &[Literal],
+    input_b: &[Literal],
     result: &mut dyn EncodingResult,
     f: &FormulaFactory,
     direction: ImplicationDirection,
@@ -256,7 +256,7 @@ fn recursive_merger(
         let odd_merge = cc_merge(c / 2 + 1, tmp_lits_odd_a, tmp_lits_odd_b, result, f, direction);
         let even_merge = cc_merge(c / 2, tmp_lits_even_a, tmp_lits_even_b, result, f, direction);
 
-        let mut output = vec![*odd_merge.get(0).unwrap()];
+        let mut output = vec![*odd_merge.first().unwrap()];
 
         let mut i = 1_usize;
         let mut j = 0_usize;
@@ -290,13 +290,7 @@ fn recursive_merger(
     }
 }
 
-fn direct_merger(
-    m: usize,
-    input_a: &Vec<Literal>,
-    input_b: &Vec<Literal>,
-    result: &mut dyn EncodingResult,
-    f: &FormulaFactory,
-) -> Vec<Literal> {
+fn direct_merger(m: usize, input_a: &[Literal], input_b: &[Literal], result: &mut dyn EncodingResult, f: &FormulaFactory) -> Vec<Literal> {
     let a = input_a.len();
     let b = input_b.len();
     let output: Vec<Literal> = std::iter::repeat_with(|| result.new_cc_variable(f).pos_lit()).take(m).collect();
