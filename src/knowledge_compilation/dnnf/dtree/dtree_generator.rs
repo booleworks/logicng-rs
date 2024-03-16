@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::repeat;
 
 use itertools::Itertools;
@@ -74,7 +74,7 @@ impl Graph {
         }
 
         let mut adj_matrix: Vec<Vec<bool>> = repeat(repeat(false).take(number_of_vertices).collect()).take(number_of_vertices).collect();
-        let mut edge_list: Vec<Vec<usize>> = repeat(Vec::new()).take(number_of_vertices).collect();
+        let mut edge_list: Vec<HashSet<usize>> = repeat(HashSet::new()).take(number_of_vertices).collect();
 
         for clause in &*cnf.operands(f) {
             let variables = clause.variables(f);
@@ -83,14 +83,19 @@ impl Graph {
                 for j in (i + 1)..var_nums.len() {
                     let var_i = var_nums[i];
                     let var_j = var_nums[j];
-                    edge_list[var_i].push(var_j);
-                    edge_list[var_j].push(var_i);
+                    edge_list[var_i].insert(var_j);
+                    edge_list[var_j].insert(var_i);
                     adj_matrix[var_i][var_j] = true;
                     adj_matrix[var_j][var_i] = true;
                 }
             }
         }
-        Self { number_of_vertices, adj_matrix, vertices, edge_list }
+        Self {
+            number_of_vertices,
+            adj_matrix,
+            vertices,
+            edge_list: edge_list.into_iter().map(|edges| edges.into_iter().collect::<Vec<usize>>()).collect(),
+        }
     }
 
     pub fn get_min_fill_ordering(self) -> Vec<Variable> {
