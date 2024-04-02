@@ -29,23 +29,23 @@ fn main() {
     GLOBAL.print_memory("Initial state".into());
     for file_name in ["large_formula.txt", "large_formula2.txt", "large_formula2-split.txt"] {
         let f = &FormulaFactory::new();
-        GLOBAL.print_memory(format!("[{file_name}] FF created"));
+        GLOBAL.print_memory(&format!("[{file_name}] FF created"));
 
-        GLOBAL.print_memory(format!("[{file_name}] Parser created"));
+        GLOBAL.print_memory(&format!("[{file_name}] Parser created"));
 
         let start = Instant::now();
         let lines = read_file(file_name);
         if PRINT_PERFORMANCE {
             println!("[{}] File read: {:?}", file_name, start.elapsed());
         }
-        GLOBAL.print_memory(format!("[{file_name}] File read"));
+        GLOBAL.print_memory(&format!("[{file_name}] File read"));
 
         let start = Instant::now();
         let formulas = lines.iter().map(|l| f.parse(l).unwrap());
         if PRINT_PERFORMANCE {
             println!("[{}] Parse: {:?}", file_name, start.elapsed());
         }
-        GLOBAL.print_memory(format!("[{file_name}] Formulas parsed"));
+        GLOBAL.print_memory(&format!("[{file_name}] Formulas parsed"));
 
         let start = Instant::now();
         let formula = f.and(formulas);
@@ -61,33 +61,33 @@ fn main() {
             if PRINT_PERFORMANCE {
                 println!("[{}] PG on solver: {:?}", file_name, start.elapsed());
             }
-            GLOBAL.print_memory(format!("[{file_name}] CNF on solver created"));
+            GLOBAL.print_memory(&format!("[{file_name}] CNF on solver created"));
         }
-        GLOBAL.print_memory(format!("[{file_name}] Solver dropped"));
+        GLOBAL.print_memory(&format!("[{file_name}] Solver dropped"));
 
         let start = Instant::now();
         let _cnf = CnfEncoder::new(CnfAlgorithm::Tseitin).transform(formula, f);
         if PRINT_PERFORMANCE {
             println!("[{}] Tseitin CNF: {:?}", file_name, start.elapsed());
         }
-        GLOBAL.print_memory(format!("[{file_name}] Tseitin created"));
+        GLOBAL.print_memory(&format!("[{file_name}] Tseitin created"));
 
         let start = Instant::now();
         let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f);
         if PRINT_PERFORMANCE {
             println!("[{}] PG CNF: {:?}", file_name, start.elapsed());
         }
-        GLOBAL.print_memory(format!("[{file_name}] PG created"));
+        GLOBAL.print_memory(&format!("[{file_name}] PG created"));
 
         f.shrink_to_fit();
-        GLOBAL.print_memory(format!("[{file_name}] After shrink"));
+        GLOBAL.print_memory(&format!("[{file_name}] After shrink"));
 
         println!("Internal nodes: {}", _cnf.number_of_internal_nodes(f));
         println!("Formula Factory size: {}", f.number_of_cached_nodes());
 
         println!("{}", f.print_stats());
     }
-    GLOBAL.print_memory("End".into());
+    GLOBAL.print_memory("End");
 }
 
 fn read_file(file_name: &str) -> Vec<String> {

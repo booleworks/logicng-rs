@@ -76,6 +76,10 @@ path = "examples/benches/parse.rs"
 name = "bench_overview"
 path = "examples/benches/overview.rs"
 
+[[example]]
+name = "bench_overview2"
+path = "examples/benches/overview2.rs"
+
 [[test]]
 name = "test"
 path = "tests/sat/dimacs_tests.rs"

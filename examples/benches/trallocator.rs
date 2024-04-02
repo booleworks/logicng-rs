@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 
-use std::alloc::{GlobalAlloc, Layout, System};
-use std::any::Any;
+use std::alloc::{GlobalAlloc, Layout};
+use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering::SeqCst;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::PRINT_MEMORY;
 
@@ -33,7 +32,7 @@ impl<A: GlobalAlloc> Trallocator<A> {
         self.1.load(SeqCst)
     }
 
-    pub fn print_memory(&self, prefix: String) {
+    pub fn print_memory(&self, prefix: &str) {
         if PRINT_MEMORY {
             println!("{}: {:.3} MB", prefix, self.get() as f64 / 1024_i32.pow(2) as f64);
         }
