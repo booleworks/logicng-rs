@@ -1,7 +1,7 @@
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::handlers::{ClauseLimitFactorizationHandler, FactorizationHandler};
+use crate::handlers::{ComputationHandler, LngComputation, LngEvent};
+use crate::operations::transformations::cnf::CnfAlgorithm;
 use crate::operations::transformations::cnf::CnfAlgorithm::Tseitin;
-use crate::operations::transformations::cnf::{CancellableCnfAlgorithm, CnfAlgorithm};
 
 use super::CnfEncoder;
 
@@ -27,9 +27,10 @@ fn single_advanced_encoding(
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
 ) -> EncodedFormula {
-    CancellableCnfAlgorithm::FactorizationWithHandler(config.handler())
-        .transform(formula, f)
-        .unwrap_or_else(|_| (*config.fallback_algorithm).transform(formula, f, state))
+    CnfAlgorithm::Factorization
+        .transform_with_handler(formula, f, state, &mut config.handler())
+        .result()
+        .unwrap_or_else(|| (*config.fallback_algorithm).transform(formula, f, state))
 }
 
 /// Configuration for advanced _CNF_ algorithms.
@@ -81,12 +82,64 @@ impl AdvancedFactorizationConfig {
     /// The default value is [`CnfAlgorithm::TSEITIN`](`CnfAlgorithm`).
     #[must_use]
     pub fn fallback_algorithm(mut self, fallback_algorithm: CnfAlgorithm) -> Self {
+        assert!(fallback_algorithm != CnfAlgorithm::Factorization, "Factorization can not be used as fallback");
         self.fallback_algorithm = Box::new(fallback_algorithm);
         self
     }
 
     /// Creates an new handler based on this configuration.
-    pub fn handler(&self) -> Box<dyn FactorizationHandler> {
-        Box::new(ClauseLimitFactorizationHandler::new(self.distribution_boundary, self.created_clause_boundary))
+    pub fn handler(&self) -> AdvancedFactorizationHandler {
+        AdvancedFactorizationHandler::new(Some(self.distribution_boundary), Some(self.created_clause_boundary))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct AdvancedFactorizationHandler {
+    distribution_boundary: Option<u64>,
+    created_clause_boundary: Option<u64>,
+    canceled: bool,
+    current_distribution: usize,
+    current_clause: usize,
+}
+
+impl AdvancedFactorizationHandler {
+    pub fn new(distribution_boundary: Option<u64>, created_clause_boundary: Option<u64>) -> Self {
+        Self { distribution_boundary, created_clause_boundary, canceled: false, current_distribution: 0, current_clause: 0 }
+    }
+
+    #[cfg(test)]
+    pub fn canceled(&self) -> bool {
+        self.canceled
+    }
+
+    #[cfg(test)]
+    pub fn current_distribution(&self) -> usize {
+        self.current_distribution
+    }
+
+    #[cfg(test)]
+    pub fn current_clause(&self) -> usize {
+        self.current_clause
+    }
+}
+
+impl ComputationHandler for AdvancedFactorizationHandler {
+    fn should_resume(&mut self, event: LngEvent) -> bool {
+        match event {
+            LngEvent::ComputationStarted(LngComputation::Factorization) => {
+                self.current_distribution = 0;
+                self.current_clause = 0;
+            }
+            LngEvent::DistributionPerformed => {
+                self.current_distribution += 1;
+                self.canceled = self.distribution_boundary.is_some_and(|bound| self.current_distribution > bound as usize);
+            }
+            LngEvent::FactorizationCreatedClause(_) => {
+                self.current_clause += 1;
+                self.canceled = self.created_clause_boundary.is_some_and(|bound| self.current_clause > bound as usize);
+            }
+            _ => {}
+        }
+        !self.canceled
     }
 }

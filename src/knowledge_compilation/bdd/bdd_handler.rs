@@ -1,47 +1,34 @@
-/// Error raised by a [`BddHandler`].
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum BddError {
-    /// Error raised by [`NumberOfNodesBddHandler`].
-    NodeLimitReached,
-    /// Error raised if a timeout is reached.
-    TimoutReached,
-}
-
-/// Handler for BDD operations.
-pub trait BddHandler {
-    /// This method is called every time a new reference in the BDD is added.
-    fn new_ref_added(&mut self) -> Option<BddError> {
-        None
-    }
-}
-
-/// A BDD handler which does never cancel the BDD computation.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NopBddHandler {}
-impl BddHandler for NopBddHandler {}
+use crate::handlers::{ComputationHandler, LngComputation, LngEvent};
 
 /// A BDD handler which cancels the build process after a given number of added nodes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NumberOfNodesBddHandler {
     bound: usize,
     count: usize,
+    canceled: bool,
 }
 
 impl NumberOfNodesBddHandler {
     /// Constructs a new handler, which stops the execution if a certain number
     /// of nodes is exceeded.
     pub const fn new(bound: usize) -> Self {
-        Self { bound, count: 0 }
+        assert!(bound >= 0, "The bound for added nodes must be >= 0");
+        Self { bound, count: 0, canceled: false }
     }
 }
 
-impl BddHandler for NumberOfNodesBddHandler {
-    fn new_ref_added(&mut self) -> Option<BddError> {
-        self.count += 1;
-        if self.count >= self.bound {
-            Some(BddError::NodeLimitReached)
-        } else {
-            None
+impl ComputationHandler for NumberOfNodesBddHandler {
+    fn should_resume(&mut self, event: LngEvent) -> bool {
+        match event {
+            LngEvent::ComputationStarted(LngComputation::Bdd) => {
+                self.count = 0;
+            }
+            LngEvent::BddNewRefAdded => {
+                self.count += 1;
+                self.canceled = self.count >= self.bound;
+            }
+            _ => {}
         }
+        !self.canceled
     }
 }

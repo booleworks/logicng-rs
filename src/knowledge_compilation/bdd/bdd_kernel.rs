@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 use std::num::Wrapping;
 
 use crate::formulas::Variable;
+use crate::handlers::{ComputationHandler, LngEvent};
 
 use super::bdd_cache::BddCache;
-use super::bdd_handler::{BddError, BddHandler};
 use super::bdd_prime::{prime_gte, prime_lte};
 
 pub(super) const BDD_TRUE: usize = 1;
@@ -199,9 +199,9 @@ impl BddKernel {
         self.apply_rec(l, r, op)
     }
 
-    pub(super) fn add_ref(&mut self, root: usize, handler: &mut dyn BddHandler) -> Result<usize, BddError> {
-        if let Some(error) = handler.new_ref_added() {
-            return Err(error);
+    pub(super) fn add_ref(&mut self, root: usize, handler: &mut dyn ComputationHandler) -> Result<usize, LngEvent> {
+        if !handler.should_resume(LngEvent::BddNewRefAdded) {
+            return Err(LngEvent::BddNewRefAdded);
         }
         if root < 2 {
             return Ok(root);

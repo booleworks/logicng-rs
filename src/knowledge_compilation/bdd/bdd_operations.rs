@@ -1,7 +1,8 @@
 #![allow(clippy::cast_possible_truncation)]
 use num_bigint::{BigUint, ToBigUint};
 
-use super::bdd_handler::NopBddHandler;
+use crate::handlers::NopHandler;
+
 use super::bdd_kernel::{is_const, is_one, is_zero, BddKernel, BDD_FALSE, BDD_TRUE, MARKOFF, MARKON};
 
 const CACHEID_SATCOU: usize = 0x2;
@@ -125,7 +126,7 @@ pub fn support(r: usize, kernel: &mut BddKernel) -> usize {
 
     let mut res = 1;
     for n in support {
-        kernel.add_ref(res, &mut NopBddHandler {}).expect("Nop Handler never aborts.");
+        kernel.add_ref(res, &mut NopHandler::new()).expect("Nop Handler never aborts.");
         let node = kernel.make_node(n, 0, res);
         kernel.del_ref(res);
         res = node;

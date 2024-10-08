@@ -5,6 +5,7 @@ use num_bigint::BigUint;
 use crate::datastructures::Model;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 
+use crate::handlers::{ComputationHandler, LngComputation, LngEvent, LngResult, NopHandler};
 use crate::knowledge_compilation::bdd::bdd_construction::{
     and, bdd_high, bdd_low, bdd_var, equivalence, exists, for_all, implication, ith_var, nith_var, not, or,
 };
@@ -16,7 +17,6 @@ use crate::knowledge_compilation::bdd::bdd_operations::{
 };
 
 use super::bdd_construction::restrict;
-use super::bdd_handler::{BddError, BddHandler, NopBddHandler};
 use super::bdd_operations::support;
 
 /// The internal representation of a BDD.
@@ -28,7 +28,7 @@ pub struct Bdd {
 impl Bdd {
     /// Generates a new BDD for the given formula with the given kernel.
     pub fn from_formula(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel) -> Self {
-        Self { index: build_rec(formula, f, kernel, &mut NopBddHandler {}).expect("Nop Handler never aborts.") }
+        Self { index: build_rec(formula, f, kernel, &mut NopHandler::new()).expect("Nop Handler never aborts.") }
     }
 
     /// Generates a new BDD for the given formula with the given kernel.
@@ -36,10 +36,15 @@ impl Bdd {
         formula: EncodedFormula,
         f: &FormulaFactory,
         kernel: &mut BddKernel,
-        handler: &mut dyn BddHandler,
-    ) -> Result<Self, BddError> {
-        let index = build_rec(formula, f, kernel, handler)?;
-        Ok(Self { index })
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<Self> {
+        if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Bdd)) {
+            return LngResult::Canceled(LngEvent::ComputationStarted(LngComputation::Bdd));
+        }
+        match build_rec(formula, f, kernel, handler) {
+            Ok(index) => LngResult::Ok(Self { index }),
+            Err(event) => LngResult::Canceled(event),
+        }
     }
 
     /// Returns whether this BDD represents a tautology.
@@ -167,7 +172,12 @@ impl Bdd {
     }
 }
 
-fn build_rec(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel, handler: &mut dyn BddHandler) -> Result<usize, BddError> {
+fn build_rec(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+    kernel: &mut BddKernel,
+    handler: &mut dyn ComputationHandler,
+) -> Result<usize, LngEvent> {
     use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
     match formula.unpack(f) {
         False => Ok(BDD_FALSE),
@@ -241,12 +251,12 @@ fn create_model(model_bdd: usize, kernel: &mut BddKernel) -> Option<Model> {
 
 fn bdd_from_variables(variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> usize {
     let formula = f.and(variables.iter().map(|x| EncodedFormula::from(*x)));
-    build_rec(formula, f, kernel, &mut NopBddHandler {}).expect("Nop Handler never aborts.")
+    build_rec(formula, f, kernel, &mut NopHandler::new()).expect("Nop Handler never aborts.")
 }
 
 fn bdd_from_literals(literals: &[Literal], f: &FormulaFactory, kernel: &mut BddKernel) -> usize {
     let formula = f.and(literals.iter().map(|x| EncodedFormula::from(*x)));
-    build_rec(formula, f, kernel, &mut NopBddHandler {}).expect("Nop Handler never aborts.")
+    build_rec(formula, f, kernel, &mut NopHandler::new()).expect("Nop Handler never aborts.")
 }
 
 fn to_formula_rec(index: usize, f: &FormulaFactory, kernel: &mut BddKernel) -> EncodedFormula {

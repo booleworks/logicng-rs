@@ -1,4 +1,5 @@
 mod advanced;
+mod bdd;
 mod factorization;
 mod plaisted_greenbaum_on_formula;
 pub(super) mod plaisted_greenbaum_on_solver;
@@ -7,10 +8,9 @@ mod tseitin;
 use std::collections::HashMap;
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
-use crate::handlers::{FactorizationError, FactorizationHandler};
-use crate::knowledge_compilation::bdd::{Bdd, BddError, BddHandler, BddKernel};
-//use advanced::{advanced_cnf_encoding, AdvancedFactorizationConfig};
-use factorization::{factorization_cnf, factorization_cnf_with_handler};
+use crate::handlers::{ComputationHandler, LngResult, NopHandler};
+use bdd::*;
+use factorization::factorization_cnf_with_handler;
 use plaisted_greenbaum_on_formula::pg_on_formula;
 use tseitin::tseitin_cnf_with_boundary;
 
@@ -40,31 +40,44 @@ pub enum CnfAlgorithm {
 impl CnfAlgorithm {
     /// Transform the given formula into a _CNF_ formula.
     fn transform(&self, formula: EncodedFormula, f: &FormulaFactory, state: &mut CnfEncoder) -> EncodedFormula {
+        self.transform_with_handler(formula, f, state, &mut NopHandler::new()).result().expect("Nop Handler does not abort")
+    }
+
+    fn transform_with_handler(
+        &self,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+        state: &mut CnfEncoder,
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<EncodedFormula> {
         if formula.is_cnf(f) {
-            return formula;
+            return LngResult::Ok(formula);
         }
         match self {
-            Self::Factorization => factorization_cnf(formula, f),
-            Self::Tseitin => tseitin_cnf_with_boundary(
+            Self::Factorization => factorization_cnf_with_handler(formula, f, handler),
+            Self::Tseitin => LngResult::Ok(tseitin_cnf_with_boundary(
                 formula,
                 f,
                 DEFAULT_BOUNDARY_FOR_FACTORIZATION,
                 state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
-            ),
-            Self::TseitinWithBoundary(boundary) => {
-                tseitin_cnf_with_boundary(formula, f, *boundary, state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()))
-            }
-            Self::PlaistedGreenbaum => {
-                pg_on_formula(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, state.pg_state.as_mut().unwrap_or(&mut PGState::default()))
-            }
+            )),
+            Self::TseitinWithBoundary(boundary) => LngResult::Ok(tseitin_cnf_with_boundary(
+                formula,
+                f,
+                *boundary,
+                state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
+            )),
+            Self::PlaistedGreenbaum => LngResult::Ok(pg_on_formula(
+                formula,
+                f,
+                DEFAULT_BOUNDARY_FOR_FACTORIZATION,
+                state.pg_state.as_mut().unwrap_or(&mut PGState::default()),
+            )),
             Self::PlaistedGreenbaumWithBoundary(boundary) => {
-                pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default()))
+                LngResult::Ok(pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default())))
             }
-            Self::Advanced(config) => advanced_cnf_encoding(formula, f, config, state),
-            Self::Bdd => {
-                let mut kernel = BddKernel::new_with_num_vars(formula.variables(f).len(), 10_000, 10_000);
-                Bdd::from_formula(formula, f, &mut kernel).cnf(f, &mut kernel)
-            }
+            Self::Advanced(config) => LngResult::Ok(advanced_cnf_encoding(formula, f, config, state)),
+            Self::Bdd => bdd_cnf_with_handler(formula, f, handler),
         }
     }
 }
@@ -104,40 +117,15 @@ impl CnfEncoder {
     pub fn transform(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
         self.algorithm.clone().transform(formula, f, self)
     }
-}
 
-/// Types of cancellable _CNF_ algorithms.
-pub enum CancellableCnfAlgorithm {
-    /// Transformation of a formula in _CNF_ by factorization.
-    FactorizationWithHandler(Box<dyn FactorizationHandler>),
-    /// Transformation of a formula in _CNF_ by converting it to a BDD.
-    BddWithHandler(Box<dyn BddHandler>),
-}
-
-impl CancellableCnfAlgorithm {
-    /// Transform the given formula into a _CNF_ formula.
-    pub fn transform(self, formula: EncodedFormula, f: &FormulaFactory) -> Result<EncodedFormula, CancellationReason> {
-        match self {
-            Self::FactorizationWithHandler(mut handler) => {
-                factorization_cnf_with_handler(formula, f, &mut *handler).map_err(CancellationReason::FactorizationFailed)
-            }
-            Self::BddWithHandler(mut handler) => {
-                let mut kernel = BddKernel::new_with_num_vars(formula.variables(f).len(), 10_000, 10_000);
-                Ok(Bdd::from_formula_with_handler(formula, f, &mut kernel, &mut *handler)
-                    .map_err(CancellationReason::BddGenerationFailed)?
-                    .cnf(f, &mut kernel))
-            }
-        }
+    pub fn transform_with_handler(
+        &mut self,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<EncodedFormula> {
+        self.algorithm.clone().transform_with_handler(formula, f, self, handler)
     }
-}
-
-/// Errors emitted by [`CancellableCnfAlgorithm`]s if the calculation gets canceled.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CancellationReason {
-    /// Emitted by factorization algorithms.
-    FactorizationFailed(FactorizationError),
-    /// Emitted by BDD algorithms.
-    BddGenerationFailed(BddError),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Default)]
@@ -155,19 +143,16 @@ struct PGState {
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use CancellableCnfAlgorithm::FactorizationWithHandler;
     use CnfAlgorithm::{Advanced, Bdd, Factorization, Tseitin};
 
     use crate::datastructures::Assignment;
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula, Variable};
-    use crate::handlers::ClauseLimitFactorizationHandler;
-    use crate::handlers::FactorizationError::{ClauseLimitReached, DistributionLimitReached};
-    use crate::knowledge_compilation::bdd::{BddError, NumberOfNodesBddHandler};
+    use crate::handlers::{LngEvent, LngResult};
+    use crate::knowledge_compilation::bdd::NumberOfNodesBddHandler;
     use crate::operations::transformations::cnf::advanced::AdvancedFactorizationConfig;
-    use crate::operations::transformations::cnf::CancellationReason::{BddGenerationFailed, FactorizationFailed};
+    use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
-    use crate::operations::transformations::cnf::{CancellableCnfAlgorithm, CnfAlgorithm};
-    use crate::operations::transformations::CnfEncoder;
+    use crate::operations::transformations::{AdvancedFactorizationHandler, CnfEncoder};
     use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
 
     const P1: &str = "(x1 | x2) & x3 & x4 & ((x1 & x5 & ~(x6 | x7) | x8) | x9)";
@@ -306,17 +291,23 @@ mod tests {
     fn test_cancellable_cnf() {
         let f = &FormulaFactory::with_id("FF42");
         let phi1 = P1.to_formula(f);
-        let cnf1 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(5, 10000))).transform(phi1, f);
-        let cnf2 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(10000, 5))).transform(phi1, f);
-        let cnf3 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(10000, 10000))).transform(phi1, f);
-        assert_eq!(cnf1, Err(FactorizationFailed(DistributionLimitReached)));
-        assert_eq!(cnf2, Err(FactorizationFailed(ClauseLimitReached)));
-        assert!(cnf3.is_ok());
+        let cnf1 =
+            CnfEncoder::new(Factorization).transform_with_handler(phi1, f, &mut AdvancedFactorizationHandler::new(Some(5), Some(10000)));
+        let cnf2 =
+            CnfEncoder::new(Factorization).transform_with_handler(phi1, f, &mut AdvancedFactorizationHandler::new(Some(10000), Some(5)));
+        let cnf3 = CnfEncoder::new(Factorization).transform_with_handler(
+            phi1,
+            f,
+            &mut AdvancedFactorizationHandler::new(Some(10000), Some(10000)),
+        );
+        assert!(matches!(cnf1, LngResult::Canceled(LngEvent::DistributionPerformed)));
+        assert!(matches!(cnf2, LngResult::Canceled(LngEvent::FactorizationCreatedClause(_))));
+        assert!(cnf3.is_success());
 
-        let cnf1 = CancellableCnfAlgorithm::BddWithHandler(Box::new(NumberOfNodesBddHandler::new(10))).transform(phi1, f);
-        let cnf2 = CancellableCnfAlgorithm::BddWithHandler(Box::new(NumberOfNodesBddHandler::new(1000))).transform(phi1, f);
-        assert_eq!(cnf1, Err(BddGenerationFailed(BddError::NodeLimitReached)));
-        assert!(cnf2.is_ok());
+        let cnf1 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(10));
+        let cnf2 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(1000));
+        assert!(matches!(cnf1, LngResult::Canceled(LngEvent::BddNewRefAdded)));
+        assert!(cnf2.is_success());
     }
 
     fn equivalent_models(f1: EncodedFormula, f2: EncodedFormula, vars: Box<[Variable]>, f: &FormulaFactory) -> bool {

@@ -1,30 +1,32 @@
 use crate::formulas::operation_cache::OperationCache;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
-use crate::handlers::{FactorizationError, FactorizationHandler, NopFactorizationHandler};
+use crate::handlers::{ComputationHandler, LngComputation, LngEvent, LngResult, NopHandler};
 
 pub fn factorization_cnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
-    factorization_cnf_with_handler(formula, f, &mut NopFactorizationHandler {}).expect("Nop Handler never aborts.")
+    factorization_cnf_with_handler(formula, f, &mut NopHandler {}).result().expect("Nop Handler never aborts.")
 }
 
 pub fn factorization_cnf_with_handler(
     formula: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
-    handler.started();
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<EncodedFormula> {
+    if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Factorization)) {
+        return LngResult::Canceled(LngEvent::ComputationStarted(LngComputation::Factorization));
+    }
     if f.config.caches.factorization_cnf {
-        apply_rec(formula, f, handler, &mut None)
+        apply_rec(formula, f, handler, &mut None).into()
     } else {
-        apply_rec(formula, f, handler, &mut Some(OperationCache::new()))
+        apply_rec(formula, f, handler, &mut Some(OperationCache::new())).into()
     }
 }
 
 fn apply_rec(
     formula: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
 
     if let Some(lc) = local_cache {
@@ -56,18 +58,18 @@ fn apply_rec(
 fn handle_and(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     compute_nops(operands, f, handler, local_cache).map(|nops| f.and(nops))
 }
 
 fn handle_or(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     compute_nops(operands, f, handler, local_cache).and_then(|nops| {
         let mut result = *nops.first().unwrap();
         for &op in nops.iter().skip(1) {
@@ -80,9 +82,9 @@ fn handle_or(
 fn compute_nops(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<Vec<EncodedFormula>, FactorizationError> {
+) -> Result<Vec<EncodedFormula>, LngEvent> {
     let mut nops = Vec::with_capacity(operands.len());
     for op in operands {
         nops.push(apply_rec(op, f, handler, local_cache)?);
@@ -94,9 +96,11 @@ fn distribute(
     f1: EncodedFormula,
     f2: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut dyn FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
-    handler.performed_distribution()?;
+    handler: &mut dyn ComputationHandler,
+) -> Result<EncodedFormula, LngEvent> {
+    if !handler.should_resume(LngEvent::DistributionPerformed) {
+        return Err(LngEvent::DistributionPerformed);
+    }
     if f1.is_and() || f2.is_and() {
         let (and, nand) = if f1.is_and() { (f1, f2) } else { (f2, f1) };
         let mut nops = Vec::new();
@@ -106,7 +110,11 @@ fn distribute(
         Ok(f.and(&nops))
     } else {
         let result = f.or([f1, f2]);
-        handler.created_clause(result).map(|()| result)
+        if handler.should_resume(LngEvent::FactorizationCreatedClause(result)) {
+            Ok(result)
+        } else {
+            Err(LngEvent::FactorizationCreatedClause(result))
+        }
     }
 }
 
@@ -116,7 +124,7 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::time::Instant;
 
-    use crate::handlers::ClauseLimitFactorizationHandler;
+    use crate::operations::transformations::AdvancedFactorizationHandler;
 
     use super::*;
 
@@ -183,23 +191,24 @@ mod tests {
         let f = &FormulaFactory::new();
 
         let formula = f.parse("(~(~(a | b) => ~(x | y))) & ((a | x) => ~(b | y))").unwrap();
-        let mut handler = ClauseLimitFactorizationHandler::new(100, 2);
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(2));
         let result = factorization_cnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_err());
-        assert!(handler.aborted);
+        assert!(result.is_canceled());
+        assert!(handler.canceled());
 
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(2));
         let formula = f.parse("~(a | b)").unwrap();
         let result = factorization_cnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_ok());
-        assert!(!handler.aborted);
+        assert!(result.is_success());
+        assert!(!handler.canceled());
 
-        let mut handler = ClauseLimitFactorizationHandler::new(100, 100);
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(100));
         let formula = f.parse("~(~(a2 | b2) <=> ~(x2 | y2))").unwrap();
         let result = factorization_cnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_ok());
-        assert!(!handler.aborted);
-        assert_eq!(handler.dists, 10);
-        assert_eq!(handler.clauses, 7);
+        assert!(result.is_success());
+        assert!(!handler.canceled());
+        assert_eq!(handler.current_distribution(), 10);
+        assert_eq!(handler.current_clause(), 7);
     }
 
     #[test]
