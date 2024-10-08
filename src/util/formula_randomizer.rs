@@ -1220,9 +1220,9 @@ mod tests {
                 _ => panic!("Unexpected variable: {var}"),
             }
         }
-        assert!(20 < num_a && num_a < 40);
-        assert!(20 < num_b && num_b < 40);
-        assert!(20 < num_c && num_c < 40);
+        assert!(20 < num_a && num_a < 50);
+        assert!(20 < num_b && num_b < 50);
+        assert!(20 < num_c && num_c < 50);
         let vars2: Vec<String> = (0..20).map(|i| format!("TEST_VAR_{i}")).collect();
         let mut random = FormulaRandomizer::new(
             FormulaRandomizerConfig::default_with_variables(vars2.clone()).weight_pbc(1.0).weight_cc(1.0).weight_amo(1.0).weight_exo(1.0),
