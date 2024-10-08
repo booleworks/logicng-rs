@@ -1,8 +1,6 @@
-use crate::{
-    formulas::{EncodedFormula, FormulaFactory},
-    handlers::{ComputationHandler, LngResult, NopHandler},
-    knowledge_compilation::bdd::{Bdd, BddKernel},
-};
+use crate::formulas::{EncodedFormula, FormulaFactory};
+use crate::handlers::{ComputationHandler, LngResult, NopHandler};
+use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
 
 pub fn bdd_cnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
     bdd_cnf_with_handler(formula, f, &mut NopHandler::new()).result().expect("Nop Handler does not abort")

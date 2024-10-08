@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use crate::{datastructures::Model, formulas::EncodedFormula};
+use crate::datastructures::Model;
+use crate::formulas::EncodedFormula;
 
 #[derive(Clone, Debug)]
 pub enum LngEvent {
