@@ -1,9 +1,9 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
 
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use std::cmp::Ordering;
 
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
 use crate::formulas::AuxVarType::TMP;
 use crate::formulas::{FormulaFactory, Literal, Variable};
 

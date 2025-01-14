@@ -14,11 +14,11 @@ extern crate pest_derive;
 
 /// Backbone computation.
 pub mod backbones;
-/// Cardinality constraint encoders.
-pub mod cardinality_constraints;
 mod collections;
 /// Various datastructures.
 pub mod datastructures;
+/// Cardinality and Pseudo-boolean constraint encoders.
+pub mod encodings;
 /// Tools for analyzing unsatisfiable results.
 pub mod explanations;
 /// Types and datastructures to represent and manage formulas effectively.
@@ -36,8 +36,6 @@ pub mod operations;
 mod parser;
 /// Tool for assigning additional information to a formula.
 pub mod propositions;
-/// Pseudo-boolean constraint encoders.
-pub mod pseudo_booleans;
 /// Solvers for SAT and MaxSAT.
 pub mod solver;
 /// Additional utility.

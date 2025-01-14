@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
 use crate::formulas::{FormulaFactory, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the nested

@@ -1,5 +1,5 @@
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::solver::minisat::MiniSat;
 use itertools::Itertools;
@@ -50,7 +50,6 @@ impl CcIncrementalData {
     pub(super) fn for_alk(alk_encoder: AlkEncoder, vector1: Vec<Literal>, rhs: usize, n_vars: usize) -> Self {
         Self { amk_encoder: None, alk_encoder: Some(alk_encoder), vector1, vector2: None, md: 0, n_vars, current_rhs: rhs }
     }
-
 
     /// Tightens the upper bound of an at-most-k constraint and returns the resulting formula.
     pub fn new_upper_bound(&mut self, f: &FormulaFactory, rhs: u32) -> Vec<EncodedFormula> {

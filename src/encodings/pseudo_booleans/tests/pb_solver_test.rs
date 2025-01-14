@@ -1,7 +1,7 @@
 use crate::datastructures::Assignment;
+use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Literal};
-use crate::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
 use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
 use crate::solver::minisat::sat::Tristate;
 use crate::solver::minisat::MiniSat;

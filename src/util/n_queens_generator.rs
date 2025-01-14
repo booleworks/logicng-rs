@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::{AmoEncoder, CcConfig};
+use crate::encodings::{AmoEncoder, CcConfig};
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
 
 /// A generator for the n-queens problem.

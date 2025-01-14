@@ -1,8 +1,8 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::unused_self)]
 
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder, AmoEncoder, BimanderGroupSize, CcConfig, ExkEncoder};
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder, AmoEncoder, BimanderGroupSize, CcConfig, ExkEncoder};
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use crate::formulas::{CType, CardinalityConstraint, EncodedFormula, FormulaFactory, Literal, Variable};
 
 use super::{

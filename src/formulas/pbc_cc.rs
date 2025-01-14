@@ -5,17 +5,15 @@ use std::fmt::Display;
 use std::sync::Arc;
 use CType::{GE, GT, LE, LT};
 
-use crate::cardinality_constraints::CcEncoder;
 use crate::datastructures::Assignment;
+use crate::encodings::{CcEncoder, PbEncoder};
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::pseudo_booleans::PbEncoder;
 use crate::solver::minisat::sat::Tristate;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::FormulaType;
-
 
 /// Comparison types for pseudo-Boolean constraints.
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]

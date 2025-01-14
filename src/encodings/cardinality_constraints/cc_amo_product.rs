@@ -1,6 +1,6 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
 
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
 use crate::formulas::{FormulaFactory, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the 2-product

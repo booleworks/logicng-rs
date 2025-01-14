@@ -1,8 +1,8 @@
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
-use crate::cardinality_constraints::cc_sorter;
-use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{Both, InputToOutput, OutputToInput};
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::cc_sorter;
+use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::{Both, InputToOutput, OutputToInput};
 use crate::formulas::{FormulaFactory, Variable};
 
 pub(super) fn build_amk(

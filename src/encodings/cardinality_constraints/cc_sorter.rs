@@ -1,7 +1,7 @@
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{Both, InputToOutput, OutputToInput};
-use crate::cardinality_constraints::encoding_result::EncodingResult;
+use crate::datastructures::EncodingResult;
+use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::{Both, InputToOutput, OutputToInput};
 use crate::formulas::{FormulaFactory, Literal};
 
 #[derive(Eq, PartialEq, Copy, Clone)]

@@ -3,7 +3,7 @@ mod tests {
 
     use num_bigint::ToBigUint;
 
-    use crate::cardinality_constraints::{AmoEncoder, CcConfig};
+    use crate::encodings::{AmoEncoder, CcConfig};
     use crate::formulas::{CType, EncodedFormula, FormulaFactory, Variable};
     use crate::knowledge_compilation::bdd::bdd_kernel::BddKernel;
     use crate::knowledge_compilation::bdd::bdd_main::Bdd;

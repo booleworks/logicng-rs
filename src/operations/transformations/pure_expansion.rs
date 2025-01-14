@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::{AmoEncoder, CcConfig, CcEncoder};
+use crate::encodings::{AmoEncoder, CcConfig, CcEncoder};
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, ToFormula};
 
 const ENCODER: CcEncoder = CcEncoder::new(CcConfig::new().amo_encoder(AmoEncoder::Pure));

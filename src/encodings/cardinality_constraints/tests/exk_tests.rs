@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::cc_config::{CcConfig, ExkEncoder};
+use crate::encodings::cardinality_constraints::cc_config::{CcConfig, ExkEncoder};
 use crate::formulas::{CType, FormulaFactory, Variable};
 use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
 use crate::solver::minisat::sat::Tristate::{False, True};

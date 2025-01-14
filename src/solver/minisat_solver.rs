@@ -4,9 +4,9 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::Model;
+use crate::encodings::{CcEncoder, CcIncrementalData};
 use crate::explanations::UnsatCore;
 use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
 use crate::operations::transformations::{add_cnf_to_solver, CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry};
