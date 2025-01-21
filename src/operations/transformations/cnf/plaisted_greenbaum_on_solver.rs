@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use Literal::{Neg, Pos};
 
 use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
+use crate::formulas::{AUX_CNF, EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
 use crate::solver::minisat::sat::{MiniSat2Solver, mk_lit};
@@ -535,7 +535,7 @@ fn get_pg_var(
             Some(cache.variable.pos_lit()),
         )
     } else {
-        let pg_var = f.new_cnf_variable();
+        let pg_var = f.new_auxiliary_variable(AUX_CNF);
         let mut new = VarCacheEntry::new(pg_var);
         new.set_polarity_cached(polarity);
         variable_cache.insert(formula, new);
@@ -582,7 +582,7 @@ impl VarCacheEntry {
 #[cfg(test)]
 mod tests {
     use crate::errors::LngResult;
-    use crate::formulas::{ToFormula, Variable};
+    use crate::formulas::{AUX_PREFIX, ToFormula, Variable};
     use crate::solver::functions::{
         ModelEnumerationConfig, enumerate_models_for_formula_with_config,
     };
@@ -619,8 +619,8 @@ mod tests {
         let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config).unwrap();
         let pg_vars = pg.variables(f);
         let full_pg_vars = full_pg.variables(f);
-        let pg_missed_vars = missed_vars(&vars, &pg_vars);
-        let full_pg_missed_vars = missed_vars(&vars, &full_pg_vars);
+        let pg_missed_vars = missed_vars(&vars, &pg_vars, f);
+        let full_pg_missed_vars = missed_vars(&vars, &full_pg_vars, f);
         assert_eq!(
             original_models.len(),
             pg_models.len() * 2_usize.pow(pg_missed_vars)
@@ -633,11 +633,15 @@ mod tests {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn missed_vars(original_vars: &[Variable], pg_vars: &BTreeSet<Variable>) -> u32 {
+    fn missed_vars(
+        original_vars: &[Variable],
+        pg_vars: &BTreeSet<Variable>,
+        f: &FormulaFactory,
+    ) -> u32 {
         (original_vars.len()
             - pg_vars
                 .iter()
-                .filter(|v| matches!(v, Variable::FF(_)))
+                .filter(|v| !v.name(f).starts_with(AUX_PREFIX))
                 .count()) as u32
     }
 

@@ -1,9 +1,7 @@
 mod formula_factory_tests {
     use crate::formulas::FormulaType::{And, Equiv, False, Impl, Lit, Not, Or, True};
     use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
-    use crate::formulas::{
-        EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType,
-    };
+    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula};
     use crate::util::test_util::string_vars;
     use std::collections::BTreeSet;
 
@@ -320,17 +318,9 @@ mod formula_factory_tests {
 
     fn ff_lit(n: u64, phase: bool) -> EncodedFormula {
         if phase {
-            EncodedFormula::from(FormulaEncoding::encode(
-                n,
-                Lit(LitType::Pos(VarType::FF)),
-                true,
-            ))
+            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Pos), true))
         } else {
-            EncodedFormula::from(FormulaEncoding::encode(
-                n,
-                Lit(LitType::Neg(VarType::FF)),
-                true,
-            ))
+            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Neg), true))
         }
     }
 

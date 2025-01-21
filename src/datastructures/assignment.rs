@@ -743,7 +743,7 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<HashSet<Var
     let mut result = HashSet::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
-            Some(i) => Variable::FF(i),
+            Some(_) => f.var(*name),
             None => {
                 return Err(LngError::UnknownVariable {
                     var: name.to_string(),

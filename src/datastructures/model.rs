@@ -68,10 +68,7 @@ impl Model {
         P: Into<Vec<Variable>>,
         N: Into<Vec<Variable>>,
     {
-        Self {
-            pos: pos.into(),
-            neg: neg.into(),
-        }
+        Self { pos: pos.into(), neg: neg.into() }
     }
 
     /// Creates a new model from slices.
@@ -452,7 +449,7 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<Vec<Variabl
     let mut result = Vec::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
-            Some(i) => Variable::FF(i),
+            Some(_) => f.var(*name),
             None => {
                 return Err(LngError::UnknownVariable {
                     var: name.to_string(),

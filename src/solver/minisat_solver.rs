@@ -4,9 +4,9 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::encodings::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::{EncodingResultSatSolver, Model};
+use crate::encodings::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::errors::LngResult;
 use crate::explanations::UnsatCore;
 use crate::formulas::{
@@ -548,11 +548,8 @@ impl<B: Clone> MiniSat<B> {
         Model::new(pos, neg)
     }
 
-    pub(crate) const fn is_relevant_variable(&self, var: Variable) -> bool {
-        match var {
-            Variable::FF(_) => true,
-            Variable::Aux(_, _) => self.config.auxiliary_variables_in_models,
-        }
+    pub(crate) const fn is_relevant_variable(&self, _var: Variable) -> bool {
+        true
     }
 
     pub(crate) fn add_literal(&mut self, lit: &Literal) -> MsLit {

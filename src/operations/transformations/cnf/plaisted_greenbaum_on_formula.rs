@@ -1,6 +1,6 @@
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, Formula, FormulaFactory, FormulaType, Literal};
+use crate::formulas::{AUX_CNF, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal};
 use crate::operations::transformations::cnf::factorization::factorization_cnf;
 use crate::util::exceptions::panic_unexpected_formula_type;
 
@@ -83,7 +83,7 @@ fn pg_variable(formula: EncodedFormula, f: &FormulaFactory, state: &mut PGState)
     } else if let Some(lit) = state.variable.get(&formula).copied() {
         lit
     } else {
-        let lit = f.new_cnf_variable().pos_lit();
+        let lit = f.new_auxiliary_variable(AUX_CNF).pos_lit();
         state.variable.insert(formula, lit);
         lit
     }
@@ -212,7 +212,7 @@ mod tests {
                 .unwrap(),
             "(~b | ~c) & (~b | ~d) & (~c | ~d)".to_formula(f)
         );
-        assert_eq!(pg.transform("~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),"(d | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | d | @RESERVED__CC_4) & (~@RESERVED__CC_4 | @RESERVED__CC_0) & (~@RESERVED__CC_2 | @RESERVED__CC_0) & (~@RESERVED__CC_4 | ~@RESERVED__CC_2) & (c | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | c | @RESERVED__CC_5) & (~@RESERVED__CC_5 | @RESERVED__CC_2) & ~@RESERVED__CC_0".to_formula(f));
+        assert_eq!(pg.transform("~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),"(d | @RESERVED__CC_2 | @RESERVED__CC_5) & (~@RESERVED__CC_4 | @RESERVED__CC_2 | @RESERVED__CC_5) & (~@RESERVED__CC_4 | d | @RESERVED__CC_5) & (~@RESERVED__CC_5 | @RESERVED__CC_1) & (~@RESERVED__CC_3 | @RESERVED__CC_1) & (~@RESERVED__CC_5 | ~@RESERVED__CC_3) & (c | @RESERVED__CC_4 | @RESERVED__CC_6) & (b | @RESERVED__CC_4 | @RESERVED__CC_6) & (b | c | @RESERVED__CC_6) & (~@RESERVED__CC_6 | @RESERVED__CC_3) & ~@RESERVED__CC_1".to_formula(f));
     }
 
     #[test]

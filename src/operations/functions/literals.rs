@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -164,14 +163,10 @@ pub fn variables(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Va
 ///
 /// let formula = "(a => b) & c".to_formula(&f);
 ///
-/// let expected = BTreeSet::from_iter(vec![
-///     Cow::from("a"),
-///     Cow::from("b"),
-///     Cow::from("c")
-/// ].into_iter());
+/// let expected = BTreeSet::from_iter(vec!["a", "b", "c"].into_iter());
 /// assert_eq!(string_variables(formula, &f), expected)
 /// ```
-pub fn string_variables(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<Cow<'_, str>> {
+pub fn string_variables(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<&str> {
     formula.variables(f).iter().map(|var| var.name(f)).collect()
 }
 

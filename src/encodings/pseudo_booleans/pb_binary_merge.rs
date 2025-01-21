@@ -8,8 +8,8 @@
 use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::encodings::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
 use crate::datastructures::EncodingResultFF;
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::encodings::pseudo_booleans::pb_config::PbConfig;
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, AUX_PBC};
 
 pub fn encode_binary_merge(
     config: &PbConfig,
@@ -109,7 +109,7 @@ fn binary_merge(
     let new_less_then = m * 2_usize.pow(p);
     let t = new_less_then - less_then;
 
-    let true_lit = f.new_pb_variable().pos_lit();
+    let true_lit = f.new_auxiliary_variable(AUX_PBC).pos_lit();
     formula.push(true_lit.into());
     let mut buckets: Vec<Vec<Literal>> = Vec::new();
     for i in 0..=p {
@@ -228,7 +228,7 @@ fn unary_adder(
         let mut formula = Vec::new();
         let mut w = Vec::new();
         for _ in 0..(u.len() + v.len()) {
-            w.push(f.new_pb_variable().pos_lit());
+            w.push(f.new_auxiliary_variable(AUX_PBC).pos_lit());
         }
         for a in 0..u.len() {
             for b in 0..v.len() {

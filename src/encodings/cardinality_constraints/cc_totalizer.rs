@@ -1,8 +1,8 @@
+use crate::datastructures::EncodingResult;
 use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
 use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use crate::encodings::cardinality_constraints::cc_totalizer::Bound::{Both, Lower, Upper};
-use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 enum Bound {
@@ -100,7 +100,7 @@ fn initialize_constraint(
     let mut cardinality_outvars = Vec::with_capacity(vars.len());
     for &var in vars {
         cardinality_invars.push(var);
-        cardinality_outvars.push(result.new_auxiliary_variable(AuxVarType::CC));
+        cardinality_outvars.push(result.new_auxiliary_variable(AUX_CC));
     }
     (cardinality_invars, cardinality_outvars)
 }
@@ -122,13 +122,13 @@ fn to_cnf(
                 debug_assert!(!cardinality_invars.is_empty());
                 left.push(cardinality_invars.pop().unwrap());
             } else {
-                left.push(result.new_auxiliary_variable(AuxVarType::CC));
+                left.push(result.new_auxiliary_variable(AUX_CC));
             }
         } else if vars.len() - split == 1 {
             debug_assert!(!cardinality_invars.is_empty());
             right.push(cardinality_invars.pop().unwrap());
         } else {
-            right.push(result.new_auxiliary_variable(AuxVarType::CC));
+            right.push(result.new_auxiliary_variable(AUX_CC));
         }
     }
     if bound == Upper || bound == Both {

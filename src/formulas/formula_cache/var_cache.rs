@@ -3,9 +3,9 @@ use std::borrow::Cow;
 use dashmap::DashMap;
 
 use crate::collections::AppendOnlyVec;
-use crate::formulas::formula_cache::CACHE_INITIAL_CAPACITY;
 use crate::formulas::formula_cache::formula_encoding::Encoding;
-use crate::formulas::{FormulaType, LitType, VarType};
+use crate::formulas::formula_cache::CACHE_INITIAL_CAPACITY;
+use crate::formulas::{FormulaType, LitType};
 
 use super::formula_encoding::FormulaEncoding;
 
@@ -42,11 +42,7 @@ impl VariableCache {
         let name = element.into_owned();
         *self.reverse_map.entry(name.clone()).or_insert_with(|| {
             let index = self.vec.push(name);
-            FormulaEncoding::encode(
-                index as u64,
-                FormulaType::Lit(LitType::Pos(VarType::FF)),
-                true,
-            )
+            FormulaEncoding::encode(index as u64, FormulaType::Lit(LitType::Pos), true)
         })
     }
 

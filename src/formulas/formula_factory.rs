@@ -6,10 +6,9 @@
 
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 use std::sync::LazyLock;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
+use dashmap::DashMap;
 use regex::Regex;
 
 use CType::{EQ, LE, LT};
@@ -17,12 +16,11 @@ use CType::{EQ, LE, LT};
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::CType::{GE, GT};
-use crate::formulas::Literal::Pos;
 use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::{
-    AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig,
-    Literal, PbConstraint, Variable,
+    CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig, Literal,
+    PbConstraint, Variable,
 };
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
 use crate::parser::pseudo_boolean_parser::parse;
@@ -37,9 +35,10 @@ use super::{Formula, FormulaType};
 
 const FF_ID_LENGTH: i32 = 4;
 
-pub(super) const AUX_PREFIX: &str = "@RESERVED_";
+/// The prefix for global auxialiary variables
+pub const AUX_PREFIX: &str = "@RESERVED_";
 pub(super) const AUX_REGEX: &str =
-    "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>(CNF)|(CC)|(PB))_(?P<INDEX>[0-9]+)$";
+    "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>[0-9a-zA-Z]*)_(?P<INDEX>[0-9]+)$";
 
 static AUX_REGEX_LOCK: LazyLock<Regex> = LazyLock::new(|| Regex::new(AUX_REGEX).unwrap());
 struct FilterResult {
@@ -243,9 +242,7 @@ pub struct FormulaFactory {
     // TODO: Memory-efficient encodings for CCs and PBCs (Variables/Literals and optionally the CType should be encoded)
     pub(crate) ccs: SimpleCache<CardinalityConstraint>,
     pub(crate) pbcs: SimpleCache<PbConstraint>,
-    cnf_counter: AtomicUsize,
-    cc_counter: AtomicUsize,
-    pb_counter: AtomicUsize,
+    aux_counters: DashMap<String, usize>,
     pub(crate) caches: FormulaFactoryCaches,
 }
 
@@ -306,9 +303,7 @@ impl FormulaFactory {
             equivs: EquivalenceCache::new(),
             ccs: SimpleCache::new(),
             pbcs: SimpleCache::new(),
-            cnf_counter: AtomicUsize::new(0),
-            cc_counter: AtomicUsize::new(0),
-            pb_counter: AtomicUsize::new(0),
+            aux_counters: DashMap::new(),
             caches: FormulaFactoryCaches::new(),
         }
     }
@@ -450,7 +445,7 @@ impl FormulaFactory {
     ///
     /// let var = f.var("MyVar");
     ///
-    /// assert_eq!(var.name(&f).into_owned(), "MyVar");
+    /// assert_eq!(var.name(&f), "MyVar");
     /// ```
     pub fn var<'a, S: Into<Cow<'a, str>>>(&self, name: S) -> Variable {
         Variable::try_from(self.variable(name)).unwrap()
@@ -511,12 +506,12 @@ impl FormulaFactory {
             || self.variable(name),
             |captures| {
                 if captures["FF_ID"] == self.id {
-                    let aux_type = AuxVarType::from_str(&captures["AUX_TYPE"]).unwrap();
-                    let index = captures["INDEX"].parse::<u64>().unwrap();
-                    Pos(Variable::Aux(aux_type, index)).into()
-                } else {
-                    self.variable(name)
+                    let aux_type = String::from(&captures["AUX_TYPE"]);
+                    let index = captures["INDEX"].parse::<usize>().unwrap();
+                    self.aux_counters
+                        .alter(&aux_type, |_, v| std::cmp::max(v, index));
                 }
+                self.variable(name)
             },
         )
     }
@@ -553,7 +548,7 @@ impl FormulaFactory {
     ///
     /// let lit = f.lit("A", false);
     ///
-    /// assert_eq!(lit.name(&f).into_owned(), "A");
+    /// assert_eq!(lit.name(&f), "A");
     /// assert_eq!(lit.to_string(&f), "~A");
     /// ```
     pub fn lit(&self, name: &str, phase: bool) -> Literal {
@@ -1381,9 +1376,7 @@ impl FormulaFactory {
                     num_ors: {},\n\
                     num_nots: {},\n\
                     num_impls: {},\n\
-                    num_equivs: {},\n\
-                    cnf_counter: {},\n\
-                    cc_counter: {}\
+                    num_equivs: {}\n\
         ",
             self.variables.len(),
             self.ands.len(),
@@ -1391,33 +1384,18 @@ impl FormulaFactory {
             self.nots.len(),
             self.impls.len(),
             self.equivs.len(),
-            self.cnf_counter.load(Ordering::SeqCst),
-            self.cc_counter.load(Ordering::SeqCst)
         )
     }
 
-    pub(crate) fn new_auxiliary_variable(&self, aux_type: AuxVarType) -> Variable {
-        match aux_type {
-            AuxVarType::CNF => self.new_cnf_variable(),
-            AuxVarType::CC => self.new_cc_variable(),
-            AuxVarType::PB => self.new_pb_variable(),
-            AuxVarType::TMP => panic!("Tmp variables cannot be created by an user."),
-        }
-    }
-
-    pub(crate) fn new_cnf_variable(&self) -> Variable {
-        let n = self.cnf_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::CNF, n as u64)
-    }
-
-    pub(crate) fn new_cc_variable(&self) -> Variable {
-        let n = self.cc_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::CC, n as u64)
-    }
-
-    pub(crate) fn new_pb_variable(&self) -> Variable {
-        let n = self.pb_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::PB, n as u64)
+    /// Generates a new auxiliary variable with the given variable type.
+    pub fn new_auxiliary_variable<'a>(&self, aux_type: impl Into<Cow<'a, str>>) -> Variable {
+        let mut i = self
+            .aux_counters
+            .entry(aux_type.into().into_owned())
+            .or_insert(0);
+        let index = *i;
+        *i += 1;
+        self.var(format!("{}{}_{}_{}", AUX_PREFIX, self.id(), i.key(), index))
     }
 
     pub(crate) fn var_name(&self, index: FormulaEncoding) -> &str {

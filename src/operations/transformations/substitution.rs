@@ -98,7 +98,7 @@ fn handle_cc(
                     lhs_fixed += 1;
                 }
                 FormulaType::False => {}
-                FormulaType::Lit(LitType::Pos(_)) => {
+                FormulaType::Lit(LitType::Pos) => {
                     new_lits.push(subst.as_literal().unwrap());
                 }
                 _ => return Err(OperationError::SubstFormCcPbc.into()),

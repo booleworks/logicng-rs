@@ -8,8 +8,7 @@ use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementa
 use std::cmp::Ordering;
 
 use crate::datastructures::EncodingResult;
-use crate::formulas::AuxVarType::{self, TMP};
-use crate::formulas::{Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 struct ModularTotalizerState {
     n: usize,
@@ -106,15 +105,15 @@ pub fn build_alk(
 }
 
 fn initialize(result: &mut dyn EncodingResult, rhs: usize, n: usize) -> ModularTotalizerState {
-    let h0 = Variable::Aux(TMP, 0);
+    let h0 = result.new_auxiliary_variable(AUX_CC);
     let md = (rhs as f64 + 1.0).sqrt().ceil() as usize;
     let mut cardinality_up_outvars: Vec<Literal> = Vec::with_capacity(n / md);
     for _ in 0..(n / md) {
-        cardinality_up_outvars.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+        cardinality_up_outvars.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
     }
     let mut cardinality_lw_outvars: Vec<Literal> = Vec::with_capacity(md - 1);
     for _ in 0..(md - 1) {
-        cardinality_lw_outvars.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+        cardinality_lw_outvars.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
     }
     let inlits = Vec::with_capacity(n);
     let current_cardinality_rhs = rhs + 1;
@@ -159,7 +158,7 @@ fn to_cnf(
     } else {
         left = split / md;
         for _ in 0..left {
-            lupper.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+            lupper.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
         }
         let limit = if left % md == 0 && split < md - 1 {
             split
@@ -167,7 +166,7 @@ fn to_cnf(
             md - 1
         };
         for _ in 0..limit {
-            llower.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+            llower.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
         }
     }
 
@@ -178,7 +177,7 @@ fn to_cnf(
     } else {
         right = (rhs - split) / md;
         for _ in 0..right {
-            rupper.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+            rupper.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
         }
         let limit = if right % md == 0 && rhs - split < md - 1 {
             rhs - split
@@ -186,7 +185,7 @@ fn to_cnf(
             md - 1
         };
         for _ in 0..limit {
-            rlower.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+            rlower.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
         }
     }
 
@@ -255,7 +254,7 @@ fn adder(
     let carry = if upper[0] == h0 {
         None
     } else {
-        Some(result.new_auxiliary_variable(AuxVarType::CC).pos_lit())
+        Some(result.new_auxiliary_variable(AUX_CC).pos_lit())
     };
     for i in 0..=llower.len() {
         for j in 0..=rlower.len() {

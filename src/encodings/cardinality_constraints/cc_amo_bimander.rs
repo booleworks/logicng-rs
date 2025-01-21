@@ -6,7 +6,7 @@
 )]
 
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the Bimander
 /// encoding due to Hölldobler and Nguyen.
@@ -84,7 +84,7 @@ fn initialize_bits<R: EncodingResult>(
     let two_pow_n_bits = 2usize.pow(number_of_bits as u32);
     let k = (two_pow_n_bits - m) * 2;
     let bits = (0..number_of_bits)
-        .map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true))
+        .map(|_| Literal::new(result.new_auxiliary_variable(AUX_CC), true))
         .collect();
     (bits, number_of_bits, two_pow_n_bits, k)
 }

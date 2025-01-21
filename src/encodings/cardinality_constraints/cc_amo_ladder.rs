@@ -1,11 +1,11 @@
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the ladder/regular
 /// encoding.
 pub fn build_amo_ladder<R: EncodingResult>(result: &mut R, vars: &[Variable]) {
     let seq_auxiliary: Vec<Variable> = (0..(vars.len() - 1))
-        .map(|_| result.new_auxiliary_variable(AuxVarType::CC))
+        .map(|_| result.new_auxiliary_variable(AUX_CC))
         .collect();
     for i in 0..vars.len() {
         let variable_ref = vars[i];

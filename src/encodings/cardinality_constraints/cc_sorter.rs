@@ -1,10 +1,10 @@
 #![allow(clippy::cast_possible_truncation)]
 
+use crate::datastructures::EncodingResult;
 use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::{
     Both, InputToOutput, OutputToInput,
 };
-use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal};
+use crate::formulas::{AUX_CC, Literal};
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum ImplicationDirection {
@@ -26,9 +26,9 @@ pub fn cc_sort(
     } else if n == 1 {
         input
     } else if n == 2 {
-        let o1 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+        let o1 = result.new_auxiliary_variable(AUX_CC).pos_lit();
         if m2 == 2 {
-            let o2 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+            let o2 = result.new_auxiliary_variable(AUX_CC).pos_lit();
             comparator2(input[0], input[1], o1, o2, result, direction);
             vec![o1, o2]
         } else {
@@ -160,7 +160,7 @@ fn counter_sorter(
     }
     for j in 0..k {
         for aux_var in aux_vars.iter_mut().take(n).skip(j) {
-            aux_var.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+            aux_var.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
         }
     }
 
@@ -195,7 +195,7 @@ fn direct_sorter(m: usize, input: &[Literal], result: &mut dyn EncodingResult) -
     let mut bitmask = 1;
     let mut output = Vec::with_capacity(m);
     for _ in 0..m {
-        output.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
+        output.push(result.new_auxiliary_variable(AUX_CC).pos_lit());
     }
 
     let mut clause = Vec::with_capacity(m);
@@ -231,13 +231,13 @@ fn recursive_merger(
     let a2 = c.min(input_a.len());
     let b2 = c.min(input_b.len());
     if c == 1 {
-        let y = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+        let y = result.new_auxiliary_variable(AUX_CC).pos_lit();
         comparator1(input_a[0], input_b[0], y, result, direction);
         vec![y]
     } else if a2 == 1 && b2 == 1 {
         assert_eq!(c, 2);
-        let y1 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
-        let y2 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+        let y1 = result.new_auxiliary_variable(AUX_CC).pos_lit();
+        let y2 = result.new_auxiliary_variable(AUX_CC).pos_lit();
         comparator2(input_a[0], input_b[0], y1, y2, result, direction);
         vec![y1, y2]
     } else {
@@ -269,8 +269,8 @@ fn recursive_merger(
         loop {
             if i < odd_merge.len() && j < even_merge.len() {
                 if output.len() + 2 <= c {
-                    let z0 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
-                    let z1 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+                    let z0 = result.new_auxiliary_variable(AUX_CC).pos_lit();
+                    let z1 = result.new_auxiliary_variable(AUX_CC).pos_lit();
                     comparator2(odd_merge[i], even_merge[j], z0, z1, result, direction);
                     output.push(z0);
                     output.push(z1);
@@ -278,7 +278,7 @@ fn recursive_merger(
                         return output;
                     }
                 } else if output.len() + 1 == c {
-                    let z0 = result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+                    let z0 = result.new_auxiliary_variable(AUX_CC).pos_lit();
                     comparator1(odd_merge[i], even_merge[j], z0, result, direction);
                     output.push(z0);
                     return output;
@@ -305,7 +305,7 @@ fn direct_merger(
     let a = input_a.len();
     let b = input_b.len();
     let output: Vec<Literal> =
-        std::iter::repeat_with(|| result.new_auxiliary_variable(AuxVarType::CC).pos_lit())
+        std::iter::repeat_with(|| result.new_auxiliary_variable(AUX_CC).pos_lit())
             .take(m)
             .collect();
     for i in 0..m.min(a) {

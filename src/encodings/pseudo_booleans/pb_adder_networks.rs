@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::iter::repeat_n;
 
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, AUX_PBC};
 
 pub fn encode_adder_networks(
     lits: &[Literal],
@@ -72,13 +72,8 @@ fn adder_tree(
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_sum(
-    a: Literal,
-    b: Literal,
-    c: Literal,
-    f: &FormulaFactory,
-) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_pb_variable().pos_lit();
+fn fa_sum(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
+    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
     (
         x,
         vec![
@@ -95,13 +90,8 @@ fn fa_sum(
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_carry(
-    a: Literal,
-    b: Literal,
-    c: Literal,
-    f: &FormulaFactory,
-) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_pb_variable().pos_lit();
+fn fa_carry(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
+    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
     (
         x,
         vec![
@@ -134,7 +124,7 @@ fn fa_extra(
 }
 
 fn ha_sum(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_pb_variable().pos_lit();
+    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
     (
         x,
         vec![
@@ -147,15 +137,8 @@ fn ha_sum(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFo
 }
 
 fn ha_carry(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_pb_variable().pos_lit();
-    (
-        x,
-        vec![
-            f.clause([a, x.negate()]),
-            f.clause([b, x.negate()]),
-            f.clause([a.negate(), b.negate(), x]),
-        ],
-    )
+    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
+    (x, vec![f.clause([a, x.negate()]), f.clause([b, x.negate()]), f.clause([a.negate(), b.negate(), x])])
 }
 
 fn less_than_or_equal(

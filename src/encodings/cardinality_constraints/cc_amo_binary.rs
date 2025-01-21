@@ -6,7 +6,7 @@
 )]
 
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the binary
 /// encoding due to Doggett, Frisch, Peugniez, and Nightingale.
@@ -16,7 +16,7 @@ pub fn build_amo_binary<R: EncodingResult>(result: &mut R, vars: &[Variable]) {
     let two_pow_n_bits = 2u64.pow(number_of_bits);
     let k = ((two_pow_n_bits - vars.len() as u64) * 2) as isize;
     let bits: Vec<Literal> = (0..number_of_bits)
-        .map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true))
+        .map(|_| Literal::new(result.new_auxiliary_variable(AUX_CC), true))
         .collect();
 
     let mut gray_code: isize;

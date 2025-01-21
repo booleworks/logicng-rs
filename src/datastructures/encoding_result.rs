@@ -1,4 +1,4 @@
-use crate::formulas::{AuxVarType, EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::propositions::Proposition;
 use crate::solver::minisat::MiniSat;
 
@@ -19,15 +19,15 @@ pub trait EncodingResult {
     /// ```
     /// # use logicng::formulas::FormulaFactory;
     /// # use logicng::datastructures::EncodingResultFF;
-    /// # use logicng::formulas::AuxVarType;
+    /// # use logicng::formulas::{AUX_CC, AUX_CNF};
     /// # let f = FormulaFactory::new();
     /// # let mut encoding_result = EncodingResultFF::new(&f);
     /// use logicng::datastructures::EncodingResult;
     ///
-    /// let variable1 = encoding_result.new_auxiliary_variable(AuxVarType::CC);
-    /// let variable2 = encoding_result.new_auxiliary_variable(AuxVarType::CNF);
+    /// let variable1 = encoding_result.new_auxiliary_variable(AUX_CC);
+    /// let variable2 = encoding_result.new_auxiliary_variable(AUX_CNF);
     /// ```
-    fn new_auxiliary_variable(&mut self, aux_type: AuxVarType) -> Variable;
+    fn new_auxiliary_variable(&mut self, aux_type: &str) -> Variable;
 
     /// Adds a clause to the result.
     ///
@@ -36,13 +36,13 @@ pub trait EncodingResult {
     /// ```
     /// # use logicng::formulas::FormulaFactory;
     /// # use logicng::datastructures::EncodingResultFF;
-    /// # use logicng::formulas::AuxVarType;
+    /// # use logicng::formulas::AUX_CC;
     /// # let f = FormulaFactory::new();
     /// # let mut encoding_result = EncodingResultFF::new(&f);
     /// use logicng::datastructures::EncodingResult;
     ///
     /// let literal1 = f.lit("A", false);
-    /// let literal2 = encoding_result.new_auxiliary_variable(AuxVarType::CC).pos_lit();
+    /// let literal2 = encoding_result.new_auxiliary_variable(AUX_CC).pos_lit();
     /// encoding_result.add_clause(&[literal1, literal2]);
     /// ```
     fn add_clause(&mut self, lits: &[Literal]);
@@ -98,7 +98,7 @@ impl<'a> EncodingResultFF<'a> {
 }
 
 impl EncodingResult for EncodingResultFF<'_> {
-    fn new_auxiliary_variable(&mut self, aux_type: AuxVarType) -> Variable {
+    fn new_auxiliary_variable(&mut self, aux_type: &str) -> Variable {
         self.f.new_auxiliary_variable(aux_type)
     }
 
@@ -173,7 +173,7 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
 }
 
 impl<B: Clone> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
-    fn new_auxiliary_variable(&mut self, aux_type: AuxVarType) -> Variable {
+    fn new_auxiliary_variable(&mut self, aux_type: &str) -> Variable {
         let initial_phase = self.solver.config.initial_phase;
         let index = self.solver.underlying_solver.new_var(initial_phase, true);
         let variable = self.f.new_auxiliary_variable(aux_type);

@@ -1,5 +1,5 @@
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the commander
 /// encoding due to Klieber and Kwon.
@@ -25,7 +25,7 @@ fn encode_recursive(
             literals.push(current_literals[i]);
             if (i % k) == k - 1 || i == current_literals.len() - 1 {
                 encode_non_recursive(result, &literals);
-                let new_var = Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true);
+                let new_var = Literal::new(result.new_auxiliary_variable(AUX_CC), true);
                 literals.push(new_var);
                 next_literals.push(new_var.negate());
                 if is_exactly_one {

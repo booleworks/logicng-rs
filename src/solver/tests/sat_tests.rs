@@ -223,8 +223,13 @@ fn test_cc1() -> LngResult<()> {
             let vars = (0..100)
                 .map(|i| f.var(format!("x{i}")))
                 .collect::<Box<[_]>>();
-            solver.add(f.exo(vars), f)?;
-            let models = enumerate_models(&mut solver).unwrap();
+            solver.add(f.exo(vars.clone()), f)?;
+            // TODO fix this with the new model enumeration
+            let models = enumerate_models_with_config(
+                &mut solver,
+                &ModelEnumerationConfig::default().variables(vars),
+            )
+            .unwrap();
             assert_eq!(models.len(), 100);
             assert!(models.iter().all(|m| m.pos().len() == 1));
         }

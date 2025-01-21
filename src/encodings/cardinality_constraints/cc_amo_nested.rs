@@ -1,5 +1,5 @@
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the nested
 /// encoding.
@@ -19,7 +19,7 @@ fn encode_intern<R: EncodingResult>(group_size: usize, result: &mut R, vars: Vec
             }
         }
     } else {
-        let new_variable = result.new_auxiliary_variable(AuxVarType::CC);
+        let new_variable = result.new_auxiliary_variable(AUX_CC);
         let split = vars.len() / 2;
         let mut l2 = vars[split..].to_vec();
         let mut l1 = vars;

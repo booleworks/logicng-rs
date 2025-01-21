@@ -1,4 +1,6 @@
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+#![allow(clippy::cast_possible_wrap)]
+
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable, AUX_PBC};
 
 pub fn encode_swc(
     lits: &[Literal],
@@ -8,9 +10,7 @@ pub fn encode_swc(
 ) -> Vec<EncodedFormula> {
     let mut result = Vec::new();
     let n = lits.len();
-    let seq_auxiliary: Vec<Vec<Variable>> = (0..n)
-        .map(|_| (0..rhs).map(|_| f.new_pb_variable()).collect())
-        .collect();
+    let seq_auxiliary: Vec<Vec<Variable>> = (0..n).map(|_| (0..rhs).map(|_| f.new_auxiliary_variable(AUX_PBC)).collect()).collect();
     for i in 0..n {
         let ci = coeffs[i];
         for j in 0..rhs {

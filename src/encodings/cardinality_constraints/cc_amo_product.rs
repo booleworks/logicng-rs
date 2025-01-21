@@ -5,7 +5,7 @@
 )]
 
 use crate::datastructures::EncodingResult;
-use crate::formulas::{AuxVarType, Literal, Variable};
+use crate::formulas::{AUX_CC, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the 2-product
 /// method due to Chen.
@@ -23,10 +23,10 @@ fn product_rec<R: EncodingResult>(recursive_bound: usize, result: &mut R, vars: 
     let p = (n as f64).sqrt().ceil() as usize;
     let q = (n as f64 / p as f64).ceil() as usize;
     let us: Vec<Variable> = (0..p)
-        .map(|_| result.new_auxiliary_variable(AuxVarType::CC))
+        .map(|_| result.new_auxiliary_variable(AUX_CC))
         .collect();
     let vs: Vec<Variable> = (0..q)
-        .map(|_| result.new_auxiliary_variable(AuxVarType::CC))
+        .map(|_| result.new_auxiliary_variable(AUX_CC))
         .collect();
 
     if p <= recursive_bound {
