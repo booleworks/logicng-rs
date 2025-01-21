@@ -4,7 +4,6 @@ use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementa
 use std::cmp::Ordering;
 
 use crate::datastructures::EncodingResult;
-use crate::formulas::AuxVarType::TMP;
 use crate::formulas::{FormulaFactory, Literal, Variable};
 
 struct ModularTotalizerState {
@@ -90,7 +89,7 @@ pub fn build_alk(
 
 fn initialize(result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: usize, n: usize) -> ModularTotalizerState {
     result.reset();
-    let h0 = Variable::Aux(TMP, 0);
+    let h0 = result.new_cc_variable(f);
     let md = (rhs as f64 + 1.0).sqrt().ceil() as usize;
     let mut cardinality_up_outvars: Vec<Literal> = Vec::with_capacity(n / md);
     for _ in 0..(n / md) {

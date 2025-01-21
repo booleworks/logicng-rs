@@ -693,7 +693,7 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> Result<HashSet<Variab
     let mut result = HashSet::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
-            Some(i) => Variable::FF(i),
+            Some(_) => f.var(*name),
             None => {
                 return Err(format!("Variable {} is not known in the given FormulaFactory", *name));
             }

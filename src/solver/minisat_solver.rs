@@ -8,7 +8,7 @@ use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::Model;
 use crate::encodings::{CcEncoder, CcIncrementalData};
 use crate::explanations::UnsatCore;
-use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
+use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable, AUX_PREFIX};
 use crate::operations::transformations::{add_cnf_to_solver, CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry};
 use crate::propositions::Proposition;
 use crate::solver::functions::compute_unsat_core;
@@ -404,10 +404,7 @@ impl<B> MiniSat<B> {
     }
 
     pub(crate) const fn is_relevant_variable(&self, var: Variable) -> bool {
-        match var {
-            Variable::FF(_) => true,
-            Variable::Aux(_, _) => self.config.auxiliary_variables_in_models,
-        }
+        true
     }
 
     pub(crate) fn add_literal(&mut self, lit: &Literal) -> MsLit {

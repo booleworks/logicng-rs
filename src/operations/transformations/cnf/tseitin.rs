@@ -1,4 +1,4 @@
-use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal};
+use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, AUX_CNF};
 use crate::operations::functions::sub_nodes;
 use crate::operations::transformations::cnf::factorization::factorization_cnf;
 use crate::operations::transformations::restrict_lit;
@@ -38,7 +38,7 @@ fn compute_tseitin(formula: EncodedFormula, f: &FormulaFactory, state: &mut Tsei
             }
             FormulaType::And | FormulaType::Or => {
                 let num_ops = formula.number_of_operands(f);
-                let ts_variable = f.new_cnf_variable();
+                let ts_variable = f.new_auxiliary_variable(AUX_CNF);
                 let ts_literal = EncodedFormula::from(Pos(ts_variable));
                 let neg_ts_literal = EncodedFormula::from(Neg(ts_variable));
                 let mut nops = Vec::new();

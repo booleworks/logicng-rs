@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use Literal::{Neg, Pos};
 
-use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
+use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable, AUX_CNF};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
 use crate::solver::minisat::sat::{mk_lit, MiniSat2Solver};
@@ -281,7 +281,9 @@ fn handle_nary<B>(
 }
 
 fn add_clause<'a, B, L>(solver: &mut MiniSat2Solver<B>, clause: L, proposition: Option<Proposition<B>>, config: PgOnSolverConfig)
-where L: IntoIterator<Item = &'a Literal> {
+where
+    L: IntoIterator<Item = &'a Literal>,
+{
     let clause_vec = clause
         .into_iter()
         .map(|lit| {
@@ -306,7 +308,7 @@ fn get_pg_var(
     if let Some(cache) = variable_cache.get_mut(&formula) {
         (cache.set_polarity_cached(polarity), Some(cache.variable.pos_lit()))
     } else {
-        let pg_var = f.new_cnf_variable();
+        let pg_var = f.new_auxiliary_variable(AUX_CNF);
         let mut new = VarCacheEntry::new(pg_var);
         new.set_polarity_cached(polarity);
         variable_cache.insert(formula, new);
@@ -348,7 +350,7 @@ impl VarCacheEntry {
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
-    use crate::formulas::{ToFormula, Variable};
+    use crate::formulas::{ToFormula, Variable, AUX_PREFIX};
     use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
     use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverCnfMethod};
     use crate::util::test_util::F;
@@ -378,15 +380,15 @@ mod tests {
         let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config);
         let pg_vars = pg.variables(f);
         let full_pg_vars = full_pg.variables(f);
-        let pg_missed_vars = missed_vars(&vars, &pg_vars);
-        let full_pg_missed_vars = missed_vars(&vars, &full_pg_vars);
+        let pg_missed_vars = missed_vars(&vars, &pg_vars, f);
+        let full_pg_missed_vars = missed_vars(&vars, &full_pg_vars, f);
         assert_eq!(original_models.len(), pg_models.len() * 2_usize.pow(pg_missed_vars));
         assert_eq!(original_models.len(), full_pg_models.len() * 2_usize.pow(full_pg_missed_vars));
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn missed_vars(original_vars: &[Variable], pg_vars: &BTreeSet<Variable>) -> u32 {
-        (original_vars.len() - pg_vars.iter().filter(|v| matches!(v, Variable::FF(_))).count()) as u32
+    fn missed_vars(original_vars: &[Variable], pg_vars: &BTreeSet<Variable>, f: &FormulaFactory) -> u32 {
+        (original_vars.len() - pg_vars.iter().filter(|v| !v.name(f).starts_with(AUX_PREFIX)).count()) as u32
     }
 
     fn test_formula_eq(f: &FormulaFactory, formula: EncodedFormula, expected: EncodedFormula) {

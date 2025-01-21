@@ -152,8 +152,7 @@ impl ToFormula for Backbone {
 #[cfg(test)]
 mod tests {
     use crate::backbones::Backbone;
-    use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
-    use crate::formulas::{FormulaFactory, FormulaType, LitType, ToFormula, VarType, Variable};
+    use crate::formulas::{FormulaFactory, ToFormula, Variable};
     use std::collections::BTreeSet;
 
     #[test]
@@ -165,7 +164,7 @@ mod tests {
     }
 
     fn var(index: u64) -> Variable {
-        Variable::FF(FormulaEncoding::encode(index, FormulaType::Lit(LitType::Pos(VarType::FF)), true))
+        Variable::from_index(index)
     }
     #[test]
     fn test_is_empty() {

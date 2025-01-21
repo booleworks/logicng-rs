@@ -75,7 +75,7 @@ fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &Formul
                     lhs_fixed += 1;
                 }
                 FormulaType::False => {}
-                FormulaType::Lit(LitType::Pos(_)) => {
+                FormulaType::Lit(LitType::Pos) => {
                     new_lits.push(subst.as_literal().unwrap());
                 }
                 _ => panic!("Cannot substitute a formula for a variable in a cardinality constraint"),

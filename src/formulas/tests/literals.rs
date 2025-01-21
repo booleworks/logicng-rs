@@ -1,7 +1,10 @@
 mod literals_test {
     use std::borrow::Cow;
 
-    use crate::util::test_util::{hash, lits, string_lits, string_vars, vars, F};
+    use crate::{
+        formulas::{FormulaFactory, AUX_CC, AUX_CNF, AUX_PBC},
+        util::test_util::{hash, lits, string_lits, string_vars, vars, F},
+    };
 
     #[test]
     fn test_type() {
@@ -52,8 +55,8 @@ mod literals_test {
     fn test_getters() {
         let ff = F::new();
         let f = &ff.f;
-        assert_eq!(ff.A.as_literal().map(|l| l.name(f)), Some(Cow::from("a")));
-        assert_eq!(ff.NA.as_literal().map(|l| l.name(f)), Some(Cow::from("a")));
+        assert_eq!(ff.A.as_literal().map(|l| l.name(f)), Some("a"));
+        assert_eq!(ff.NA.as_literal().map(|l| l.name(f)), Some("a"));
         assert_eq!(ff.A.as_literal().map(|l| l.phase()), Some(true));
         assert_eq!(ff.NA.as_literal().map(|l| l.phase()), Some(false));
     }
@@ -168,5 +171,26 @@ mod literals_test {
         assert!(ff.NA.contains_node(ff.NA, f));
         assert!(!ff.NA.contains_node(ff.A, f));
         assert!(!ff.NA.contains_node(ff.AND1, f));
+    }
+
+    #[test]
+    fn test_auxiliary_variables() {
+        let f = FormulaFactory::with_id("FF");
+        let var_cc0 = f.new_auxiliary_variable(AUX_CC);
+        let var_pbc0 = f.new_auxiliary_variable(AUX_PBC);
+        let var_cnf0 = f.new_auxiliary_variable(AUX_CNF);
+        let var_custom0 = f.new_auxiliary_variable("CUSTOM");
+        let var_cc1 = f.new_auxiliary_variable(AUX_CC);
+        let var_pbc1 = f.new_auxiliary_variable(AUX_PBC);
+        let var_cnf1 = f.new_auxiliary_variable(AUX_CNF);
+        let var_custom1 = f.new_auxiliary_variable("CUSTOM");
+        assert_eq!(var_cc0.name(&f), "@RESERVED_FF_CC_0");
+        assert_eq!(var_pbc0.name(&f), "@RESERVED_FF_PB_0");
+        assert_eq!(var_cnf0.name(&f), "@RESERVED_FF_CNF_0");
+        assert_eq!(var_custom0.name(&f), "@RESERVED_FF_CUSTOM_0");
+        assert_eq!(var_cc1.name(&f), "@RESERVED_FF_CC_1");
+        assert_eq!(var_pbc1.name(&f), "@RESERVED_FF_PB_1");
+        assert_eq!(var_cnf1.name(&f), "@RESERVED_FF_CNF_1");
+        assert_eq!(var_custom1.name(&f), "@RESERVED_FF_CUSTOM_1");
     }
 }

@@ -158,7 +158,7 @@ fn test_formula3() {
 }
 
 #[test]
-fn test_cc1() {
+fn test_cc1() { //FIXME: We need the new Solver Interface. We no longer distinguish between normal and aux vars.
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
         if solver.config.incremental {

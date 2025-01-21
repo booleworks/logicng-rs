@@ -1,20 +1,9 @@
 mod formula_factory_tests {
     use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
     use crate::formulas::FormulaType::{And, Equiv, False, Impl, Lit, Not, Or, True};
-    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType};
+    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula};
     use crate::util::test_util::string_vars;
     use std::collections::BTreeSet;
-
-    #[test]
-    fn test() {
-        let f = FormulaFactory::new();
-        let a = f.variable("a");
-        let b = f.variable("b");
-        let ab = f.and([a, b]);
-        let ba = f.and([b, a]);
-        println!("{:?}, {}", ab, ab.to_string(&f));
-        println!("{:?}, {}", ba, ba.to_string(&f));
-    }
 
     #[test]
     #[allow(clippy::many_single_char_names)]
@@ -273,9 +262,9 @@ mod formula_factory_tests {
 
     fn ff_lit(n: u64, phase: bool) -> EncodedFormula {
         if phase {
-            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Pos(VarType::FF)), true))
+            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Pos), true))
         } else {
-            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Neg(VarType::FF)), true))
+            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Neg), true))
         }
     }
 

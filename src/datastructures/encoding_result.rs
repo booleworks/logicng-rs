@@ -1,4 +1,4 @@
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable, AUX_CC};
 use crate::solver::minisat::sat::MsLit;
 use crate::solver::minisat::MiniSat;
 
@@ -34,7 +34,7 @@ pub trait EncodingResult {
 impl<B> EncodingResult for MiniSat<B> {
     fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable {
         let index = self.underlying_solver.new_var(self.config.initial_phase, true);
-        let variable = f.new_cc_variable();
+        let variable = f.new_auxiliary_variable(AUX_CC);
         self.underlying_solver.add_variable(variable, index);
         variable
     }
@@ -80,7 +80,7 @@ impl<B> EncodingResult for MiniSat<B> {
 
 impl EncodingResult for Vec<EncodedFormula> {
     fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable {
-        f.new_cc_variable()
+        f.new_auxiliary_variable(AUX_CC)
     }
 
     fn reset(&mut self) {

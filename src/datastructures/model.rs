@@ -65,7 +65,8 @@ impl Model {
     pub fn new<P, N>(pos: P, neg: N) -> Self
     where
         P: Into<Vec<Variable>>,
-        N: Into<Vec<Variable>>, {
+        N: Into<Vec<Variable>>,
+    {
         Self { pos: pos.into(), neg: neg.into() }
     }
 
@@ -424,7 +425,7 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> Result<Vec<Variable>,
     let mut result = Vec::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
-            Some(i) => Variable::FF(i),
+            Some(_) => f.var(*name),
             None => {
                 return Err(format!("Variable {} is not known in the given FormulaFactory", *name));
             }

@@ -5,15 +5,15 @@ use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
 
 use super::formula::ToFormula;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
-use super::{FormulaType, VarType};
+use super::FormulaType;
 
 /// Specifies all types of literals.
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub enum LitType {
     /// Positive literal
-    Pos(VarType),
+    Pos,
     /// Negative literal
-    Neg(VarType),
+    Neg,
 }
 
 /// Boolean literal.
@@ -158,26 +158,8 @@ impl Literal {
     ///
     /// assert_eq!(literal.name(&f), Cow::from("a"));
     /// ```
-    pub fn name<'a>(&self, f: &'a FormulaFactory) -> Cow<'a, str> {
+    pub fn name<'a>(&self, f: &'a FormulaFactory) -> &'a str {
         self.variable().name(f)
-    }
-
-    /// Returns the name of the variable of this literal, if the variable is a
-    /// auxiliary variable. Otherwise, it will return `None`.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::formulas::FormulaFactory;
-    /// let f = FormulaFactory::new();
-    ///
-    /// let aux_name = format!("@RESERVED_{}_CNF_0", f.id());
-    /// let aux_lit = f.parsed_variable(&aux_name).as_literal().unwrap();
-    /// assert_eq!(aux_lit.aux_name(&f), Some(aux_name));
-    /// ```
-    pub fn aux_name(&self, f: &FormulaFactory) -> Option<String> {
-        self.variable().aux_name(f)
     }
 
     /// Returns a new literal with the phase inverted.
@@ -221,7 +203,7 @@ impl Literal {
     /// assert_eq!(literal.to_string_lit(&f), StringLiteral::new("a", true));
     /// ```
     pub fn to_string_lit<'a>(&self, f: &'a FormulaFactory) -> StringLiteral<'a> {
-        StringLiteral { name: self.name(f), phase: self.phase() }
+        StringLiteral::new(self.name(f), self.phase())
     }
 
     /// Converts this literal into a string representation.
@@ -253,8 +235,8 @@ impl Literal {
 impl From<Literal> for EncodedFormula {
     fn from(lit: Literal) -> Self {
         let (index, ty) = match lit {
-            Literal::Pos(var) => (var.index(), LitType::Pos(var.var_type())),
-            Literal::Neg(var) => (var.index(), LitType::Neg(var.var_type())),
+            Literal::Pos(var) => (var.index(), LitType::Pos),
+            Literal::Neg(var) => (var.index(), LitType::Neg),
         };
         Self::from(FormulaEncoding::encode(index, FormulaType::Lit(ty), true))
     }

@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
@@ -9,8 +8,8 @@ use std::hash::{Hash, Hasher};
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, StringLiteral, ToFormula, ToStringLiteral, Variable};
 
-pub fn string_vars(elements: &'static str) -> BTreeSet<Cow<str>> {
-    elements.split(' ').map(Cow::from).collect()
+pub fn string_vars(elements: &'static str) -> BTreeSet<&'static str> {
+    elements.split(' ').collect()
 }
 
 pub fn string_lits(elements: &str) -> BTreeSet<StringLiteral> {
@@ -34,7 +33,9 @@ pub fn lits_list(elements: &str, f: &FormulaFactory) -> Vec<Literal> {
 }
 
 pub fn hash<H>(element: H) -> u64
-where H: Hash {
+where
+    H: Hash,
+{
     let mut hasher = DefaultHasher::new();
     element.hash(&mut hasher);
     hasher.finish()

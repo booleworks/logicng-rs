@@ -160,7 +160,7 @@ pub fn variables(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Va
 /// ].into_iter());
 /// assert_eq!(string_variables(formula, &f), expected)
 /// ```
-pub fn string_variables(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<Cow<'_, str>> {
+pub fn string_variables(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<&str> {
     formula.variables(f).iter().map(|var| var.name(f)).collect()
 }
 

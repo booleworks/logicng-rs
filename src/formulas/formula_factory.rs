@@ -4,13 +4,11 @@
 //! s.t. it is guaranteed that equivalent formulas (in terms of associativity
 //! and commutativity) are hold exactly once in memory.
 
-
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
 
+use dashmap::DashMap;
 use pest::error::Error;
 use regex::Regex;
 
@@ -20,8 +18,7 @@ use crate::datastructures::Assignment;
 use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::CType::{GE, GT};
-use crate::formulas::Literal::Pos;
-use crate::formulas::{AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
+use crate::formulas::{CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
 use crate::parser::pseudo_boolean_parser::{parse, Rule};
 
@@ -35,8 +32,8 @@ use super::{Formula, FormulaType};
 
 const FF_ID_LENGTH: i32 = 4;
 
-pub(super) const AUX_PREFIX: &str = "@RESERVED_";
-pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>(CNF)|(CC)|(PB))_(?P<INDEX>[0-9]+)$";
+pub const AUX_PREFIX: &str = "@RESERVED_";
+pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>[0-9a-zA-Z]*)_(?P<INDEX>[0-9]+)$";
 
 static AUX_REGEX_LOCK: OnceLock<Regex> = OnceLock::new(); // TODO replace with LazyLock once available
 
@@ -241,9 +238,7 @@ pub struct FormulaFactory {
     // TODO: Memory-efficient encodings for CCs and PBCs (Variables/Literals and optionally the CType should be encoded)
     pub(crate) ccs: SimpleCache<CardinalityConstraint>,
     pub(crate) pbcs: SimpleCache<PbConstraint>,
-    cnf_counter: AtomicUsize,
-    cc_counter: AtomicUsize,
-    pb_counter: AtomicUsize,
+    aux_counters: DashMap<String, usize>,
     pub(crate) caches: FormulaFactoryCaches,
 }
 
@@ -304,9 +299,7 @@ impl FormulaFactory {
             equivs: EquivalenceCache::new(),
             ccs: SimpleCache::new(),
             pbcs: SimpleCache::new(),
-            cnf_counter: AtomicUsize::new(0),
-            cc_counter: AtomicUsize::new(0),
-            pb_counter: AtomicUsize::new(0),
+            aux_counters: DashMap::new(),
             caches: FormulaFactoryCaches::new(),
         }
     }
@@ -510,12 +503,11 @@ impl FormulaFactory {
             || self.variable(name),
             |captures| {
                 if captures["FF_ID"] == self.id {
-                    let aux_type = AuxVarType::from_str(&captures["AUX_TYPE"]).unwrap();
-                    let index = captures["INDEX"].parse::<u64>().unwrap();
-                    Pos(Variable::Aux(aux_type, index)).into()
-                } else {
-                    self.variable(name)
+                    let aux_type = String::from(&captures["AUX_TYPE"]);
+                    let index = captures["INDEX"].parse::<usize>().unwrap();
+                    self.aux_counters.alter(&aux_type, |_, v| std::cmp::max(v, index));
                 }
+                self.variable(name)
             },
         )
     }
@@ -620,7 +612,8 @@ impl FormulaFactory {
     pub fn and<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -663,7 +656,8 @@ impl FormulaFactory {
     pub fn or<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -711,7 +705,8 @@ impl FormulaFactory {
     pub fn clause<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<Literal>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         self.or(operands.into_iter().map(|lit| EncodedFormula::from(*lit.borrow())))
     }
 
@@ -974,7 +969,8 @@ impl FormulaFactory {
     pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> EncodedFormula
     where
         L: Into<Box<[Literal]>>,
-        C: Into<Box<[i64]>>, {
+        C: Into<Box<[i64]>>,
+    {
         let l = literals.into();
         let c = coefficients.into();
         assert_eq!(l.len(), c.len(), "The number of literals and coefficients in a pseudo-boolean constraint must be the same.");
@@ -1185,7 +1181,6 @@ impl FormulaFactory {
         self.substitute(formula, &substitution)
     }
 
-
     /// Shrinks the `FormulaFactory` as much as possible.
     ///
     /// A `FormulaFactory` makes use of data structures that might allocate more
@@ -1283,9 +1278,7 @@ impl FormulaFactory {
                     num_ors: {},\n\
                     num_nots: {},\n\
                     num_impls: {},\n\
-                    num_equivs: {},\n\
-                    cnf_counter: {},\n\
-                    cc_counter: {}\
+                    num_equivs: {}\n\
         ",
             self.variables.len(),
             self.ands.len(),
@@ -1293,24 +1286,14 @@ impl FormulaFactory {
             self.nots.len(),
             self.impls.len(),
             self.equivs.len(),
-            self.cnf_counter.load(Ordering::SeqCst),
-            self.cc_counter.load(Ordering::SeqCst)
         )
     }
 
-    pub(crate) fn new_cnf_variable(&self) -> Variable {
-        let n = self.cnf_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::CNF, n as u64)
-    }
-
-    pub(crate) fn new_cc_variable(&self) -> Variable {
-        let n = self.cc_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::CC, n as u64)
-    }
-
-    pub(crate) fn new_pb_variable(&self) -> Variable {
-        let n = self.pb_counter.fetch_add(1, Ordering::SeqCst);
-        Variable::Aux(AuxVarType::PB, n as u64)
+    pub fn new_auxiliary_variable<'a>(&self, aux_type: impl Into<Cow<'a, str>>) -> Variable {
+        let mut i = self.aux_counters.entry(aux_type.into().into_owned()).or_insert(0);
+        let index = *i;
+        *i += 1;
+        self.var(format!("{}{}_{}_{}", AUX_PREFIX, self.id(), i.key(), index))
     }
 
     pub(crate) fn var_name(&self, index: FormulaEncoding) -> &str {
@@ -1336,7 +1319,8 @@ impl FormulaFactory {
     fn prepare_nary<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Option<FilterResult>
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut filter_result = FilterResult {
             reduced32: Vec::new(),
             reduced_set32: HashSet::default(),
@@ -1354,7 +1338,8 @@ impl FormulaFactory {
     fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut is_large = false;
         for op in ops {
             let owned = *op.borrow();

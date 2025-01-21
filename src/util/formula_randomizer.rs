@@ -1599,8 +1599,8 @@ mod tests {
         use FormulaType::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
         match formula.formula_type() {
             True | False => *occurrences.entry("constant").or_insert(0) += 1,
-            Lit(LitType::Pos(_)) => *occurrences.entry("pos_lit").or_insert(0) += 1,
-            Lit(LitType::Neg(_)) => *occurrences.entry("neg_lit").or_insert(0) += 1,
+            Lit(LitType::Pos) => *occurrences.entry("pos_lit").or_insert(0) += 1,
+            Lit(LitType::Neg) => *occurrences.entry("neg_lit").or_insert(0) += 1,
             And => *occurrences.entry("and").or_insert(0) += 1,
             Or => *occurrences.entry("or").or_insert(0) += 1,
             Not => *occurrences.entry("not").or_insert(0) += 1,

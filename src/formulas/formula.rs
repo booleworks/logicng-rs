@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -179,8 +178,8 @@ impl EncodedFormula {
             FormulaType::Or => Formula::Or(f.ors.get_iter(self.encoding)),
             FormulaType::And => Formula::And(f.ands.get_iter(self.encoding)),
             FormulaType::Not => Formula::Not(f.nots.get(self.encoding)),
-            FormulaType::Lit(LitType::Pos(_)) => Formula::Lit(Literal::Pos(Variable::try_from(self).unwrap())),
-            FormulaType::Lit(LitType::Neg(_)) => Formula::Lit(Literal::Neg(Variable::try_from(self).unwrap())),
+            FormulaType::Lit(LitType::Pos) => Formula::Lit(Literal::Pos(Variable::try_from(self).unwrap())),
+            FormulaType::Lit(LitType::Neg) => Formula::Lit(Literal::Neg(Variable::try_from(self).unwrap())),
             FormulaType::True => Formula::True,
             FormulaType::False => Formula::False,
         }
@@ -325,7 +324,7 @@ impl EncodedFormula {
     /// assert!(!formula3.is_variable());
     /// ```
     pub fn is_variable(self) -> bool {
-        matches!(self.formula_type(), FormulaType::Lit(LitType::Pos(_)))
+        matches!(self.formula_type(), FormulaType::Lit(LitType::Pos))
     }
 
     /// Returns `true` if this formula is negative literal.
@@ -347,7 +346,7 @@ impl EncodedFormula {
     /// assert!(formula3.is_negative_literal());
     /// ```
     pub fn is_negative_literal(self) -> bool {
-        matches!(self.formula_type(), FormulaType::Lit(LitType::Neg(_)))
+        matches!(self.formula_type(), FormulaType::Lit(LitType::Neg))
     }
 
     /// Returns `true` if this formula is literal.
@@ -731,7 +730,7 @@ impl EncodedFormula {
     /// ].into_iter());
     /// assert_eq!(formula.string_variables(&f), expected)
     /// ```
-    pub fn string_variables(self, f: &FormulaFactory) -> BTreeSet<Cow<str>> {
+    pub fn string_variables(self, f: &FormulaFactory) -> BTreeSet<&str> {
         functions::string_variables(self, f)
     }
 
@@ -1056,8 +1055,8 @@ impl EncodedFormula {
     /// ```
     pub fn as_literal(self) -> Option<Literal> {
         match self.formula_type() {
-            FormulaType::Lit(LitType::Pos(_)) => Some(Literal::Pos(Variable::try_from(self).unwrap())),
-            FormulaType::Lit(LitType::Neg(_)) => Some(Literal::Neg(Variable::try_from(self).unwrap())),
+            FormulaType::Lit(LitType::Pos) => Some(Literal::Pos(Variable::try_from(self).unwrap())),
+            FormulaType::Lit(LitType::Neg) => Some(Literal::Neg(Variable::try_from(self).unwrap())),
             _ => None,
         }
     }
@@ -1082,7 +1081,7 @@ impl EncodedFormula {
     /// ```
     pub fn as_variable(self) -> Option<Variable> {
         match self.formula_type() {
-            FormulaType::Lit(LitType::Pos(_)) => Some(Variable::try_from(self).unwrap()),
+            FormulaType::Lit(LitType::Pos) => Some(Variable::try_from(self).unwrap()),
             _ => None,
         }
     }
@@ -1320,17 +1319,15 @@ pub(crate) const LIT_PRECEDENCE: u8 = 7_u8;
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::VarType;
-
     use super::*;
 
     #[test]
     fn test_formula_creation() {
         fn ff_lit(n: u64, phase: bool) -> EncodedFormula {
             if phase {
-                EncodedFormula::from(FormulaEncoding::encode(n, FormulaType::Lit(LitType::Pos(VarType::FF)), true))
+                EncodedFormula::from(FormulaEncoding::encode(n, FormulaType::Lit(LitType::Pos), true))
             } else {
-                EncodedFormula::from(FormulaEncoding::encode(n, FormulaType::Lit(LitType::Neg(VarType::FF)), true))
+                EncodedFormula::from(FormulaEncoding::encode(n, FormulaType::Lit(LitType::Neg), true))
             }
         }
 
