@@ -9,9 +9,8 @@ use std::time::Instant;
 
 use logicng::formulas::{EncodedFormula, FormulaFactory};
 use logicng::operations::transformations::{CnfAlgorithm, CnfEncoder};
-use logicng::solver::minisat::sat::MiniSat2Solver;
-use logicng::solver::minisat::SolverCnfMethod::FullPgOnSolver;
-use logicng::solver::minisat::{MiniSat, MiniSatConfig};
+use logicng::solver::lng_core_solver::CnfMethod;
+use logicng::solver::lng_core_solver::{SatSolver, SatSolverConfig};
 
 use crate::trallocator::Trallocator;
 
@@ -54,10 +53,10 @@ fn main() {
         }
 
         for _ in 0..1 {
-            let mut minisat = MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
+            let mut minisat = SatSolver::<()>::from_config(SatSolverConfig::default().with_cnf_method(CnfMethod::FullPgOnSolver));
             let start = Instant::now();
-            minisat.add(formula, f);
-            println!("{:?}", minisat.sat());
+            minisat.add_formula(formula, f);
+            println!("{:?}", minisat.sat(f));
             if PRINT_PERFORMANCE {
                 println!("[{}] PG on solver: {:?}", file_name, start.elapsed());
             }

@@ -1,8 +1,10 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
 
+use crate::datastructures::{EncodingResult, EncodingResultFF};
 use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
-use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, PbConstraint};
+use crate::encodings::CcEncoder;
+use crate::formulas::{EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, PbConstraint};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::{encode_adder_networks, encode_binary_merge, encode_swc};
@@ -31,7 +33,9 @@ impl PbEncoder {
         match normalized.formula_type() {
             FormulaType::Pbc => {
                 let pbc = normalized.as_pbc(f).unwrap();
-                self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, f).into()
+                let mut result = EncodingResultFF::new(f);
+                self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, &mut result);
+                result.result.into()
             }
             FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f),
             FormulaType::And => {
@@ -56,14 +60,41 @@ impl PbEncoder {
         }
     }
 
-    fn encode_internal(&self, lits: &[Literal], coeffs: &[i64], rhs: i64, f: &FormulaFactory) -> Vec<EncodedFormula> {
+    pub fn encode_on(&self, constraint: &PbConstraint, result: &mut dyn EncodingResult, f: &FormulaFactory) {
+        let normalized = constraint.normalize(f);
+        match normalized.unpack(f) {
+            Formula::Pbc(pbc) => self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, result),
+            Formula::Cc(cc) => CcEncoder::default().encode_on(result, cc),
+            Formula::And(operands) => {
+                for op in operands {
+                    match op.unpack(f) {
+                        Formula::Pbc(pbc) => {
+                            self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, result);
+                        }
+                        Formula::Cc(cc) => {
+                            CcEncoder::default().encode_on(result, cc);
+                        }
+                        _ => panic_unexpected_formula_type(op, Some(f)),
+                    }
+                }
+            }
+            Formula::True => {}
+            Formula::False => result.add_clause_literals(&[]),
+            _ => panic_unexpected_formula_type(normalized, Some(f)),
+        }
+    }
+
+    fn encode_internal(&self, lits: &[Literal], coeffs: &[i64], rhs: i64, result: &mut dyn EncodingResult) {
         match rhs.cmp(&0) {
-            Ordering::Less => vec![f.falsum()],
-            Ordering::Equal => lits.iter().map(|lit| EncodedFormula::from(lit.negate())).collect(),
+            Ordering::Less => result.add_clause_literals(&[]),
+            Ordering::Equal => {
+                for &lit in lits {
+                    result.add_clause_literals(&[lit]);
+                }
+            }
             Ordering::Greater => {
                 let mut simplified_lits = Vec::with_capacity(lits.len());
                 let mut simplified_coeffs = Vec::with_capacity(coeffs.len());
-                let mut result = Vec::new();
                 for i in 0..lits.len() {
                     let lit = lits[i];
                     let coeff = coeffs[i];
@@ -71,18 +102,19 @@ impl PbEncoder {
                         simplified_lits.push(lit);
                         simplified_coeffs.push(coeff);
                     } else {
-                        result.push(lit.negate().into());
+                        result.add_clause_literals(&[lit.negate()]);
                     }
                 }
                 if simplified_lits.len() > 1 {
                     #[allow(clippy::cast_sign_loss)]
-                    result.extend(match self.config.pb_algorithm {
-                        PbAlgorithm::Best | PbAlgorithm::Swc => encode_swc(&simplified_lits, &simplified_coeffs, rhs as u64, f),
-                        PbAlgorithm::BinaryMerge => encode_binary_merge(&self.config, simplified_lits, simplified_coeffs, rhs as u64, f),
-                        PbAlgorithm::AdderNetworks => encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs as u64, f),
-                    });
+                    match self.config.pb_algorithm {
+                        PbAlgorithm::Best | PbAlgorithm::Swc => encode_swc(&simplified_lits, &simplified_coeffs, rhs as u64, result),
+                        PbAlgorithm::BinaryMerge => {
+                            encode_binary_merge(&self.config, simplified_lits, simplified_coeffs, rhs as u64, result);
+                        }
+                        PbAlgorithm::AdderNetworks => encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs as u64, result),
+                    };
                 }
-                result
             }
         }
     }

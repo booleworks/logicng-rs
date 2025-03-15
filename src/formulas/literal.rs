@@ -53,10 +53,10 @@ pub enum LitType {
 /// [`FormulaFactory`]: super::FormulaFactory
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug, Ord, PartialOrd)]
 pub enum Literal {
-    /// Positive literal
-    Pos(Variable),
     /// Negative literal
     Neg(Variable),
+    /// Positive literal
+    Pos(Variable),
 }
 
 impl Literal {
@@ -242,6 +242,12 @@ impl From<Literal> for EncodedFormula {
     }
 }
 
+impl<'a> From<&'a Literal> for EncodedFormula {
+    fn from(value: &'a Literal) -> Self {
+        (*value).into()
+    }
+}
+
 impl ToFormula for Literal {
     fn to_formula(&self, _: &FormulaFactory) -> EncodedFormula {
         (*self).into()
@@ -356,6 +362,12 @@ impl<'a> StringLiteral<'a> {
     /// ```
     pub fn to_literal(&self, f: &FormulaFactory) -> Literal {
         f.lit(&self.name, self.phase)
+    }
+}
+
+impl From<Variable> for Literal {
+    fn from(value: Variable) -> Self {
+        Self::Pos(value)
     }
 }
 

@@ -1,29 +1,26 @@
 #![allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
 
-use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::iter::repeat;
-use std::rc::Rc;
 
 use bitvec::vec::BitVec;
 
-use crate::collections::MsClause;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
-use crate::solver::minisat::sat::Tristate::Undef;
-use crate::solver::minisat::sat::{mk_lit, ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate};
+use crate::solver::lng_core_solver::{self, mk_lit, ClauseRef, LngClause, LngCoreSolver, LngLit, LngState, LngVar, Tristate};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 pub struct DnnfSatSolver {
-    internal_solver: MiniSat2Solver<()>,
+    internal_solver: LngCoreSolver<()>,
     newly_implied_dirty: bool,
     assertion_level: isize,
-    last_learnt: Option<Vec<MsLit>>,
+    last_learnt: Option<Vec<LngLit>>,
+    assignment: Vec<Tristate>,
 }
 
 impl DnnfSatSolver {
-    pub fn new(mut internal_solver: MiniSat2Solver<()>, number_of_variables: usize) -> Self {
-        internal_solver.dnnf_assignment = Some(repeat(Undef).take(2 * number_of_variables).collect());
-        Self { internal_solver, newly_implied_dirty: false, assertion_level: -1, last_learnt: None }
+    pub fn new(internal_solver: LngCoreSolver<()>, number_of_variables: usize) -> Self {
+        let assignment = repeat(Tristate::Undef).take(2 * number_of_variables).collect();
+        Self { internal_solver, newly_implied_dirty: false, assertion_level: -1, last_learnt: None, assignment }
     }
 
     pub fn start(&mut self) -> bool {
@@ -46,7 +43,7 @@ impl DnnfSatSolver {
         }
     }
 
-    pub fn decide(&mut self, var: MsVar, phase: bool) -> bool {
+    pub fn decide(&mut self, var: LngVar, phase: bool) -> bool {
         self.newly_implied_dirty = true;
         let lit = mk_lit(var, !phase);
         self.internal_solver.trail_lim.push(self.internal_solver.trail.len());
@@ -54,12 +51,12 @@ impl DnnfSatSolver {
         self.propagate_after_decide()
     }
 
-    pub fn undo_decide(&mut self, var: MsVar) {
+    pub fn undo_decide(&mut self, var: LngVar) {
         self.newly_implied_dirty = false;
         self.internal_solver.cancel_until(self.internal_solver.vars[var.0].level.unwrap() - 1);
     }
 
-    pub fn at_assertion_level(&mut self) -> bool {
+    pub fn at_assertion_level(&self) -> bool {
         self.internal_solver.decision_level() as isize == self.assertion_level
     }
 
@@ -71,15 +68,17 @@ impl DnnfSatSolver {
             self.internal_solver.unchecked_enqueue(lit, None);
             self.internal_solver.unit_clauses.push(lit);
         } else {
-            let cr = Rc::new(RefCell::new(MsClause::new(self.last_learnt.as_ref().unwrap().clone(), true)));
-            self.internal_solver.attach_clause(&cr);
-            if !self.internal_solver.config.incremental {
-                (*cr).borrow_mut().activity += self.internal_solver.cla_inc;
-            }
-            self.internal_solver.unchecked_enqueue((*cr).borrow().get(0), Some(cr.clone()));
+            let mut c = LngClause::new(self.last_learnt.clone().unwrap(), Some(LngState(self.internal_solver.next_state_id)), false);
+            c.lbd = self.internal_solver.analyze_lbd;
+            c.one_watched = false;
+            let cr = self.internal_solver.add_new_clause(c);
             self.internal_solver.learnts.push(cr);
+            self.internal_solver.attach_clause(cr);
+            self.internal_solver.cla_bump_activity(cr);
+            self.internal_solver.unchecked_enqueue(self.internal_solver.c(cr).get(0), Some(cr));
         }
-        self.internal_solver.decay_activities();
+        self.internal_solver.var_decay_activities();
+        self.internal_solver.cla_decay_activities();
         self.propagate_after_decide()
     }
 
@@ -90,7 +89,7 @@ impl DnnfSatSolver {
                 for i in (limit..self.internal_solver.trail.len()).rev() {
                     let lit = self.internal_solver.trail[i];
                     if *known_variables.get(Self::var(lit).0).unwrap() {
-                        implied_operands.push(self.int_to_literal(lit));
+                        implied_operands.push(self.int_to_literal(lit, f));
                     }
                 }
             }
@@ -99,28 +98,28 @@ impl DnnfSatSolver {
         f.and(&implied_operands)
     }
 
-    pub fn value_of(&self, lit: MsLit) -> Tristate {
-        self.internal_solver.dnnf_assignment.as_ref().unwrap()[lit.0]
+    pub fn value_of(&self, lit: LngLit) -> Tristate {
+        self.assignment[lit.0]
     }
 
-    pub fn variable_index(&self, lit: Literal) -> MsVar {
+    pub fn variable_index(&self, lit: Literal) -> LngVar {
         self.internal_solver.idx_for_variable(lit.variable()).unwrap()
     }
 
-    pub fn var_for_idx(&self, var: MsVar) -> Variable {
-        self.internal_solver.variable_for_idx(var).unwrap()
+    pub fn var_for_idx(&mut self, var: LngVar, f: &FormulaFactory) -> Variable {
+        self.internal_solver.variable_for_idx(var, f)
     }
 
-    pub const fn var(lit: MsLit) -> MsVar {
-        MsVar(lit.0 >> 1)
+    pub const fn var(lit: LngLit) -> LngVar {
+        lng_core_solver::var(lit)
     }
 
-    pub const fn phase(lit: MsLit) -> bool {
-        lit.0 & 1 == 0
+    pub const fn phase(lit: LngLit) -> bool {
+        !lng_core_solver::sign(lit)
     }
 
     fn propagate_after_decide(&mut self) -> bool {
-        self.internal_solver.propagate().map_or(true, |conflict| {
+        self.internal_solver.propagate().is_none_or(|conflict| {
             self.handle_conflict(conflict);
             false
         })
@@ -137,11 +136,11 @@ impl DnnfSatSolver {
         }
     }
 
-    fn generate_clause_vec(&mut self, literals: &BTreeSet<Literal>) -> Vec<MsLit> {
+    fn generate_clause_vec(&mut self, literals: &BTreeSet<Literal>) -> Vec<LngLit> {
         literals.iter().map(|lit| self.generate_literal(*lit)).collect()
     }
 
-    fn generate_literal(&mut self, literal: Literal) -> MsLit {
+    fn generate_literal(&mut self, literal: Literal) -> LngLit {
         let variable = literal.variable();
         let index = self.internal_solver.idx_for_variable(variable).unwrap_or_else(|| {
             let new_index = self.internal_solver.new_var(false, true);
@@ -151,8 +150,8 @@ impl DnnfSatSolver {
         mk_lit(index, !literal.phase())
     }
 
-    fn int_to_literal(&self, lit: MsLit) -> EncodedFormula {
-        let variable = self.internal_solver.variable_for_idx(Self::var(lit)).unwrap();
+    fn int_to_literal(&mut self, lit: LngLit, f: &FormulaFactory) -> EncodedFormula {
+        let variable = self.internal_solver.variable_for_idx(Self::var(lit), f);
         EncodedFormula::from(Literal::new(variable, Self::phase(lit)))
     }
 }

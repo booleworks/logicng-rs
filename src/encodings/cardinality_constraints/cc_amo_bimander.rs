@@ -1,18 +1,17 @@
 #![allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
 
-use crate::datastructures::EncodingResult;
-use crate::formulas::{FormulaFactory, Literal, Variable};
+use crate::datastructures::{EncodingResult, SolverExportLiteral};
+use crate::formulas::{Literal, Variable, AUX_CC};
 
 /// An encoding of at-most-one cardinality constraints using the Bimander
 /// encoding due to Hölldobler and Nguyen.
-pub fn build_amo_bimander<R: EncodingResult>(m: usize, result: &mut R, f: &FormulaFactory, vars: &[Variable]) {
-    result.reset();
-    encode_intern(m, f, result, &vars.iter().map(|var| Literal::new(*var, true)).collect::<Box<[_]>>());
+pub fn build_amo_bimander(m: usize, result: &mut dyn EncodingResult, vars: &[Variable]) {
+    encode_intern(m, result, &vars.iter().map(|var| Literal::new(*var, true)).collect::<Box<[_]>>());
 }
 
-fn encode_intern<R: EncodingResult>(m: usize, f: &FormulaFactory, result: &mut R, vars: &[Literal]) {
-    let groups = initialize_groups(m, result, f, vars);
-    let (bits, number_of_bits, two_pow_n_bits, k) = initialize_bits(m, result, f);
+fn encode_intern(m: usize, result: &mut dyn EncodingResult, vars: &[Literal]) {
+    let groups = initialize_groups(m, result, vars);
+    let (bits, number_of_bits, two_pow_n_bits, k) = initialize_bits(m, result);
     let mut gray_code: isize;
     let mut next_gray: isize;
     let mut i = 0isize;
@@ -24,7 +23,7 @@ fn encode_intern<R: EncodingResult>(m: usize, f: &FormulaFactory, result: &mut R
         next_gray = i ^ (i >> 1);
         for (j, bit) in bits.iter().enumerate().take(number_of_bits) {
             if (gray_code & (1 << j)) == (next_gray & (1 << j)) {
-                handle_gray_code(result, f, &groups[index as usize], *bit, gray_code, j);
+                handle_gray_code(result, &groups[index as usize], *bit, gray_code, j);
             }
         }
         i += 1;
@@ -33,13 +32,13 @@ fn encode_intern<R: EncodingResult>(m: usize, f: &FormulaFactory, result: &mut R
         index += 1;
         gray_code = i ^ (i >> 1);
         for (j, bit) in bits.iter().enumerate().take(number_of_bits) {
-            handle_gray_code(result, f, &groups[index as usize], *bit, gray_code, j);
+            handle_gray_code(result, &groups[index as usize], *bit, gray_code, j);
         }
         i += 1;
     }
 }
 
-fn initialize_groups<R: EncodingResult>(group_size: usize, result: &mut R, f: &FormulaFactory, vars: &[Literal]) -> Box<[Vec<Literal>]> {
+fn initialize_groups(group_size: usize, result: &mut dyn EncodingResult, vars: &[Literal]) -> Box<[Vec<Literal>]> {
     let n = vars.len();
     let mut groups: Vec<Vec<Literal>> = (0..group_size).map(|_| Vec::new()).collect();
 
@@ -56,30 +55,30 @@ fn initialize_groups<R: EncodingResult>(group_size: usize, result: &mut R, f: &F
     }
 
     for clause in &groups {
-        encode_naive(result, f, clause);
+        encode_naive(result, clause);
     }
     groups.into()
 }
 
-fn initialize_bits<R: EncodingResult>(m: usize, result: &mut R, f: &FormulaFactory) -> (Box<[Literal]>, usize, usize, usize) {
+fn initialize_bits(m: usize, result: &mut dyn EncodingResult) -> (Box<[SolverExportLiteral]>, usize, usize, usize) {
     let number_of_bits = (m as f64).log2().ceil() as usize;
     let two_pow_n_bits = 2usize.pow(number_of_bits as u32);
     let k = (two_pow_n_bits - m) * 2;
-    let bits = (0..number_of_bits).map(|_| Literal::new(result.new_cc_variable(f), true)).collect();
+    let bits = (0..number_of_bits).map(|_| result.new_auxiliary_variable(AUX_CC)).collect();
     (bits, number_of_bits, two_pow_n_bits, k)
 }
 
-fn encode_naive<R: EncodingResult>(result: &mut R, f: &FormulaFactory, literals: &[Literal]) {
+fn encode_naive(result: &mut dyn EncodingResult, literals: &[Literal]) {
     for i in 0..literals.len() {
         for j in (i + 1)..literals.len() {
-            result.add_clause2(f, literals[i].negate(), literals[j].negate());
+            result.add_clause_literals(&[literals[i].negate(), literals[j].negate()]);
         }
     }
 }
 
-fn handle_gray_code(result: &mut dyn EncodingResult, f: &FormulaFactory, group: &[Literal], bit: Literal, gray_code: isize, j: usize) {
+fn handle_gray_code(result: &mut dyn EncodingResult, group: &[Literal], bit: SolverExportLiteral, gray_code: isize, j: usize) {
     let b = if (gray_code & (1 << j)) == 0 { bit.negate() } else { bit };
     for p in group {
-        result.add_clause2(f, p.negate(), b);
+        result.add_clause(&[p.negate().into(), b]);
     }
 }

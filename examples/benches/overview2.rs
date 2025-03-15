@@ -5,8 +5,9 @@ use std::error::Error;
 
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::functions::{enumerate_models_with_config, BackboneType, ModelEnumerationConfig};
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::functions::backbone_function::BackboneType;
+use logicng::solver::lng_core_solver::functions::model_enumeration_function::{enumerate_models_with_config, ModelEnumerationConfig};
+use logicng::solver::lng_core_solver::SatSolver;
 
 use crate::trallocator::Trallocator;
 
@@ -32,18 +33,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let formula = read_formula("resources/formulas/large_formula2.txt", &f)?;
     GLOBAL.print_memory("read");
     let t2 = std::time::Instant::now();
-    let mut solver = MiniSat::new();
-    solver.add(formula, &f);
+    let mut solver = SatSolver::<()>::new();
+    solver.add_formula(formula, &f);
     GLOBAL.print_memory("add to solver");
     let t3 = std::time::Instant::now();
-    solver.sat();
+    solver.sat(&f);
     GLOBAL.print_memory("solve");
     let t4 = std::time::Instant::now();
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars));
+    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::new(vars), &f);
     GLOBAL.print_memory("model enumeration");
     let t5 = std::time::Instant::now();
-    let bb =
-        solver.underlying_solver.compute_backbone(Vec::from_iter(formula.variables(&f).iter().copied()), BackboneType::PositiveAndNegative);
+    let bb = solver.backbone(formula.variables(&f).as_ref(), BackboneType::PositiveAndNegative);
     GLOBAL.print_memory("backbone");
     let t6 = std::time::Instant::now();
     println!("{}", models.len());

@@ -84,7 +84,9 @@ mod tests {
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::PlaistedGreenbaum;
     use crate::operations::transformations::CnfEncoder;
-    use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+    use crate::solver::lng_core_solver::functions::model_enumeration_function::{
+        enumerate_models_for_formula_with_config, ModelEnumerationConfig,
+    };
     use crate::util::test_util::F;
 
     use super::*;
@@ -98,9 +100,9 @@ mod tests {
         let pg = transformer.transform(formula, f);
         assert!(pg.is_cnf(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
-        let config = ModelEnumerationConfig::default().variables(vars);
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config);
-        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config);
+        let config = ModelEnumerationConfig::new(vars);
+        let original_models = enumerate_models_for_formula_with_config(formula, &config, f);
+        let pg_models = enumerate_models_for_formula_with_config(pg, &config, f);
         assert_eq!(original_models.len(), pg_models.len());
     }
 

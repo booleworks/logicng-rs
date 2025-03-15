@@ -141,6 +141,18 @@ impl From<Variable> for EncodedFormula {
     }
 }
 
+impl<'a> From<&'a Variable> for EncodedFormula {
+    fn from(value: &'a Variable) -> Self {
+        (*value).into()
+    }
+}
+
+impl<'a> From<&'a Self> for Variable {
+    fn from(value: &'a Self) -> Self {
+        *value
+    }
+}
+
 impl ToFormula for Variable {
     fn to_formula(&self, _: &FormulaFactory) -> EncodedFormula {
         (*self).into()

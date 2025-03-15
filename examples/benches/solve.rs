@@ -5,7 +5,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::SatSolver;
 
 pub fn main() {
     for threads in &[1, 2, 4, 8] {
@@ -36,9 +36,9 @@ fn solve(thread_count: usize) {
                 break;
             }
             let formula = formulas_l[c];
-            let mut solver = MiniSat::new();
-            solver.add(formula, &f_l);
-            let _ = solver.sat();
+            let mut solver = SatSolver::<()>::new();
+            solver.add_formula(formula, &f_l);
+            let _ = solver.sat(&f_l);
         });
         threads.push(handle);
     }

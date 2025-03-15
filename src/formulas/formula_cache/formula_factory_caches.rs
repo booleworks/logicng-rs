@@ -57,6 +57,7 @@ impl Default for FormulaFactoryCaches {
 mod test {
     mod config {
         use crate::formulas::{FormulaFactory, ToFormula};
+        use crate::handlers::NopHandler;
         use crate::operations::{functions, predicates, transformations};
 
         #[test]
@@ -563,10 +564,10 @@ mod test {
 
             let formula = "a => b".to_formula(&f);
 
-            let res1 = transformations::backbone_simplification(formula, &f);
+            let res1 = transformations::backbone_simplification(formula, &f, &mut NopHandler);
             assert_eq!(f.caches.backbone_simps.len(), 1);
 
-            let res2 = transformations::backbone_simplification(formula, &f);
+            let res2 = transformations::backbone_simplification(formula, &f, &mut NopHandler);
             assert_eq!(f.caches.backbone_simps.len(), 1);
             assert_eq!(res1, res2);
         }
@@ -578,10 +579,10 @@ mod test {
 
             let formula = "a => b".to_formula(&f);
 
-            let res1 = transformations::backbone_simplification(formula, &f);
+            let res1 = transformations::backbone_simplification(formula, &f, &mut NopHandler);
             assert_eq!(f.caches.backbone_simps.len(), 0);
 
-            let res2 = transformations::backbone_simplification(formula, &f);
+            let res2 = transformations::backbone_simplification(formula, &f, &mut NopHandler);
             assert_eq!(f.caches.backbone_simps.len(), 0);
             assert_eq!(res1, res2);
         }

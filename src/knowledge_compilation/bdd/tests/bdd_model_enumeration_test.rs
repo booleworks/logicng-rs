@@ -10,8 +10,7 @@ mod tests {
     use crate::knowledge_compilation::bdd::orderings::{
         bfs_ordering, dfs_ordering, force_ordering, max_to_min_ordering, min_to_max_ordering,
     };
-    use crate::solver::minisat::sat::Tristate;
-    use crate::solver::minisat::MiniSat;
+    use crate::solver::lng_core_solver::SatSolver;
     use crate::util::n_queens_generator::generate_n_queens;
 
     #[test]
@@ -106,16 +105,16 @@ mod tests {
     }
 
     fn check_equiv(original: EncodedFormula, cnf: EncodedFormula, f: &FormulaFactory) {
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::<()>::new();
         let formula = f.equivalence(original, cnf);
-        solver.add(f.negate(formula), f);
-        assert_eq!(solver.sat(), Tristate::False);
+        solver.add_formula(f.negate(formula), f);
+        assert!(!solver.sat(f));
     }
 
     fn generate_variables(n: usize, f: &FormulaFactory) -> Vec<Variable> {
         let mut result = Vec::new();
         for i in 0..n {
-            result.push(f.var(&format!("v{i}")));
+            result.push(f.var(format!("v{i}")));
         }
         result
     }

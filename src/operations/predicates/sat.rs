@@ -1,7 +1,7 @@
-use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
-use crate::solver::minisat::SolverCnfMethod::FactoryCnf;
-use crate::solver::minisat::{MiniSat, MiniSatConfig};
+use crate::{
+    formulas::{EncodedFormula, FormulaFactory},
+    solver::lng_core_solver::{CnfMethod, SatSolver, SatSolverConfig},
+};
 
 /// A predicate tests whether a formula is satisfiable. A formula is satisfiable
 /// if there exists at least one assignment such that the formula evaluates to
@@ -25,17 +25,13 @@ use crate::solver::minisat::{MiniSat, MiniSatConfig};
 /// ```
 pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
     f.caches.sat.get(formula).unwrap_or_else(|| {
-        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-        solver.add(formula, f);
-        let sat = solver.sat();
+        let mut solver = SatSolver::<()>::from_config(SatSolverConfig::default().with_cnf_method(CnfMethod::FactoryCnf));
+        solver.add_formula(formula, f);
+        let sat = solver.sat(f);
         if f.config.caches.sat {
-            match sat {
-                True => f.caches.sat.insert(formula, true),
-                False => f.caches.sat.insert(formula, false),
-                Undef => {}
-            }
+            f.caches.sat.insert(formula, sat);
         }
-        sat == True
+        sat
     })
 }
 
@@ -77,17 +73,13 @@ pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> bool {
     let negeated_formula = f.negate(formula);
     f.caches.sat.get(negeated_formula).map_or_else(
         || {
-            let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-            solver.add(negeated_formula, f);
-            let sat = solver.sat();
+            let mut solver = SatSolver::<()>::from_config(SatSolverConfig::default().with_cnf_method(CnfMethod::FactoryCnf));
+            solver.add_formula(negeated_formula, f);
+            let sat = solver.sat(f);
             if f.config.caches.sat {
-                match sat {
-                    True => f.caches.sat.insert(negeated_formula, true),
-                    False => f.caches.sat.insert(negeated_formula, false),
-                    Undef => {}
-                }
+                f.caches.sat.insert(negeated_formula, sat);
             }
-            sat == False
+            !sat
         },
         |cached| !cached,
     )

@@ -4,9 +4,10 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
+use logicng::handlers::NopHandler;
 use logicng::io::read_formula;
-use logicng::solver::functions::OptimizationFunction;
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::functions::optimization_function::OptimizationFunction;
+use logicng::solver::lng_core_solver::SatSolver;
 
 /// Test for parallel model maximization with the SAT solver's
 /// optimization function on a multi-threading formula factory.
@@ -37,9 +38,9 @@ fn maximize(thread_count: usize) {
             }
             let formula = read_formula(&paths_l[c], &f_l).unwrap();
             let literals = formula.variables(&f_l).iter().map(|v| v.pos_lit()).collect_vec();
-            let mut solver = MiniSat::new();
-            solver.add(formula, &f_l);
-            let _model = solver.optimize(&f_l, &OptimizationFunction::maximize(literals));
+            let mut solver = SatSolver::<()>::new();
+            solver.add_formula(formula, &f_l);
+            let _model = OptimizationFunction::maximize(literals).optimize(&mut solver, &mut NopHandler::new(), &f_l);
         });
         threads.push(handle);
     }

@@ -1,9 +1,49 @@
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable, AUX_CC};
-use crate::solver::minisat::sat::MsLit;
-use crate::solver::minisat::MiniSat;
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::solver::lng_core_solver::LngLit;
 
-// TODO: for MiniSat, we also would need a proposition to be passed to `add_clause` methods
-//       (actually, we need the FormulaFactory only for Vec<Formula> and we need a Proposition only for MiniSat)
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+pub enum SolverExportLiteral {
+    FF(Literal),
+    Solver(LngLit),
+}
+
+impl SolverExportLiteral {
+    pub fn negate(self) -> SolverExportLiteral {
+        match self {
+            SolverExportLiteral::FF(literal) => SolverExportLiteral::FF(literal.negate()),
+            SolverExportLiteral::Solver(ms_lit) => {
+                let nl = crate::solver::lng_core_solver::not(ms_lit);
+                SolverExportLiteral::Solver(nl)
+            }
+        }
+    }
+
+    pub fn expect_literal(self, expected: &str) -> Literal {
+        match self {
+            SolverExportLiteral::FF(literal) => literal,
+            SolverExportLiteral::Solver(_) => panic!("{}", expected),
+        }
+    }
+
+    pub fn expect_intern(self, expected: &str) -> LngLit {
+        match self {
+            SolverExportLiteral::Solver(ms_lit) => ms_lit,
+            SolverExportLiteral::FF(_) => panic!("{}", expected),
+        }
+    }
+}
+
+impl From<Literal> for SolverExportLiteral {
+    fn from(value: Literal) -> Self {
+        Self::FF(value)
+    }
+}
+
+impl From<Variable> for SolverExportLiteral {
+    fn from(value: Variable) -> Self {
+        Self::FF(value.pos_lit())
+    }
+}
 
 /// The result of an encoding.
 ///
@@ -12,108 +52,40 @@ use crate::solver::minisat::MiniSat;
 /// encoding in the formula factory and therefore polluting the factory and the
 /// heap.  This class can be used to connect an encoding directly with a SAT
 /// solver and therefore introducing the variables only on the solver - not in
-/// the factory. When working with many encodings, this can be a large
+/// the factory.  When working with many encodings, this can be a large
 /// performance gain.
 pub trait EncodingResult {
-    /// Returns a new auxiliary variable.
-    fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable;
-    /// Resets the result.
-    fn reset(&mut self);
-    /// Adds a clause to the result.
-    fn add_clause(&mut self, f: &FormulaFactory, lits: &[Literal]);
-    /// Adds a clause of length 1 to the result.
-    fn add_clause1(&mut self, f: &FormulaFactory, literal: Literal);
-    /// Adds a clause of length 2 to the result.
-    fn add_clause2(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal);
-    /// Adds a clause of length 3 to the result.
-    fn add_clause3(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal);
-    /// Adds a clause of length 4 to the result.
-    fn add_clause4(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal);
+    fn new_auxiliary_variable(&mut self, aux_type: &str) -> SolverExportLiteral;
+    fn add_clause_literals(&mut self, lits: &[Literal]);
+    fn add_clause(&mut self, lits: &[SolverExportLiteral]);
 }
 
-impl<B> EncodingResult for MiniSat<B> {
-    fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable {
-        let index = self.underlying_solver.new_var(self.config.initial_phase, true);
-        let variable = f.new_auxiliary_variable(AUX_CC);
-        self.underlying_solver.add_variable(variable, index);
-        variable
+pub struct EncodingResultFF<'a> {
+    f: &'a FormulaFactory,
+    pub result: Vec<EncodedFormula>,
+}
+
+impl<'a> EncodingResultFF<'a> {
+    pub const fn new(f: &'a FormulaFactory) -> Self {
+        Self { f, result: Vec::new() }
     }
 
-    fn reset(&mut self) {
-        // do nothing
-    }
-
-    fn add_clause(&mut self, _f: &FormulaFactory, lits: &[Literal]) {
-        let mut clause_vec = Vec::<MsLit>::with_capacity(lits.len());
-        for lit in lits {
-            clause_vec.push(self.add_literal(lit));
-        }
-        self.underlying_solver.add_clause(clause_vec, None);
-        self.set_solver_to_undef();
-    }
-
-    fn add_clause1(&mut self, _f: &FormulaFactory, literal: Literal) {
-        let clause_vec = vec![self.add_literal(&literal)];
-        self.underlying_solver.add_clause(clause_vec, None);
-        self.set_solver_to_undef();
-    }
-
-    fn add_clause2(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal) {
-        let clause_vec = vec![self.add_literal(&literal1), self.add_literal(&literal2)];
-        self.underlying_solver.add_clause(clause_vec, None);
-        self.set_solver_to_undef();
-    }
-
-    fn add_clause3(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal) {
-        let clause_vec = vec![self.add_literal(&literal1), self.add_literal(&literal2), self.add_literal(&literal3)];
-        self.underlying_solver.add_clause(clause_vec, None);
-        self.set_solver_to_undef();
-    }
-
-    fn add_clause4(&mut self, _f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal) {
-        let clause_vec =
-            vec![self.add_literal(&literal1), self.add_literal(&literal2), self.add_literal(&literal3), self.add_literal(&literal4)];
-        self.underlying_solver.add_clause(clause_vec, None);
-        self.set_solver_to_undef();
+    pub const fn factory(&self) -> &FormulaFactory {
+        self.f
     }
 }
 
-impl EncodingResult for Vec<EncodedFormula> {
-    fn new_cc_variable(&mut self, f: &FormulaFactory) -> Variable {
-        f.new_auxiliary_variable(AUX_CC)
+impl EncodingResult for EncodingResultFF<'_> {
+    fn new_auxiliary_variable(&mut self, aux_type: &str) -> SolverExportLiteral {
+        self.f.new_auxiliary_variable(aux_type).into()
     }
 
-    fn reset(&mut self) {
-        self.clear();
+    fn add_clause_literals(&mut self, lits: &[Literal]) {
+        self.result.push(self.f.clause(lits));
     }
 
-    fn add_clause(&mut self, f: &FormulaFactory, lits: &[Literal]) {
-        let clause = f.or(lits.iter().map(|lit| EncodedFormula::from(*lit)));
-        self.push(clause);
-    }
-
-    fn add_clause1(&mut self, f: &FormulaFactory, literal: Literal) {
-        let clause = f.or([EncodedFormula::from(literal)]);
-        self.push(clause);
-    }
-
-    fn add_clause2(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal) {
-        let clause = f.or([EncodedFormula::from(literal1), EncodedFormula::from(literal2)]);
-        self.push(clause);
-    }
-
-    fn add_clause3(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal) {
-        let clause = f.or([EncodedFormula::from(literal1), EncodedFormula::from(literal2), EncodedFormula::from(literal3)]);
-        self.push(clause);
-    }
-
-    fn add_clause4(&mut self, f: &FormulaFactory, literal1: Literal, literal2: Literal, literal3: Literal, literal4: Literal) {
-        let clause = f.or([
-            EncodedFormula::from(literal1),
-            EncodedFormula::from(literal2),
-            EncodedFormula::from(literal3),
-            EncodedFormula::from(literal4),
-        ]);
-        self.push(clause);
+    fn add_clause(&mut self, lits: &[SolverExportLiteral]) {
+        self.result
+            .push(self.f.clause(lits.iter().map(|v| v.expect_literal("Encoding result for a factory does not create solver variables"))));
     }
 }

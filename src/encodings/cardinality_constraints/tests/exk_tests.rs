@@ -1,8 +1,7 @@
 use crate::encodings::cardinality_constraints::cc_config::{CcConfig, ExkEncoder};
 use crate::formulas::{CType, FormulaFactory, Variable};
-use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::minisat::sat::Tristate::{False, True};
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::functions::model_enumeration_function::{enumerate_models_with_config, ModelEnumerationConfig};
+use crate::solver::lng_core_solver::SatSolver;
 
 fn configs() -> Vec<CcConfig> {
     vec![CcConfig::new().exk_encoder(ExkEncoder::Totalizer), CcConfig::new().exk_encoder(ExkEncoder::CardinalityNetwork)]
@@ -30,14 +29,14 @@ fn test_exk() {
 
 fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::<()>::new();
     let cc = f.cc(CType::EQ, rhs, problem_vars.clone());
-    solver.add(cc, f);
+    solver.add_formula(cc, f);
     if expected == 0 {
-        assert_eq!(solver.sat(), False);
+        assert!(!solver.sat(f));
     } else {
-        assert_eq!(solver.sat(), True);
+        assert!(solver.sat(f));
     }
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000));
+    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::new(problem_vars).max_models(12000), f);
     assert_eq!(models.len() as u64, expected);
 }

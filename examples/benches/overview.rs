@@ -4,8 +4,8 @@ use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
 use logicng::operations::functions::{count_models, ModelCountAlgorithm};
-use logicng::solver::minisat::MiniSat;
 
+use logicng::solver::lng_core_solver::SatSolver;
 #[cfg(feature = "open_wbo")]
 use logicng::solver::maxsat::{Algorithm, MaxSatSolver};
 
@@ -35,11 +35,10 @@ fn sat() {
 
     let start = std::time::Instant::now();
 
-
     for formula in formulas {
-        let mut solver = MiniSat::new();
-        solver.add(formula, &f);
-        let _ = solver.sat();
+        let mut solver = SatSolver::<()>::new();
+        solver.add_formula(formula, &f);
+        let _ = solver.sat(&f);
     }
     println!("Rust SAT: {}s", start.elapsed().as_secs_f32());
 }

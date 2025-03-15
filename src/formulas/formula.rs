@@ -72,7 +72,7 @@ pub enum Formula<'a> {
 ///
 /// Since a `EncodedFormula` is technically only a fancy pointer, it also implements
 /// the [`Copy`] trait.
-#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, Hash, PartialEq, Copy, Clone, Debug, PartialOrd, Ord)]
 pub struct EncodedFormula {
     pub(super) encoding: FormulaEncoding,
 }
@@ -1280,6 +1280,12 @@ impl EncodedFormula {
 impl From<FormulaEncoding> for EncodedFormula {
     fn from(encoding: FormulaEncoding) -> Self {
         Self { encoding }
+    }
+}
+
+impl<'a> From<&'a Self> for EncodedFormula {
+    fn from(value: &'a Self) -> Self {
+        *value
     }
 }
 

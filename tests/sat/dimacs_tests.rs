@@ -7,8 +7,8 @@ use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 
 use logicng::formulas::Variable;
-use logicng::solver::minisat::sat::Tristate::True;
-use logicng::solver::minisat::sat::{mk_lit, MiniSat2Solver};
+use logicng::handlers::NopHandler;
+use logicng::solver::lng_core_solver::{mk_lit, LngCoreSolver};
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]
@@ -43,7 +43,7 @@ fn read_result() -> HashMap<String, bool> {
 fn test_file(file: DimacsFile, expected: bool) {
     println!("Processing file: {}", file.name);
     stdout().flush().unwrap();
-    let mut solver: MiniSat2Solver<()> = MiniSat2Solver::new();
+    let mut solver: LngCoreSolver<()> = LngCoreSolver::new();
     for v in 1..(file.max_var + 1) {
         let index = solver.new_var(true, true);
         solver.add_variable(Variable::from_index(v as u64), index);
@@ -57,9 +57,9 @@ fn test_file(file: DimacsFile, expected: bool) {
             None,
         );
     }
-    let result = solver.solve();
-    println!("{:?}{}", result, if (result == True) == expected { "" } else { "  <-- ERROR" });
-    if expected != (result == True) {
+    let result = solver.internal_solve(&mut NopHandler::new());
+    println!("{:?}{}", result, if (result.is_success()) == expected { "" } else { "  <-- ERROR" });
+    if expected != (result.is_success()) {
         panic!("unexpected result!");
     }
 }

@@ -1,49 +1,48 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
 
-use crate::datastructures::EncodingResult;
-use crate::formulas::{FormulaFactory, Literal, Variable};
+use crate::datastructures::{EncodingResult, SolverExportLiteral};
+use crate::formulas::{Variable, AUX_CC};
 
 /// An encoding of at-most-one cardinality constraints using the 2-product
 /// method due to Chen.
-pub fn build_amo_product<R: EncodingResult>(recursive_bound: usize, result: &mut R, f: &FormulaFactory, vars: &[Variable]) {
-    result.reset();
-    product_rec(recursive_bound, result, f, vars);
+pub fn build_amo_product(recursive_bound: usize, result: &mut dyn EncodingResult, vars: &[Variable]) {
+    product_rec(recursive_bound, result, &vars.iter().map(|&v| v.into()).collect::<Box<[_]>>());
 }
 
 #[allow(clippy::many_single_char_names)]
-fn product_rec<R: EncodingResult>(recursive_bound: usize, result: &mut R, f: &FormulaFactory, vars: &[Variable]) {
+fn product_rec(recursive_bound: usize, result: &mut dyn EncodingResult, vars: &[SolverExportLiteral]) {
     let n = vars.len();
     let p = (n as f64).sqrt().ceil() as usize;
     let q = (n as f64 / p as f64).ceil() as usize;
-    let us: Vec<Variable> = (0..p).map(|_| result.new_cc_variable(f)).collect();
-    let vs: Vec<Variable> = (0..q).map(|_| result.new_cc_variable(f)).collect();
+    let us: Vec<SolverExportLiteral> = (0..p).map(|_| result.new_auxiliary_variable(AUX_CC)).collect();
+    let vs: Vec<SolverExportLiteral> = (0..q).map(|_| result.new_auxiliary_variable(AUX_CC)).collect();
 
     if p <= recursive_bound {
-        build_pure(result, f, &us);
+        build_pure(result, &us);
     } else {
-        product_rec(recursive_bound, result, f, &us);
+        product_rec(recursive_bound, result, &us);
     }
     if q <= recursive_bound {
-        build_pure(result, f, &vs);
+        build_pure(result, &vs);
     } else {
-        product_rec(recursive_bound, result, f, &vs);
+        product_rec(recursive_bound, result, &vs);
     }
 
-    for (i, u) in us.iter().enumerate().take(p) {
-        for (j, v) in vs.iter().enumerate().take(q) {
+    for (i, &u) in us.iter().enumerate().take(p) {
+        for (j, &v) in vs.iter().enumerate().take(q) {
             let k = i * q + j;
             if k < n {
-                result.add_clause2(f, Literal::new(vars[k], false), Literal::new(*u, true));
-                result.add_clause2(f, Literal::new(vars[k], false), Literal::new(*v, true));
+                result.add_clause(&[vars[k].negate(), u]);
+                result.add_clause(&[vars[k].negate(), v]);
             }
         }
     }
 }
 
-fn build_pure<R: EncodingResult>(result: &mut R, f: &FormulaFactory, vars: &[Variable]) {
+fn build_pure(result: &mut dyn EncodingResult, vars: &[SolverExportLiteral]) {
     for i in 0..vars.len() {
         for j in (i + 1)..vars.len() {
-            result.add_clause2(f, Literal::new(vars[i], false), Literal::new(vars[j], false));
+            result.add_clause(&[vars[i].negate(), vars[j].negate()]);
         }
     }
 }

@@ -6,11 +6,10 @@ use std::sync::Arc;
 use CType::{GE, GT, LE, LT};
 
 use crate::datastructures::Assignment;
-use crate::encodings::{CcEncoder, PbEncoder};
+use crate::encodings::{CcConfig, CcEncoder, PbEncoder};
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::solver::minisat::sat::Tristate;
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::Tristate;
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::FormulaType;
@@ -256,11 +255,15 @@ impl CardinalityConstraint {
     /// let encoded = formula.encode(&f);
     /// ```
     pub fn encode(&self, f: &FormulaFactory) -> Arc<[EncodedFormula]> {
+        self.encode_with_config(f.config.cc_config.clone(), f)
+    }
+
+    pub fn encode_with_config(&self, config: CcConfig, f: &FormulaFactory) -> Arc<[EncodedFormula]> {
         let index = f.ccs.lookup(self).expect("Cardinality Constraint must be present in FF");
         if let Some(cached) = f.caches.cc_encoding.get(&index) {
             return cached.clone();
         }
-        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f));
+        let result: Arc<[_]> = Arc::from(CcEncoder::new(config).encode(self, f));
         if f.config.caches.cc_encoding {
             f.caches.cc_encoding.insert(index, result.clone());
         }
@@ -467,9 +470,9 @@ impl PbConstraint {
         let new_rhs = self.rhs - lhs_fixed;
         if self.comparator != EQ {
             let fixed = evaluate_coeffs(min_value, max_value, new_rhs, self.comparator);
-            if fixed == True {
+            if fixed == Tristate::True {
                 return f.verum();
-            } else if fixed == False {
+            } else if fixed == Tristate::False {
                 return f.falsum();
             }
         }
@@ -587,45 +590,45 @@ const fn evaluate_coeffs(min_value: i64, max_value: i64, rhs: i64, comparator: C
     match comparator {
         EQ => {
             if status == 0 || status == 4 {
-                False
+                Tristate::False
             } else {
-                Undef
+                Tristate::Undef
             }
         }
         LE => {
             if status >= 3 {
-                True
+                Tristate::True
             } else if status < 1 {
-                False
+                Tristate::False
             } else {
-                Undef
+                Tristate::Undef
             }
         }
         LT => {
             if status > 3 {
-                True
+                Tristate::True
             } else if status <= 1 {
-                False
+                Tristate::False
             } else {
-                Undef
+                Tristate::Undef
             }
         }
         GE => {
             if status <= 1 {
-                True
+                Tristate::True
             } else if status > 3 {
-                False
+                Tristate::False
             } else {
-                Undef
+                Tristate::Undef
             }
         }
         GT => {
             if status < 1 {
-                True
+                Tristate::True
             } else if status >= 3 {
-                False
+                Tristate::False
             } else {
-                Undef
+                Tristate::Undef
             }
         }
     }
@@ -711,7 +714,7 @@ mod tests {
     use crate::formulas::pbc_cc::evaluate_coeffs;
     use crate::formulas::CType::{EQ, GE, GT, LE, LT};
     use crate::formulas::{FormulaFactory, ToFormula};
-    use crate::solver::minisat::sat::Tristate::{False, True, Undef};
+    use crate::solver::lng_core_solver::Tristate;
 
     #[test]
     fn test_normalization() {
@@ -765,34 +768,34 @@ mod tests {
     #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_evaluate_coeffs() {
-        assert_eq!(evaluate_coeffs(-2, 2, -3, EQ), False);
-        assert_eq!(evaluate_coeffs(-2, 2, 3, EQ), False);
-        assert_eq!(evaluate_coeffs(-2, 2, -2, EQ), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 2, EQ), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 0, EQ), Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, -3, EQ), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, 3, EQ), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, -2, EQ), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 2, EQ), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 0, EQ), Tristate::Undef);
 
-        assert_eq!(evaluate_coeffs(-2, 2, -3, GE), True);
-        assert_eq!(evaluate_coeffs(-2, 2, 3, GE), False);
-        assert_eq!(evaluate_coeffs(-2, 2, -2, GE), True);
-        assert_eq!(evaluate_coeffs(-2, 2, 2, GE), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 0, GE), Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, -3, GE), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, 3, GE), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, -2, GE), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, 2, GE), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 0, GE), Tristate::Undef);
 
-        assert_eq!(evaluate_coeffs(-2, 2, -3, GT), True);
-        assert_eq!(evaluate_coeffs(-2, 2, 3, GT), False);
-        assert_eq!(evaluate_coeffs(-2, 2, -2, GT), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 2, GT), False);
-        assert_eq!(evaluate_coeffs(-2, 2, 0, GT), Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, -3, GT), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, 3, GT), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, -2, GT), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 2, GT), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, 0, GT), Tristate::Undef);
 
-        assert_eq!(evaluate_coeffs(-2, 2, -3, LE), False);
-        assert_eq!(evaluate_coeffs(-2, 2, 3, LE), True);
-        assert_eq!(evaluate_coeffs(-2, 2, -2, LE), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 2, LE), True);
-        assert_eq!(evaluate_coeffs(-2, 2, 0, LE), Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, -3, LE), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, 3, LE), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, -2, LE), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 2, LE), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, 0, LE), Tristate::Undef);
 
-        assert_eq!(evaluate_coeffs(-2, 2, -3, LT), False);
-        assert_eq!(evaluate_coeffs(-2, 2, 3, LT), True);
-        assert_eq!(evaluate_coeffs(-2, 2, -2, LT), False);
-        assert_eq!(evaluate_coeffs(-2, 2, 2, LT), Undef);
-        assert_eq!(evaluate_coeffs(-2, 2, 0, LT), Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, -3, LT), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, 3, LT), Tristate::True);
+        assert_eq!(evaluate_coeffs(-2, 2, -2, LT), Tristate::False);
+        assert_eq!(evaluate_coeffs(-2, 2, 2, LT), Tristate::Undef);
+        assert_eq!(evaluate_coeffs(-2, 2, 0, LT), Tristate::Undef);
     }
 }

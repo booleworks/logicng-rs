@@ -1,6 +1,7 @@
 use super::LngEvent;
 
-#[derive(Clone, Debug)]
+#[must_use]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LngResult<R> {
     Ok(R),
     Canceled(LngEvent),

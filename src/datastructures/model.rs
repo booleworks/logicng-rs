@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::datastructures::Assignment;
 use crate::formulas::{FormulaFactory, Literal, StringLiteral, Variable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
 /// A `Model` stores a set of positive and negative [`Variable`]s.
 ///
 /// `Model` stores all variables in [`Vec`]s, this allows for a fast creation of

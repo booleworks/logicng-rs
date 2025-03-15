@@ -55,27 +55,22 @@ impl CnfAlgorithm {
         }
         match self {
             Self::Factorization => factorization_cnf_with_handler(formula, f, handler),
-            Self::Tseitin => LngResult::Ok(tseitin_cnf_with_boundary(
-                formula,
-                f,
-                DEFAULT_BOUNDARY_FOR_FACTORIZATION,
-                state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
+            Self::Tseitin => LngResult::Ok(state.tseitin_state.as_mut().map_or_else(
+                || tseitin_cnf_with_boundary(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, &mut TseitinState::default()),
+                |ts_state| tseitin_cnf_with_boundary(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, ts_state),
             )),
-            Self::TseitinWithBoundary(boundary) => LngResult::Ok(tseitin_cnf_with_boundary(
-                formula,
-                f,
-                *boundary,
-                state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
+            Self::TseitinWithBoundary(boundary) => LngResult::Ok(state.tseitin_state.as_mut().map_or_else(
+                || tseitin_cnf_with_boundary(formula, f, *boundary, &mut TseitinState::default()),
+                |ts_state| tseitin_cnf_with_boundary(formula, f, *boundary, ts_state),
             )),
-            Self::PlaistedGreenbaum => LngResult::Ok(pg_on_formula(
-                formula,
-                f,
-                DEFAULT_BOUNDARY_FOR_FACTORIZATION,
-                state.pg_state.as_mut().unwrap_or(&mut PGState::default()),
+            Self::PlaistedGreenbaum => LngResult::Ok(state.pg_state.as_mut().map_or_else(
+                || pg_on_formula(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, &mut PGState::default()),
+                |pg_state| pg_on_formula(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, pg_state),
             )),
-            Self::PlaistedGreenbaumWithBoundary(boundary) => {
-                LngResult::Ok(pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default())))
-            }
+            Self::PlaistedGreenbaumWithBoundary(boundary) => LngResult::Ok(state.pg_state.as_mut().map_or_else(
+                || pg_on_formula(formula, f, *boundary, &mut PGState::default()),
+                |pg_state| pg_on_formula(formula, f, *boundary, pg_state),
+            )),
             Self::Advanced(config) => LngResult::Ok(advanced_cnf_encoding(formula, f, config, state)),
             Self::Bdd => bdd_cnf_with_handler(formula, f, handler),
         }
@@ -153,7 +148,9 @@ mod tests {
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
     use crate::operations::transformations::{AdvancedFactorizationHandler, CnfEncoder};
-    use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+    use crate::solver::lng_core_solver::functions::model_enumeration_function::{
+        enumerate_models_for_formula_with_config, ModelEnumerationConfig,
+    };
 
     const P1: &str = "(x1 | x2) & x3 & x4 & ((x1 & x5 & ~(x6 | x7) | x8) | x9)";
     const P2: &str = "(y1 | y2) & y3 & y4 & ((y1 & y5 & ~(y6 | y7) | y8) | y9)";
@@ -311,9 +308,9 @@ mod tests {
     }
 
     fn equivalent_models(f1: EncodedFormula, f2: EncodedFormula, vars: Box<[Variable]>, f: &FormulaFactory) -> bool {
-        let config = ModelEnumerationConfig::default().variables(vars);
-        let models1: HashSet<Assignment> = enumerate_models_for_formula_with_config(f1, f, &config).iter().map(Assignment::from).collect();
-        let models2: HashSet<Assignment> = enumerate_models_for_formula_with_config(f2, f, &config).iter().map(Assignment::from).collect();
+        let config = ModelEnumerationConfig::new(vars);
+        let models1: HashSet<Assignment> = enumerate_models_for_formula_with_config(f1, &config, f).iter().map(Assignment::from).collect();
+        let models2: HashSet<Assignment> = enumerate_models_for_formula_with_config(f2, &config, f).iter().map(Assignment::from).collect();
         models1 == models2
     }
 }

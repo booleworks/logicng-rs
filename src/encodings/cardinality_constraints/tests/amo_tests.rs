@@ -3,9 +3,8 @@ use crate::encodings::cardinality_constraints::cc_config::{AmoEncoder, CcConfig}
 use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::minisat::sat::Tristate::True;
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::functions::model_enumeration_function::{enumerate_models_with_config, ModelEnumerationConfig};
+use crate::solver::lng_core_solver::SatSolver;
 
 fn configs() -> Vec<CcConfig> {
     vec![
@@ -60,11 +59,11 @@ fn test_amo_k() {
 
 fn test_amo(num_lits: usize, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::<()>::new();
     let cc = f.cc(LE, 1, problem_vars.clone());
-    solver.add(cc, f);
-    assert_eq!(solver.sat(), True);
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000));
+    solver.add_formula(cc, f);
+    assert!(solver.sat(f));
+    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::new(problem_vars).max_models(12000), f);
     assert_eq!(models.len(), num_lits + 1);
     for model in models {
         assert!(model.pos().len() <= 1);

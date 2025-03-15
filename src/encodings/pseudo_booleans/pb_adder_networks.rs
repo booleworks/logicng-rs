@@ -1,32 +1,36 @@
 use std::collections::VecDeque;
 use std::iter::repeat;
 
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, AUX_PBC};
+use crate::{
+    datastructures::{EncodingResult, SolverExportLiteral},
+    formulas::{Literal, AUX_PBC},
+};
 
-pub fn encode_adder_networks(lits: &[Literal], coeffs: &[i64], rhs: u64, f: &FormulaFactory) -> Vec<EncodedFormula> {
+pub fn encode_adder_networks(lits: &[Literal], coeffs: &[i64], rhs: u64, enc_result: &mut dyn EncodingResult) {
     let rhs =
         rhs.try_into().unwrap_or_else(|_| panic!("Can only encode PBCs with right-hand-sides up to {} on this architecture", usize::MAX));
-    let mut formula: Vec<EncodedFormula> = Vec::new();
     let nb = ld_int(rhs);
-    let mut result: Vec<Option<Literal>> = repeat(None).take(nb).collect();
+    let mut result: Vec<Option<_>> = repeat(None).take(nb).collect();
     let mut buckets = Vec::new();
     for i_bit in 0..nb {
         let mut bucket = VecDeque::new();
         for i_var in 0..lits.len() {
             if (1 << i_bit) & coeffs[i_var] != 0 {
-                bucket.push_front(lits[i_var]);
+                bucket.push_front(lits[i_var].into());
             }
         }
         buckets.push(bucket);
     }
-    formula.extend(adder_tree(&mut buckets, &mut result, f));
-    formula.extend(less_than_or_equal(&result, rhs, f));
-    formula
+    adder_tree(&mut buckets, &mut result, enc_result);
+    less_than_or_equal(&result, rhs, enc_result);
 }
 
 #[allow(clippy::many_single_char_names)]
-fn adder_tree(buckets: &mut Vec<VecDeque<Literal>>, result: &mut Vec<Option<Literal>>, f: &FormulaFactory) -> Vec<EncodedFormula> {
-    let mut formula = Vec::new();
+fn adder_tree(
+    buckets: &mut Vec<VecDeque<SolverExportLiteral>>,
+    result: &mut Vec<Option<SolverExportLiteral>>,
+    enc_result: &mut dyn EncodingResult,
+) {
     let mut i = 0;
     while i < buckets.len() {
         if !buckets[i].is_empty() {
@@ -39,100 +43,95 @@ fn adder_tree(buckets: &mut Vec<VecDeque<Literal>>, result: &mut Vec<Option<Lite
                 let x = bucket.pop_front().unwrap();
                 let y = bucket.pop_front().unwrap();
                 let z = bucket.pop_front().unwrap();
-                let (xs, constraints) = fa_sum(x, y, z, f);
-                formula.extend(constraints);
-                let (xc, constraints) = fa_carry(x, y, z, f);
-                formula.extend(constraints);
+                let xs = fa_sum(x, y, z, enc_result);
+                let xc = fa_carry(x, y, z, enc_result);
                 buckets[i].push_back(xs);
                 buckets[i + 1].push_back(xc);
-                formula.extend(fa_extra(xs, xc, x, y, z, f));
+                fa_extra(xs, xc, x, y, z, enc_result);
             }
             if buckets[i].len() == 2 {
                 let x = buckets[i].pop_front().unwrap();
                 let y = buckets[i].pop_front().unwrap();
-                let (xs, constraints) = ha_sum(x, y, f);
-                formula.extend(constraints);
+                let xs = ha_sum(x, y, enc_result);
                 buckets[i].push_back(xs);
-                let (xc, constraints) = ha_carry(x, y, f);
-                formula.extend(constraints);
+                let xc = ha_carry(x, y, enc_result);
                 buckets[i + 1].push_back(xc);
             }
             result[i] = buckets[i].pop_front();
         }
         i += 1;
     }
-    formula
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_sum(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
-    (
-        x,
-        vec![
-            f.clause([a, b, c, x.negate()]),
-            f.clause([a, b.negate(), c.negate(), x.negate()]),
-            f.clause([a.negate(), b, c.negate(), x.negate()]),
-            f.clause([a.negate(), b.negate(), c, x.negate()]),
-            f.clause([a.negate(), b.negate(), c.negate(), x]),
-            f.clause([a.negate(), b, c, x]),
-            f.clause([a, b.negate(), c, x]),
-            f.clause([a, b, c.negate(), x]),
-        ],
-    )
+fn fa_sum(a: SolverExportLiteral, b: SolverExportLiteral, c: SolverExportLiteral, result: &mut dyn EncodingResult) -> SolverExportLiteral {
+    let x = result.new_auxiliary_variable(AUX_PBC);
+    result.add_clause(&[a, b, c, x.negate()]);
+    result.add_clause(&[a, b.negate(), c.negate(), x.negate()]);
+    result.add_clause(&[a.negate(), b, c.negate(), x.negate()]);
+    result.add_clause(&[a.negate(), b.negate(), c, x.negate()]);
+    result.add_clause(&[a.negate(), b.negate(), c.negate(), x]);
+    result.add_clause(&[a.negate(), b, c, x]);
+    result.add_clause(&[a, b.negate(), c, x]);
+    result.add_clause(&[a, b, c.negate(), x]);
+    x
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_carry(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
-    (
-        x,
-        vec![
-            f.clause([b, c, x.negate()]),
-            f.clause([a, c, x.negate()]),
-            f.clause([a, b, x.negate()]),
-            f.clause([b.negate(), c.negate(), x]),
-            f.clause([a.negate(), c.negate(), x]),
-            f.clause([a.negate(), b.negate(), x]),
-        ],
-    )
+fn fa_carry(
+    a: SolverExportLiteral,
+    b: SolverExportLiteral,
+    c: SolverExportLiteral,
+    result: &mut dyn EncodingResult,
+) -> SolverExportLiteral {
+    let x = result.new_auxiliary_variable(AUX_PBC);
+    result.add_clause(&[b, c, x.negate()]);
+    result.add_clause(&[a, c, x.negate()]);
+    result.add_clause(&[a, b, x.negate()]);
+    result.add_clause(&[b.negate(), c.negate(), x]);
+    result.add_clause(&[a.negate(), c.negate(), x]);
+    result.add_clause(&[a.negate(), b.negate(), x]);
+    x
 }
 
-fn fa_extra(xs: Literal, xc: Literal, a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> Vec<EncodedFormula> {
-    vec![
-        f.clause([xc.negate(), xs.negate(), a]),
-        f.clause([xc.negate(), xs.negate(), b]),
-        f.clause([xc.negate(), xs.negate(), c]),
-        f.clause([xc, xs, a.negate()]),
-        f.clause([xc, xs, b.negate()]),
-        f.clause([xc, xs, c.negate()]),
-    ]
+fn fa_extra(
+    xs: SolverExportLiteral,
+    xc: SolverExportLiteral,
+    a: SolverExportLiteral,
+    b: SolverExportLiteral,
+    c: SolverExportLiteral,
+    result: &mut dyn EncodingResult,
+) {
+    result.add_clause(&[xc.negate(), xs.negate(), a]);
+    result.add_clause(&[xc.negate(), xs.negate(), b]);
+    result.add_clause(&[xc.negate(), xs.negate(), c]);
+    result.add_clause(&[xc, xs, a.negate()]);
+    result.add_clause(&[xc, xs, b.negate()]);
+    result.add_clause(&[xc, xs, c.negate()]);
 }
 
-fn ha_sum(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
-    (
-        x,
-        vec![
-            f.clause([a.negate(), b.negate(), x.negate()]),
-            f.clause([a, b, x.negate()]),
-            f.clause([a.negate(), b, x]),
-            f.clause([a, b.negate(), x]),
-        ],
-    )
+fn ha_sum(a: SolverExportLiteral, b: SolverExportLiteral, result: &mut dyn EncodingResult) -> SolverExportLiteral {
+    let x = result.new_auxiliary_variable(AUX_PBC);
+    result.add_clause(&[a.negate(), b.negate(), x.negate()]);
+    result.add_clause(&[a, b, x.negate()]);
+    result.add_clause(&[a.negate(), b, x]);
+    result.add_clause(&[a, b.negate(), x]);
+    x
 }
 
-fn ha_carry(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
-    let x = f.new_auxiliary_variable(AUX_PBC).pos_lit();
-    (x, vec![f.clause([a, x.negate()]), f.clause([b, x.negate()]), f.clause([a.negate(), b.negate(), x])])
+fn ha_carry(a: SolverExportLiteral, b: SolverExportLiteral, result: &mut dyn EncodingResult) -> SolverExportLiteral {
+    let x = result.new_auxiliary_variable(AUX_PBC);
+    result.add_clause(&[a, x.negate()]);
+    result.add_clause(&[b, x.negate()]);
+    result.add_clause(&[a.negate(), b.negate(), x]);
+    x
 }
 
-fn less_than_or_equal(xs: &[Option<Literal>], rhs: usize, f: &FormulaFactory) -> Vec<EncodedFormula> {
-    let mut result = Vec::new();
+fn less_than_or_equal(xs: &[Option<SolverExportLiteral>], rhs: usize, result: &mut dyn EncodingResult) {
     for i in 0..xs.len() {
         let xi = xs.get(i).unwrap();
         if !(xi.is_none() || rhs & (1 << i) > 0) {
-            let mut clause: Vec<Literal> = Vec::with_capacity(xs.len() - i);
+            let mut clause: Vec<_> = Vec::with_capacity(xs.len() - i);
             let mut skip = false;
             for j in (i + 1)..xs.len() {
                 let xj = xs.get(j).unwrap();
@@ -149,11 +148,10 @@ fn less_than_or_equal(xs: &[Option<Literal>], rhs: usize, f: &FormulaFactory) ->
             }
             if !skip {
                 clause.push(xs.get(i).unwrap().unwrap().negate());
-                result.push(f.clause(&clause));
+                result.add_clause(&clause);
             }
         }
     }
-    result
 }
 
 const fn ld_int(x: usize) -> usize {

@@ -1,9 +1,10 @@
 use std::fmt::Display;
+use std::rc::Rc;
 
 use crate::datastructures::Model;
 use crate::formulas::EncodedFormula;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum LngEvent {
     NoEvent,
     DistributionPerformed,
@@ -23,7 +24,7 @@ pub enum LngEvent {
     FactorizationCreatedClause(EncodedFormula),
     MaxSatNewLowerBound(usize),
     MaxSatNewUpperBound(usize),
-    OptimizationFoundBetterBound(Model),
+    OptimizationFoundBetterBound(Rc<Model>),
 }
 
 impl Display for LngEvent {
@@ -53,7 +54,7 @@ impl Display for LngEvent {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LngComputation {
     Sat,
     MaxSat,
