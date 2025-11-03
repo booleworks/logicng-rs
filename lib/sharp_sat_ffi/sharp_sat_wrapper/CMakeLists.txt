@@ -10,11 +10,8 @@ endif ()
 
 IF(UNIX)
   IF(APPLE)
-    IF(CMAKE_APPLE_SILICON_PROCESSOR)
-      include_directories(/opt/homebrew/Cellar/gmp/6.3.0/include)
-    ELSE(CMAKE_APPLE_SILICON_PROCESSOR)
-      include_directories(/usr/local/include)
-    ENDIF(CMAKE_APPLE_SILICON_PROCESSOR)
+    include_directories(/usr/local/include)
+    include_directories(/opt/local/include)
   ELSE(APPLE)
 
   ENDIF(APPLE)

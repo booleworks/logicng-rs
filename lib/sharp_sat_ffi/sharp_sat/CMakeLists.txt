@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project (SHARPSAT LANGUAGES CXX) 
+project (SHARPSAT LANGUAGES CXX)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -fpie -pie")
 
@@ -9,11 +9,8 @@ set(CMAKE_CXX_FLAGS_PROFILING "${CMAKE_CXX_FLAGS_PROFILING} -O3 -g -DNDEBUG -Wal
 
 IF(UNIX)
   IF(APPLE)
-    IF(CMAKE_APPLE_SILICON_PROCESSOR)
-      include_directories(/opt/homebrew/Cellar/gmp/6.3.0/include)
-    ELSE(CMAKE_APPLE_SILICON_PROCESSOR)
-      include_directories(/usr/local/include)
-    ENDIF(CMAKE_APPLE_SILICON_PROCESSOR)
+    include_directories(/usr/local/include)
+    include_directories(/opt/local/include)
   ELSE(APPLE)
 
   ENDIF(APPLE)
@@ -54,8 +51,8 @@ SET(SOURCES ${SHARPSATSRCDIR}/alt_component_analyzer.cpp ${SHARPSATSRCDIR}/alt_c
 
 add_library(_sharp_sat STATIC ${SOURCES})
 target_link_libraries(_sharp_sat ${GMP_LIB} ${GMPXX_LIB})
-set_target_properties(_sharp_sat PROPERTIES 
-  CXX_STANDARD 11 
+set_target_properties(_sharp_sat PROPERTIES
+  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
   CMAKE_POSITION_INDEPENDENT_CODE ON
   CMAKE_BUILD_TYPE Release
