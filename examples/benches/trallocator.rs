@@ -9,14 +9,14 @@ use crate::PRINT_MEMORY;
 pub struct Trallocator<A: GlobalAlloc>(pub A, AtomicU64);
 
 unsafe impl<A: GlobalAlloc> GlobalAlloc for Trallocator<A> {
-    unsafe fn alloc(&self, l: Layout) -> *mut u8 {
+    unsafe fn alloc(&self, l: Layout) -> *mut u8 { unsafe {
         self.1.fetch_add(l.size() as u64, SeqCst);
         self.0.alloc(l)
-    }
-    unsafe fn dealloc(&self, ptr: *mut u8, l: Layout) {
+    }}
+    unsafe fn dealloc(&self, ptr: *mut u8, l: Layout) { unsafe {
         self.0.dealloc(ptr, l);
         self.1.fetch_sub(l.size() as u64, SeqCst);
-    }
+    }}
 }
 
 impl<A: GlobalAlloc> Trallocator<A> {

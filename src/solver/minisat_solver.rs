@@ -257,7 +257,7 @@ impl<B> MiniSat<B> {
     /// Returns all known variables on the solver.
     pub fn known_variables(&self) -> Vec<Variable> {
         let n_vars = self.underlying_solver.vars.len();
-        self.underlying_solver.name2idx.iter().filter(|(_, &idx)| idx.0 < n_vars).map(|(&var, _)| var).collect()
+        self.underlying_solver.name2idx.iter().filter(|&(_, &idx)| idx.0 < n_vars).map(|(&var, _)| var).collect()
     }
 
     /// Adds a cardinality constraint and returns its incremental data in order

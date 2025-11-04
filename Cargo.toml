@@ -2,7 +2,7 @@
 name = "logicng"
 version = "0.1.0-alpha.3"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
-edition = "2021"
+edition = "2024"
 include = ["/src"]
 
 description = "A Library for Creating, Manipulating, and Solving Boolean Formulas"

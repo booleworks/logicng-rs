@@ -2,7 +2,7 @@
 name = "logicng-open-wbo-sys"
 version = "0.1.0-alpha.3"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
-edition = "2021"
+edition = "2024"
 build = "build.rs"
 
 description = "LogicNG Bindings for OpenWBO"
