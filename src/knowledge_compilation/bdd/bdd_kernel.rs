@@ -556,7 +556,7 @@ impl BddKernel {
         self.refstacktop = 0;
     }
 
-    #[allow(clippy::cast_abs_to_unsigned)]
+    #[allow(clippy::cast_sign_loss, clippy::cast_abs_to_unsigned)]
     pub(super) fn insvarset(&self, a: usize) -> bool {
         self.quantvarset[a].abs() as u32 == self.quantvarset_id
     }

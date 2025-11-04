@@ -1,6 +1,6 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
@@ -28,12 +28,14 @@ fn parse_files(thread_count: usize, f: &Arc<FormulaFactory>) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(f);
         let paths_l = Arc::clone(&paths);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= paths_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= paths_l.len() {
+                    break;
+                }
+                read_formula(&paths_l[c], &f_l).unwrap();
             }
-            read_formula(&paths_l[c], &f_l).unwrap();
         });
         threads.push(handle);
     }

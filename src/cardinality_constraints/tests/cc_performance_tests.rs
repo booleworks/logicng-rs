@@ -1,8 +1,8 @@
 use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder, CcConfig};
 use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::minisat::sat::Tristate::True;
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::Tristate::True;
 
 const fn configs() -> [CcConfig; 3] {
     [

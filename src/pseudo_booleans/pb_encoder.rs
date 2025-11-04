@@ -8,14 +8,9 @@ use crate::util::exceptions::panic_unexpected_formula_type;
 use super::{encode_adder_networks, encode_binary_merge, encode_swc};
 
 /// An encoder for pseudo-boolean constraints.
+#[derive(Clone, Default)]
 pub struct PbEncoder {
     config: PbConfig,
-}
-
-impl Default for PbEncoder {
-    fn default() -> Self {
-        Self { config: PbConfig::new() }
-    }
 }
 
 impl PbEncoder {

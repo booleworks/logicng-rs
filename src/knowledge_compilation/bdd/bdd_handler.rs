@@ -38,10 +38,6 @@ impl NumberOfNodesBddHandler {
 impl BddHandler for NumberOfNodesBddHandler {
     fn new_ref_added(&mut self) -> Option<BddError> {
         self.count += 1;
-        if self.count >= self.bound {
-            Some(BddError::NodeLimitReached)
-        } else {
-            None
-        }
+        if self.count >= self.bound { Some(BddError::NodeLimitReached) } else { None }
     }
 }

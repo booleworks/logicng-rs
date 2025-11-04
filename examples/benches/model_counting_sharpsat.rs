@@ -1,11 +1,11 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::operations::functions::{count_models, ModelCountAlgorithm};
+use logicng::operations::functions::{ModelCountAlgorithm, count_models};
 
 pub fn main() {
     for threads in &[1, 2, 4, 6, 8, 10] {
@@ -26,13 +26,15 @@ pub fn parallel(thread_count: usize) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(&f);
         let paths_l = Arc::clone(&paths);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= paths_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= paths_l.len() {
+                    break;
+                }
+                let formula = read_formula(&paths_l[c], &f_l).unwrap();
+                count_models(formula, ModelCountAlgorithm::SharpSat, &f_l);
             }
-            let formula = read_formula(&paths_l[c], &f_l).unwrap();
-            count_models(formula, ModelCountAlgorithm::SharpSat, &f_l);
         });
         threads.push(handle);
     }

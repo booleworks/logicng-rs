@@ -449,11 +449,7 @@ impl Assignment {
     /// assert_eq!(assignment.contains(lit3), false);
     /// ```
     pub fn contains(&self, lit: Literal) -> bool {
-        if lit.phase() {
-            self.pos.contains(&lit.variable())
-        } else {
-            self.neg.contains(&lit.variable())
-        }
+        if lit.phase() { self.pos.contains(&lit.variable()) } else { self.neg.contains(&lit.variable()) }
     }
 
     /// Evaluates the given literals on this assignment.
@@ -487,11 +483,7 @@ impl Assignment {
     /// ```
     pub fn evaluate_lit(&self, lit: Literal) -> bool {
         let var = &lit.variable();
-        if lit.phase() {
-            self.pos.contains(var)
-        } else {
-            self.neg.contains(var) || !self.pos.contains(var)
-        }
+        if lit.phase() { self.pos.contains(var) } else { self.neg.contains(var) || !self.pos.contains(var) }
     }
 
     /// Restricts the given literal in this assignment.
@@ -527,17 +519,9 @@ impl Assignment {
         let var = lit.variable();
         let phase = lit.phase();
         if self.pos.contains(&var) {
-            if phase {
-                EncodedFormula::constant(true)
-            } else {
-                EncodedFormula::constant(false)
-            }
+            if phase { EncodedFormula::constant(true) } else { EncodedFormula::constant(false) }
         } else if self.neg.contains(&var) {
-            if phase {
-                EncodedFormula::constant(false)
-            } else {
-                EncodedFormula::constant(true)
-            }
+            if phase { EncodedFormula::constant(false) } else { EncodedFormula::constant(true) }
         } else {
             lit.into()
         }

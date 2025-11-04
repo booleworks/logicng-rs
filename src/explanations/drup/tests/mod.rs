@@ -3,8 +3,8 @@ mod drup_tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
     use crate::propositions::{Proposition, StandardProposition};
-    use crate::solver::minisat::sat::Tristate::{False, True};
     use crate::solver::minisat::SolverCnfMethod::{FactoryCnf, PgOnSolver};
+    use crate::solver::minisat::sat::Tristate::{False, True};
     use crate::solver::minisat::{MiniSat, MiniSatConfig, SatBuilder};
     use std::collections::HashSet;
     use std::fmt::Debug;

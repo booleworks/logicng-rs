@@ -1,13 +1,14 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::fmt::Write;
 use std::sync::Arc;
 
 use crate::formulas::{CardinalityConstraint, FormulaFactory, Literal, PbConstraint, StringLiteral, Variable};
 use crate::operations::{functions, predicates};
 
+use super::LitType;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
 use super::formula_cache::nary_formula_cache::NaryIterator;
-use super::LitType;
 
 /// Specifies all types a [`EncodedFormula`] can have.
 ///
@@ -170,7 +171,7 @@ impl EncodedFormula {
     ///     Formula::And(operands_iterator) => {},
     /// }
     /// ```
-    pub fn unpack(self, f: &FormulaFactory) -> Formula {
+    pub fn unpack(self, f: &FormulaFactory) -> Formula<'_> {
         match self.formula_type() {
             FormulaType::Pbc => Formula::Pbc(&f.pbcs[self.encoding]),
             FormulaType::Cc => Formula::Cc(&f.ccs[self.encoding]),
@@ -731,7 +732,7 @@ impl EncodedFormula {
     /// ].into_iter());
     /// assert_eq!(formula.string_variables(&f), expected)
     /// ```
-    pub fn string_variables(self, f: &FormulaFactory) -> BTreeSet<Cow<str>> {
+    pub fn string_variables(self, f: &FormulaFactory) -> BTreeSet<Cow<'_, str>> {
         functions::string_variables(self, f)
     }
 
@@ -781,7 +782,7 @@ impl EncodedFormula {
     /// ].into_iter());
     /// assert_eq!(formula.string_literals(&f), expected)
     /// ```
-    pub fn string_literals(self, f: &FormulaFactory) -> BTreeSet<StringLiteral> {
+    pub fn string_literals(self, f: &FormulaFactory) -> BTreeSet<StringLiteral<'_>> {
         functions::string_literals(self, f)
     }
 
@@ -1269,7 +1270,7 @@ impl EncodedFormula {
                 result.push_str(op_char);
             }
             if self.precedence() > op.precedence() {
-                result.push_str(&format!("({})", &op.to_string(f)));
+                write!(&mut result, "({})", &op.to_string(f)).expect("Write to string cannot fail");
             } else {
                 result.push_str(&op.to_string(f));
             }

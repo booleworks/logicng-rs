@@ -1,7 +1,7 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
 
 use std::collections::HashSet;
-use std::iter::repeat;
+use std::iter::repeat_n;
 use std::ops::{BitAndAssign, BitOr};
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf, Node};
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{DTree, DTreeEncoding, DTreeIndex};
 use crate::solver::minisat::sat::Tristate::{True, Undef};
-use crate::solver::minisat::sat::{mk_lit, var, MsLit};
+use crate::solver::minisat::sat::{MsLit, mk_lit, var};
 
 pub struct DTreeFactory {
     pub(crate) _id: String,
@@ -92,7 +92,7 @@ impl DTreeFactory {
         let (clause_contents, clause_content_ranges) = self.generate_clause_contents(root);
         self.clause_contents = clause_contents;
         self.clause_content_ranges = clause_content_ranges;
-        self.static_var_sets = repeat(Arc::new(bitvec![])).take(2 * self.leafs.len()).collect();
+        self.static_var_sets = repeat_n(Arc::new(bitvec![]), 2 * self.leafs.len()).collect();
         self.compute_static_var_sets(root);
         self.finished = true;
     }
@@ -163,7 +163,7 @@ impl DTreeFactory {
 
     fn generate_clause_contents(&mut self, root: DTree) -> (Vec<isize>, Vec<(usize, usize)>) {
         let mut clause_contents: Vec<isize> = vec![];
-        let mut clause_content_ranges = repeat((0, 0)).take(2 * self.leafs.len()).collect();
+        let mut clause_content_ranges = repeat_n((0, 0), 2 * self.leafs.len()).collect();
         self.generate_clause_contents_rec(root, &mut clause_contents, &mut clause_content_ranges);
         (clause_contents, clause_content_ranges)
     }
@@ -235,11 +235,7 @@ impl DTreeFactory {
     }
 
     const fn decode(encoded: u32) -> DTree {
-        if encoded & 1 > 0 {
-            Leaf((encoded - 1) >> 1)
-        } else {
-            Node(encoded >> 1)
-        }
+        if encoded & 1 > 0 { Leaf((encoded - 1) >> 1) } else { Node(encoded >> 1) }
     }
 }
 

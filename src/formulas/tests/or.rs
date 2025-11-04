@@ -1,6 +1,6 @@
 mod or_test {
     use crate::formulas::EncodedFormula;
-    use crate::util::test_util::{hash, lits, string_lits, string_vars, vars, F};
+    use crate::util::test_util::{F, hash, lits, string_lits, string_vars, vars};
 
     #[test]
     fn test_type() {

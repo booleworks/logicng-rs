@@ -166,7 +166,7 @@ pub mod ffi {
         /// # Safety
         ///
         /// We flag all FFI-functions as unsafe. This function can fail, you need to use `get_error()` to check for that.
-        /// It fails if `var == 0`.  
+        /// It fails if `var == 0`.
         pub unsafe fn add_literal(formula: *mut MaxSATFormula, clause: *mut Clause, var: i32);
 
         /// Adds a _OpenWBO_ clause as hard clause to the _OpenWBO_ formula.

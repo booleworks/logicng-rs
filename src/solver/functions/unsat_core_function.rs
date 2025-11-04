@@ -1,11 +1,11 @@
 use itertools::Itertools;
 
-use crate::explanations::{drup_compute, UnsatCore};
+use crate::explanations::{UnsatCore, drup_compute};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::propositions::Proposition;
+use crate::solver::minisat::MiniSat;
 use crate::solver::minisat::sat::MsVar;
 use crate::solver::minisat::sat::Tristate::{True, Undef};
-use crate::solver::minisat::MiniSat;
 use std::collections::HashMap;
 
 /// Computes the [`UnsatCore`] if the formula is unsatisfiable.

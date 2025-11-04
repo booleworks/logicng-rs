@@ -1,6 +1,6 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::solver::minisat::sat::MsLit;
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::MsLit;
 
 // TODO: for MiniSat, we also would need a proposition to be passed to `add_clause` methods
 //       (actually, we need the FormulaFactory only for Vec<Formula> and we need a Proposition only for MiniSat)

@@ -1,6 +1,6 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
@@ -30,16 +30,18 @@ fn maximize(thread_count: usize) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(&f);
         let paths_l = Arc::clone(&paths);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= paths_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= paths_l.len() {
+                    break;
+                }
+                let formula = read_formula(&paths_l[c], &f_l).unwrap();
+                let literals = formula.variables(&f_l).iter().map(|v| v.pos_lit()).collect_vec();
+                let mut solver = MiniSat::new();
+                solver.add(formula, &f_l);
+                let _model = solver.optimize(&f_l, &OptimizationFunction::maximize(literals));
             }
-            let formula = read_formula(&paths_l[c], &f_l).unwrap();
-            let literals = formula.variables(&f_l).iter().map(|v| v.pos_lit()).collect_vec();
-            let mut solver = MiniSat::new();
-            solver.add(formula, &f_l);
-            let _model = solver.optimize(&f_l, &OptimizationFunction::maximize(literals));
         });
         threads.push(handle);
     }

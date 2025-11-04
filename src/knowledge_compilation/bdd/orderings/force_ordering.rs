@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::graphs::{hypergraph_from_cnf, Hypergraph, NodeIndex};
+use crate::graphs::{Hypergraph, NodeIndex, hypergraph_from_cnf};
 
 use super::dfs_ordering::dfs_ordering;
 

@@ -180,7 +180,7 @@ mod maxsat_solver;
 ///
 /// We generate a `MSU3` solver and add all formulas as soft clauses with weight
 /// 1.  Therefore, we have a pure MaxSAT problem without distinction between
-/// hard/soft clauses and without weights.
+///     hard/soft clauses and without weights.
 ///
 /// ```
 /// # use logicng::solver::maxsat::*;
@@ -295,7 +295,7 @@ mod maxsat_solver;
 ///
 /// The solver found an optimal solution in this case.  Further, the result is 0
 /// - indicating that *all* formulas were satisfied and no formula had to be
-/// unsatisfied.
+///   unsatisfied.
 ///
 /// ## Minimum vs. Maximum: Solving the Dual Problem
 ///
@@ -373,7 +373,7 @@ pub mod maxsat {
 ///
 /// In order to use this module you need to enable the `sharp_sat` feature and
 /// ensure the library compiles properly on your device (this is usually the
-/// hard part).  
+/// hard part).
 ///
 /// # Examples
 ///

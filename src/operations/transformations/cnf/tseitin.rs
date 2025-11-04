@@ -92,7 +92,7 @@ mod tests {
     use std::fs::read_to_string;
 
     use crate::formulas::{EncodedFormula, FormulaFactory};
-    use crate::operations::transformations::cnf::tseitin::{tseitin_cnf_with_boundary, TseitinState};
+    use crate::operations::transformations::cnf::tseitin::{TseitinState, tseitin_cnf_with_boundary};
 
     #[test]
     fn test() {

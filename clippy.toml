@@ -1,1 +1,1 @@
-doc-valid-idents = ["LogicNG", "MaxSAT", "MiniSAT", ".."]
+doc-valid-idents = ["LogicNG", "MaxSAT", "MiniSAT", "OpenWBO", "CVig", ".."]

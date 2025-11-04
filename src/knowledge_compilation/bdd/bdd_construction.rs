@@ -1,6 +1,6 @@
-use crate::knowledge_compilation::bdd::bdd_kernel::{is_const, BddKernel};
+use crate::knowledge_compilation::bdd::bdd_kernel::{BddKernel, is_const};
 
-use super::bdd_kernel::{is_one, is_zero, pair, Operand, BDD_FALSE, BDD_TRUE, OPCODE_NOT};
+use super::bdd_kernel::{BDD_FALSE, BDD_TRUE, OPCODE_NOT, Operand, is_one, is_zero, pair};
 
 const CACHEID_RESTRICT: usize = 0x1;
 const CACHEID_FORALL: usize = 0x1;

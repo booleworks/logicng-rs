@@ -87,11 +87,7 @@ impl Literal {
     /// let literal2 = Literal::new(var, false); // "~a"
     /// ```
     pub const fn new(variable: Variable, phase: bool) -> Self {
-        if phase {
-            Self::Pos(variable)
-        } else {
-            Self::Neg(variable)
-        }
+        if phase { Self::Pos(variable) } else { Self::Neg(variable) }
     }
 
     /// Returns the inherit variable of this literal.
@@ -394,13 +390,13 @@ impl ToStringLiteral for String {
     }
 }
 
-impl<'a> ToFormula for StringLiteral<'a> {
+impl ToFormula for StringLiteral<'_> {
     fn to_formula(&self, f: &FormulaFactory) -> EncodedFormula {
         f.literal(&self.name, self.phase)
     }
 }
 
-impl<'a> Display for StringLiteral<'a> {
+impl Display for StringLiteral<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}", if self.phase { "" } else { "~" }, self.name)
     }

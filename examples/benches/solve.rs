@@ -1,6 +1,6 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
@@ -30,15 +30,17 @@ fn solve(thread_count: usize) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(&f);
         let formulas_l = Arc::clone(&formulas);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= formulas_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= formulas_l.len() {
+                    break;
+                }
+                let formula = formulas_l[c];
+                let mut solver = MiniSat::new();
+                solver.add(formula, &f_l);
+                let _ = solver.sat();
             }
-            let formula = formulas_l[c];
-            let mut solver = MiniSat::new();
-            solver.add(formula, &f_l);
-            let _ = solver.sat();
         });
         threads.push(handle);
     }

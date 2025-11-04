@@ -2,9 +2,9 @@ use crate::datastructures::Assignment;
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Literal};
 use crate::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
-use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::minisat::sat::Tristate;
+use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::Tristate;
 use crate::util::test_util::F;
 
 fn configs() -> Vec<PbConfig> {

@@ -51,11 +51,7 @@ impl OpenWboSolver {
         let formula = unsafe {
             let f = ffi::new_formula();
             check_error()?;
-            if f.is_null() {
-                Err(MaxSatError::InvalidExternalResponse)
-            } else {
-                Ok(f)
-            }
+            if f.is_null() { Err(MaxSatError::InvalidExternalResponse) } else { Ok(f) }
         }?;
 
         Ok(Self {
@@ -95,11 +91,7 @@ impl OpenWboSolver {
         let clause = unsafe {
             let c = ffi::new_clause();
             check_error()?;
-            if c.is_null() {
-                Err(MaxSatError::InvalidExternalResponse)
-            } else {
-                Ok(c)
-            }
+            if c.is_null() { Err(MaxSatError::InvalidExternalResponse) } else { Ok(c) }
         }?;
 
         for lit in &*formula.literals(f) {
@@ -276,11 +268,7 @@ fn wbo_solver(config: &MaxSatConfig) -> Result<*mut ffi::MaxSAT, MaxSatError> {
         let solver = ffi::wbo(verb, weight, sym, limit);
         check_error()?;
 
-        if solver.is_null() {
-            Err(MaxSatError::InitializationError)
-        } else {
-            Ok(solver)
-        }
+        if solver.is_null() { Err(MaxSatError::InitializationError) } else { Ok(solver) }
     }
 }
 
@@ -293,11 +281,7 @@ fn linear_su_solver(config: &MaxSatConfig) -> Result<*mut ffi::MaxSAT, MaxSatErr
         let solver = ffi::linear_su(verb, config.bmo, enc, pb);
         check_error()?;
 
-        if solver.is_null() {
-            Err(MaxSatError::InitializationError)
-        } else {
-            Ok(solver)
-        }
+        if solver.is_null() { Err(MaxSatError::InitializationError) } else { Ok(solver) }
     }
 }
 
@@ -404,10 +388,6 @@ const fn convert_graph_type(graph: &GraphType) -> ffi::GraphType {
 fn check_error() -> Result<(), MaxSatError> {
     unsafe {
         let err = ffi::get_error();
-        if err == ffi::OpenWboError::NoError {
-            Ok(())
-        } else {
-            Err(MaxSatError::ExternalError(err))
-        }
+        if err == ffi::OpenWboError::NoError { Ok(()) } else { Err(MaxSatError::ExternalError(err)) }
     }
 }

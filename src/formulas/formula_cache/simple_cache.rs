@@ -4,9 +4,9 @@ use std::hash::Hash;
 use dashmap::DashMap;
 
 use crate::collections::AppendOnlyVec;
-use crate::formulas::formula_cache::formula_encoding::Encoding;
-use crate::formulas::formula_cache::CACHE_INITIAL_CAPACITY;
 use crate::formulas::FormulaType;
+use crate::formulas::formula_cache::CACHE_INITIAL_CAPACITY;
+use crate::formulas::formula_cache::formula_encoding::Encoding;
 
 use super::formula_encoding::FormulaEncoding;
 

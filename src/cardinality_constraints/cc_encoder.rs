@@ -11,15 +11,9 @@ use super::{
 };
 
 /// An encoder for cardinality constraints.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CcEncoder {
     config: CcConfig,
-}
-
-impl Default for CcEncoder {
-    fn default() -> Self {
-        Self { config: CcConfig::new() }
-    }
 }
 
 impl CcEncoder {
@@ -155,7 +149,9 @@ impl CcEncoder {
             None
         } else if rhs == 0 {
             // no variable can be true
-            vars.iter().for_each(|v| result.add_clause1(f, v.neg_lit()));
+            for v in vars {
+                result.add_clause1(f, v.neg_lit());
+            }
             None
         } else {
             match self.config.amk_encoder {
@@ -184,7 +180,9 @@ impl CcEncoder {
             result.add_clause(f, &vars.iter().map(Variable::pos_lit).collect::<Vec<Literal>>());
             None
         } else if rhs == vars.len() {
-            vars.iter().for_each(|v| result.add_clause1(f, v.pos_lit()));
+            for v in vars {
+                result.add_clause1(f, v.pos_lit());
+            }
             None
         } else {
             match self.config.alk_encoder {

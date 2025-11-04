@@ -1,6 +1,6 @@
 use crate::formulas::Literal::{Neg, Pos};
 use crate::formulas::{
-    evaluate_comparator, CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, LitType, PbConstraint, Variable,
+    CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, LitType, PbConstraint, Variable, evaluate_comparator,
 };
 use std::collections::HashMap;
 

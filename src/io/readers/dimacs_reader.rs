@@ -54,10 +54,11 @@ pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -
 
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
+    let split_regex = Regex::new(r"[ \t]+").unwrap();
     for l in reader.lines() {
         let line = l?;
         if !line.starts_with('c') && !line.starts_with('p') && !line.trim().is_empty() {
-            let split: Vec<&str> = Regex::new(r"[ \t]+").unwrap().split(&line).collect();
+            let split: Vec<&str> = split_regex.split(&line).collect();
             assert_eq!(*split.last().unwrap(), "0", "Line {line} did not end with 0.");
             let vars = split.iter().take(split.len() - 1).map(|&lit| lit.trim()).filter(|&lit| !lit.is_empty()).map(|lit| {
                 lit.strip_prefix('-')

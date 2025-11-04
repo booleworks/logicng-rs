@@ -8,7 +8,7 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable
 use crate::knowledge_compilation::bdd::bdd_construction::{
     and, bdd_high, bdd_low, bdd_var, equivalence, exists, for_all, implication, ith_var, nith_var, not, or,
 };
-use crate::knowledge_compilation::bdd::bdd_kernel::{BddKernel, BDD_FALSE, BDD_TRUE};
+use crate::knowledge_compilation::bdd::bdd_kernel::{BDD_FALSE, BDD_TRUE, BddKernel};
 use crate::knowledge_compilation::bdd::bdd_model_enumeration::enumerate_all_models;
 use crate::knowledge_compilation::bdd::bdd_normalform::normal_form;
 use crate::knowledge_compilation::bdd::bdd_operations::{
@@ -174,11 +174,7 @@ fn build_rec(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel
         True => Ok(BDD_TRUE),
         Lit(lit) => {
             let idx = kernel.get_or_add_var_index(lit.variable());
-            if lit.phase() {
-                Ok(ith_var(idx, kernel))
-            } else {
-                Ok(nith_var(idx, kernel))
-            }
+            if lit.phase() { Ok(ith_var(idx, kernel)) } else { Ok(nith_var(idx, kernel)) }
         }
         Not(op) => {
             let operand = build_rec(op, f, kernel, handler)?;

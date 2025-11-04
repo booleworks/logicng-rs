@@ -1,9 +1,9 @@
 use crate::datastructures::Model;
 use crate::formulas::CType::GE;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::solver::minisat::MiniSat;
 use crate::solver::minisat::sat::MsVar;
 use crate::solver::minisat::sat::Tristate::{False, True};
-use crate::solver::minisat::MiniSat;
 use std::collections::{BTreeMap, BTreeSet};
 use std::slice::Iter;
 
@@ -44,7 +44,7 @@ impl OptimizationFunction {
         let model = self.compute(solver, f);
         if let Some(state) = solver_state {
             solver.load_state(&state);
-        };
+        }
         model
     }
 
@@ -52,19 +52,19 @@ impl OptimizationFunction {
         let selector_map: BTreeMap<Variable, Literal> =
             self.literals.iter().enumerate().map(|(i, &l)| (f.var(format!("{SEL_PREFIX}{i}")), l)).collect();
         if self.maximize {
-            selector_map
-                .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(*lit)]), f));
-            selector_map
-                .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(lit.negate()), EncodedFormula::from(*sel_var)]), f));
+            for (sel_var, lit) in &selector_map {
+                solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(*lit)]), f);
+            }
+            for (sel_var, lit) in &selector_map {
+                solver.add(f.or([EncodedFormula::from(lit.negate()), EncodedFormula::from(*sel_var)]), f);
+            }
         } else {
             for (sel_var, lit) in &selector_map {
                 solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(lit.negate())]), f);
             }
-            selector_map
-                .iter()
-                .for_each(|(sel_var, lit)| solver.add(f.or([EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]), f));
+            for (sel_var, lit) in &selector_map {
+                solver.add(f.or([EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]), f);
+            }
         }
         if solver.sat() != True {
             return None;
@@ -78,7 +78,7 @@ impl OptimizationFunction {
             if solver.sat() == False {
                 return Some(self.mk_result_model(&internal_model, solver));
             }
-            internal_model = solver.underlying_solver.model.clone();
+            internal_model.clone_from(&solver.underlying_solver.model);
             current_model = solver.model(Some(&selectors)).unwrap();
             current_bound = current_model.pos().len();
         } else if current_bound == selectors.len() {
@@ -87,7 +87,7 @@ impl OptimizationFunction {
         let cc = f.cc(GE, u32::try_from(current_bound).expect("rhs of cc too large") + 1, selectors.clone()).as_cc(f).unwrap();
         let mut incremental_data = solver.add_incremental_cc(&cc, f);
         while solver.sat() == True {
-            internal_model = solver.underlying_solver.model.clone();
+            internal_model.clone_from(&solver.underlying_solver.model);
             current_model = solver.model(Some(&selectors)).unwrap();
             current_bound = current_model.pos().len();
             if current_bound == selectors.len() {

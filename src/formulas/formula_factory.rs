@@ -8,8 +8,8 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use pest::error::Error;
 use regex::Regex;
@@ -17,13 +17,13 @@ use regex::Regex;
 use CType::{EQ, LE, LT};
 
 use crate::datastructures::Assignment;
-use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
-use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::CType::{GE, GT};
 use crate::formulas::Literal::Pos;
+use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
+use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::{AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
-use crate::parser::pseudo_boolean_parser::{parse, Rule};
+use crate::parser::pseudo_boolean_parser::{Rule, parse};
 
 use super::formula_cache::equivalence_cache::EquivalenceCache;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFormulaEncoding};
@@ -414,11 +414,7 @@ impl FormulaFactory {
     /// assert_eq!(f.constant(false), EncodedFormula::constant(false));
     /// ```
     pub fn constant(&self, value: bool) -> EncodedFormula {
-        if value {
-            self.verum()
-        } else {
-            self.falsum()
-        }
+        if value { self.verum() } else { self.falsum() }
     }
 
     /// Creates a new [`Variable`] instance with the given name and registers it
@@ -1080,7 +1076,7 @@ impl FormulaFactory {
     /// assert!(!f.evaluate(formula, &assignment2));
     /// ```
     pub fn evaluate(&self, formula: EncodedFormula, assignment: &Assignment) -> bool {
-        let res = match formula.unpack(self) {
+        match formula.unpack(self) {
             Formula::Pbc(pbc) => pbc.evaluate(assignment),
             Formula::Cc(cc) => cc.evaluate(assignment),
             Formula::Equiv((left, right)) => self.evaluate(left, assignment) == self.evaluate(right, assignment),
@@ -1091,8 +1087,7 @@ impl FormulaFactory {
             Formula::Lit(lit) => assignment.evaluate_lit(lit),
             Formula::True => true,
             Formula::False => false,
-        };
-        res
+        }
     }
 
     /// Restricts this formula with the give assignment.
@@ -1344,11 +1339,7 @@ impl FormulaFactory {
             reduced_set64: HashSet::default(),
             is_cnf: true,
         };
-        if self.filter_flatten(ops, op_type, &mut filter_result) {
-            Some(filter_result)
-        } else {
-            None
-        }
+        if self.filter_flatten(ops, op_type, &mut filter_result) { Some(filter_result) } else { None }
     }
 
     fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
@@ -1359,7 +1350,7 @@ impl FormulaFactory {
         for op in ops {
             let owned = *op.borrow();
             if owned.is_type(op_type) {
-                if !self.filter_flatten(&owned.operands(self), op_type, result) {
+                if !self.filter_flatten(owned.operands(self), op_type, result) {
                     return false;
                 }
             } else {
@@ -1394,7 +1385,7 @@ impl FormulaFactory {
                     } else if result.reduced_set32.insert(op_encoded.as_32()) {
                         result.reduced32.push(op_encoded.as_32());
                     }
-                };
+                }
             }
         }
         true
@@ -1422,7 +1413,7 @@ impl FormulaFactory {
                 set32.contains(&enc.as_32()) || set64.contains(enc)
             }
             Not(op) => set32.contains(&op.encoding.as_32()) || set64.contains(&op.encoding),
-            _ => self.nots.lookup(formula).map(|not| set32.contains(&not.as_32()) || set64.contains(&not)) == Some(true),
+            _ => self.nots.lookup(formula).is_some_and(|not| set32.contains(&not.as_32()) || set64.contains(&not)),
         }
     }
 }

@@ -7,7 +7,7 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
 use crate::knowledge_compilation::bdd::orderings::force_ordering;
 use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
 use crate::knowledge_compilation::dnnf::compile_dnnf;
-use crate::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
+use crate::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion};
 
 #[cfg(feature = "sharp_sat")]
 use crate::solver::sharpsat::SharpSatSolver;
@@ -175,7 +175,7 @@ fn simplify(formulas: &[EncodedFormula], f: &FormulaFactory) -> (BTreeSet<Variab
 mod tests {
     mod dnnf {
         use crate::formulas::FormulaFactory;
-        use crate::operations::functions::{count_models, ModelCountAlgorithm};
+        use crate::operations::functions::{ModelCountAlgorithm, count_models};
         use crate::util::read_model_counting_examples::{read_cnf, read_normal};
         use num_bigint::BigUint;
 
@@ -216,7 +216,7 @@ mod tests {
 
     mod bdd {
         use crate::formulas::FormulaFactory;
-        use crate::operations::functions::{count_models, ModelCountAlgorithm};
+        use crate::operations::functions::{ModelCountAlgorithm, count_models};
         use crate::util::read_model_counting_examples::{read_cnf, read_normal};
         use num_bigint::BigUint;
 
@@ -257,7 +257,7 @@ mod tests {
         #[cfg(feature = "sharp_sat")]
         mod sharp_sat {
             use crate::formulas::FormulaFactory;
-            use crate::operations::functions::{count_models, ModelCountAlgorithm};
+            use crate::operations::functions::{ModelCountAlgorithm, count_models};
             use crate::util::read_model_counting_examples::{read_cnf, read_normal};
             use num_bigint::BigUint;
 

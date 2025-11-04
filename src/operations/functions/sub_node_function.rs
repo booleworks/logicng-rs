@@ -53,10 +53,10 @@ fn sub_nodes_cached(
     f: &FormulaFactory,
     local_cache: &mut Option<OperationCache<Arc<[EncodedFormula]>>>,
 ) -> Arc<[EncodedFormula]> {
-    if let Some(lc) = local_cache {
-        if let Some(v) = lc.get(formula) {
-            return v;
-        }
+    if let Some(lc) = local_cache
+        && let Some(v) = lc.get(formula)
+    {
+        return v;
     }
 
     if let Some(v) = f.caches.sub_nodes.get(formula) {

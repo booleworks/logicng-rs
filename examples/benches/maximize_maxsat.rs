@@ -1,6 +1,6 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::{EncodedFormula, FormulaFactory};
@@ -29,19 +29,21 @@ fn maximize(thread_count: usize) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(&f);
         let paths_l = Arc::clone(&paths);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= paths_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= paths_l.len() {
+                    break;
+                }
+                let formula = read_formula(&paths_l[c], &f_l).unwrap();
+                let variables = formula.variables(&f_l);
+                let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+                solver.add_hard_formula(formula, &f_l).unwrap();
+                for var in &*variables {
+                    solver.add_soft_formula(1, EncodedFormula::from(var.pos_lit()), &f_l).unwrap();
+                }
+                let _res = solver.solve().unwrap();
             }
-            let formula = read_formula(&paths_l[c], &f_l).unwrap();
-            let variables = formula.variables(&f_l);
-            let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
-            solver.add_hard_formula(formula, &f_l).unwrap();
-            for var in &*variables {
-                solver.add_soft_formula(1, EncodedFormula::from(var.pos_lit()), &f_l).unwrap();
-            }
-            let _res = solver.solve().unwrap();
         });
         threads.push(handle);
     }

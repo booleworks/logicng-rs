@@ -1,12 +1,12 @@
 use std::fs;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
 use logicng::knowledge_compilation::dnnf::{compile_dnnf, count};
-use logicng::operations::transformations::{pure_expansion, AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder};
+use logicng::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion};
 
 /// Test for parallel model counting with DNNF compilation
 /// on a multi-threading formula factory.
@@ -29,18 +29,21 @@ pub fn parallel(thread_count: usize) {
         let counter_l = Arc::clone(&counter);
         let f_l = Arc::clone(&f);
         let paths_l = Arc::clone(&paths);
-        let handle = std::thread::spawn(move || loop {
-            let c = counter_l.fetch_add(1, Ordering::SeqCst);
-            if c >= paths_l.len() {
-                break;
+        let handle = std::thread::spawn(move || {
+            loop {
+                let c = counter_l.fetch_add(1, Ordering::SeqCst);
+                if c >= paths_l.len() {
+                    break;
+                }
+                let formula = read_formula(&paths_l[c], &f_l).unwrap();
+                let expanded = pure_expansion(formula, &f_l);
+                let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
+                    AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
+                ));
+                let cnf_formula = cnf_encoder.transform(expanded, &f_l);
+                let dnnf = compile_dnnf(cnf_formula, &f_l);
+                count(&dnnf, &f_l);
             }
-            let formula = read_formula(&paths_l[c], &f_l).unwrap();
-            let expanded = pure_expansion(formula, &f_l);
-            let mut cnf_encoder =
-                CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
-            let cnf_formula = cnf_encoder.transform(expanded, &f_l);
-            let dnnf = compile_dnnf(cnf_formula, &f_l);
-            count(&dnnf, &f_l);
         });
         threads.push(handle);
     }

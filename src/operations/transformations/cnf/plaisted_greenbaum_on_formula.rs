@@ -81,10 +81,10 @@ fn pg_variable(formula: EncodedFormula, f: &FormulaFactory, state: &mut PGState)
 #[cfg(test)]
 mod tests {
     use crate::formulas::{ToFormula, Variable};
+    use crate::operations::transformations::CnfEncoder;
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::PlaistedGreenbaum;
-    use crate::operations::transformations::CnfEncoder;
-    use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
     use crate::util::test_util::F;
 
     use super::*;

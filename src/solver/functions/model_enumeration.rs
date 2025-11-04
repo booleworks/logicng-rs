@@ -4,9 +4,9 @@ use std::collections::BTreeSet;
 
 use crate::datastructures::Model;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::minisat::sat::Tristate::True;
-use crate::solver::minisat::sat::{mk_lit, MiniSat2Solver, MsLit, MsVar};
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::Tristate::True;
+use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, MsVar, mk_lit};
 
 /// A configuration to adjust the behavior of the model enumeration algorithms.
 ///
@@ -226,7 +226,7 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
     let mut unique_additional_variables: BTreeSet<Variable> =
         config.additional_variables.as_ref().map_or_else(BTreeSet::new, |vars| vars.iter().copied().collect());
     if let Some(vars) = &config.variables {
-        for var in vars.iter() {
+        for var in vars {
             unique_additional_variables.remove(var);
         }
     }
@@ -238,9 +238,8 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
             all_indices.extend(indices);
             unique_additional_variables
                 .iter()
-                .map(|&v| solver.underlying_solver.idx_for_variable(v))
-                .filter(Option::is_some)
-                .for_each(|i| all_indices.push(i.unwrap()));
+                .filter_map(|&v| solver.underlying_solver.idx_for_variable(v))
+                .for_each(|i| all_indices.push(i));
             relevant_all_indices = Some(all_indices);
         }
     } else {
@@ -264,7 +263,7 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
     models
 }
 
-#[allow(clippy::option_if_let_else)] // proposed change does not improve readability
+#[allow(clippy::option_if_let_else, clippy::ref_option)] // proposed change does not improve readability
 fn generate_blocking_clause(model_from_solver: &[bool], relevant_vars: &Option<Vec<MsVar>>) -> Vec<MsLit> {
     if let Some(relevant) = relevant_vars {
         let mut blocking_clause = Vec::<MsLit>::with_capacity(relevant.len());
@@ -321,9 +320,9 @@ mod tests {
 
     use crate::datastructures::Assignment;
     use crate::formulas::{FormulaFactory, Literal, ToFormula, Variable};
-    use crate::solver::functions::{enumerate_models, enumerate_models_with_config, ModelEnumerationConfig};
-    use crate::solver::minisat::sat::Tristate::True;
+    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models, enumerate_models_with_config};
     use crate::solver::minisat::SolverCnfMethod::PgOnSolver;
+    use crate::solver::minisat::sat::Tristate::True;
     use crate::solver::minisat::{MiniSat, MiniSatConfig};
 
     #[test]

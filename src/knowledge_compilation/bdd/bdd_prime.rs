@@ -37,7 +37,7 @@ const fn has_easy_factors(src: usize) -> bool {
 }
 
 const fn has_factor(src: usize, n: usize) -> bool {
-    src != n && src % n == 0
+    src != n && src.is_multiple_of(n)
 }
 
 fn is_miller_rabin_prime(src: usize) -> bool {

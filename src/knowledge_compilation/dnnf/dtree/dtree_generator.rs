@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use std::iter::repeat;
+use std::iter::repeat_n;
 
 use itertools::Itertools;
 
@@ -73,8 +73,8 @@ impl Graph {
             vertices.push(var);
         }
 
-        let mut adj_matrix: Vec<Vec<bool>> = repeat(repeat(false).take(number_of_vertices).collect()).take(number_of_vertices).collect();
-        let mut edge_list: Vec<HashSet<usize>> = repeat(HashSet::new()).take(number_of_vertices).collect();
+        let mut adj_matrix: Vec<Vec<bool>> = repeat_n(repeat_n(false, number_of_vertices).collect(), number_of_vertices).collect();
+        let mut edge_list: Vec<HashSet<usize>> = repeat_n(HashSet::new(), number_of_vertices).collect();
 
         for clause in &*cnf.operands(f) {
             let variables = clause.variables(f);
@@ -102,7 +102,7 @@ impl Graph {
         let mut fill_adj_matrix = self.adj_matrix;
         let mut fill_edge_list = self.edge_list;
         let mut ordering = Vec::with_capacity(self.number_of_vertices);
-        let mut processed: Vec<bool> = repeat(false).take(self.number_of_vertices).collect();
+        let mut processed: Vec<bool> = repeat_n(false, self.number_of_vertices).collect();
         let mut tree_width = 0;
         for _ in 0..self.number_of_vertices {
             let mut possibly_best_vertices = Vec::new();

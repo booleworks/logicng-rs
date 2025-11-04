@@ -75,11 +75,7 @@ const fn counter_sorter_value(m: usize, n: usize) -> usize {
 }
 
 const fn direct_sorter_value(n: usize) -> usize {
-    if n > 30 {
-        usize::MAX
-    } else {
-        2_usize.pow(n as u32) - 1
-    }
+    if n > 30 { usize::MAX } else { 2_usize.pow(n as u32) - 1 }
 }
 
 fn comparator1(x1: Literal, x2: Literal, y: Literal, result: &mut dyn EncodingResult, f: &FormulaFactory, direction: ImplicationDirection) {

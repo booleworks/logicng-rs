@@ -326,11 +326,7 @@ impl MaxSatSolver {
     /// ```
     pub fn solve(&mut self) -> Result<MaxSatResult, MaxSatError> {
         let status = self.solver.status();
-        if status == Ok(MaxSatResult::Undef) {
-            self.solver.search()
-        } else {
-            status
-        }
+        if status == Ok(MaxSatResult::Undef) { self.solver.search() } else { status }
     }
 
     /// Returns the result of the last search.

@@ -5,7 +5,7 @@ use Literal::{Neg, Pos};
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
-use crate::solver::minisat::sat::{mk_lit, MiniSat2Solver};
+use crate::solver::minisat::sat::{MiniSat2Solver, mk_lit};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -93,7 +93,7 @@ fn compute_transformation<B>(
         Lit(Pos(var)) => Some(vec![Literal::new(var, polarity)]),
         Lit(Neg(var)) => Some(vec![Literal::new(var, !polarity)]),
         Not(op) => compute_transformation(op, proposition, solver, f, cache, config, !polarity, top_level),
-        Or(_) | And(_) => handle_nary(formula, &proposition, solver, f, cache, config, polarity, top_level),
+        Or(_) | And(_) => handle_nary(formula, proposition.as_ref(), solver, f, cache, config, polarity, top_level),
         Impl(_) => handle_impl(formula, proposition, solver, f, cache, config, polarity, top_level),
         Equiv(_) => handle_equiv(formula, proposition, solver, f, cache, config, polarity, top_level),
         _ => panic_unexpected_formula_type(formula, Some(f)),
@@ -114,11 +114,7 @@ fn handle_equiv<B>(
     let skip_pg = top_level;
     let (was_cached, pg_lit) = if skip_pg { (false, None) } else { get_pg_var(equiv, f, polarity, cache) };
     if was_cached {
-        if polarity {
-            Some(vec![pg_lit.unwrap()])
-        } else {
-            Some(vec![pg_lit.unwrap().negate()])
-        }
+        if polarity { Some(vec![pg_lit.unwrap()]) } else { Some(vec![pg_lit.unwrap().negate()]) }
     } else {
         let mut left_pos =
             compute_transformation(equiv.left(f).unwrap(), proposition.clone(), solver, f, cache, config, true, false).unwrap();
@@ -170,11 +166,7 @@ fn handle_impl<B>(
     let skip_pg = polarity || top_level;
     let (was_cached, pg_lit) = if skip_pg { (false, None) } else { get_pg_var(implication, f, polarity, cache) };
     if was_cached {
-        if polarity {
-            Some(vec![pg_lit.unwrap()])
-        } else {
-            Some(vec![pg_lit.unwrap().negate()])
-        }
+        if polarity { Some(vec![pg_lit.unwrap()]) } else { Some(vec![pg_lit.unwrap().negate()]) }
     } else if polarity {
         // pg => (~left | right) = ~pg | ~left | right
         let mut left =
@@ -205,7 +197,7 @@ fn handle_impl<B>(
 #[allow(clippy::too_many_arguments)]
 fn handle_nary<B>(
     formula: EncodedFormula,
-    proposition: &Option<Proposition<B>>,
+    proposition: Option<&Proposition<B>>,
     solver: &mut MiniSat2Solver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
@@ -216,35 +208,27 @@ fn handle_nary<B>(
     let skip_pg = top_level || formula.is_and() && !polarity || formula.is_or() && polarity;
     let (was_cached, pg_lit) = if skip_pg { (false, None) } else { get_pg_var(formula, f, polarity, cache) };
     if was_cached {
-        if polarity {
-            Some(vec![pg_lit.unwrap()])
-        } else {
-            Some(vec![pg_lit.unwrap().negate()])
-        }
+        if polarity { Some(vec![pg_lit.unwrap()]) } else { Some(vec![pg_lit.unwrap().negate()]) }
     } else if formula.is_and() {
         if polarity {
             // pg => (v1 & ... & vk) = (~pg | v1) & ... & (~pg | vk)
             for &op in &*formula.operands(f) {
-                let op_pg_vars = compute_transformation(op, proposition.clone(), solver, f, cache, config, true, top_level);
+                let op_pg_vars = compute_transformation(op, proposition.cloned(), solver, f, cache, config, true, top_level);
                 if top_level {
                     if let Some(lits) = op_pg_vars {
-                        add_clause(solver, &lits, proposition.clone(), config);
+                        add_clause(solver, &lits, proposition.cloned(), config);
                     }
                 } else {
-                    add_clause(solver, &vector(pg_lit.unwrap().negate(), op_pg_vars.unwrap()), proposition.clone(), config);
+                    add_clause(solver, &vector(pg_lit.unwrap().negate(), op_pg_vars.unwrap()), proposition.cloned(), config);
                 }
             }
-            if top_level {
-                None
-            } else {
-                Some(vec![pg_lit.unwrap()])
-            }
+            if top_level { None } else { Some(vec![pg_lit.unwrap()]) }
         } else {
             // (v1 & ... & vk) => pg = ~v1 | ... | ~vk | pg
             // Speed-Up: Skip pg var
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
-                single_clause.extend(compute_transformation(op, proposition.clone(), solver, f, cache, config, false, false).unwrap());
+                single_clause.extend(compute_transformation(op, proposition.cloned(), solver, f, cache, config, false, false).unwrap());
             }
             Some(single_clause)
         }
@@ -254,26 +238,22 @@ fn handle_nary<B>(
             // Speed-Up: Skip pg var
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
-                single_clause.extend(compute_transformation(op, proposition.clone(), solver, f, cache, config, true, false).unwrap());
+                single_clause.extend(compute_transformation(op, proposition.cloned(), solver, f, cache, config, true, false).unwrap());
             }
             Some(single_clause)
         } else {
             // (v1 | ... | vk) => pg = (~v1 | pg) & ... & (~vk | pg)
             for &op in &*formula.operands(f) {
-                let op_pg_lits = compute_transformation(op, proposition.clone(), solver, f, cache, config, false, top_level);
+                let op_pg_lits = compute_transformation(op, proposition.cloned(), solver, f, cache, config, false, top_level);
                 if top_level {
                     if let Some(lits) = op_pg_lits {
-                        add_clause(solver, &lits, proposition.clone(), config);
+                        add_clause(solver, &lits, proposition.cloned(), config);
                     }
                 } else {
-                    add_clause(solver, &vector(pg_lit.unwrap(), op_pg_lits.unwrap()), proposition.clone(), config);
+                    add_clause(solver, &vector(pg_lit.unwrap(), op_pg_lits.unwrap()), proposition.cloned(), config);
                 }
             }
-            if top_level {
-                None
-            } else {
-                Some(vec![pg_lit.unwrap().negate()])
-            }
+            if top_level { None } else { Some(vec![pg_lit.unwrap().negate()]) }
         }
     } else {
         panic_unexpected_formula_type(formula, Some(f));
@@ -349,7 +329,7 @@ impl VarCacheEntry {
 #[cfg(test)]
 mod tests {
     use crate::formulas::{ToFormula, Variable};
-    use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
     use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverCnfMethod};
     use crate::util::test_util::F;
     use std::collections::BTreeSet;

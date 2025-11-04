@@ -4,7 +4,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use crate::datastructures::UbTree;
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, LIT_PRECEDENCE};
+use crate::formulas::{EncodedFormula, FormulaFactory, LIT_PRECEDENCE, Literal};
 
 /// This transformation performs subsumption on a given CNF and returns a new
 /// CNF. I.e. performs as many subsumptions as possible.
@@ -20,7 +20,7 @@ pub fn cnf_subsumption(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFo
         let ub_tree = generate_subsumed_ubtree(formula, f);
         let mut clauses = Vec::new();
         for literals in ub_tree.all_sets() {
-            clauses.push(f.clause(&literals.iter().copied().collect_vec()));
+            clauses.push(f.clause(literals.iter().copied().collect_vec()));
         }
         f.and(&clauses)
     }

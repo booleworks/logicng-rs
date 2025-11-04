@@ -521,11 +521,7 @@ impl Solver {
 }
 
 const fn index(lit: isize) -> usize {
-    if lit > 0 {
-        lit as usize * 2
-    } else {
-        ((-lit * 2) ^ 1) as usize
-    }
+    if lit > 0 { lit as usize * 2 } else { ((-lit * 2) ^ 1) as usize }
 }
 
 fn get_hash(marks: &mut [isize], mark: isize, input: &Vec<isize>) -> isize {

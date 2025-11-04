@@ -5,7 +5,7 @@ use std::error::Error;
 
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::functions::{enumerate_models_with_config, BackboneType, ModelEnumerationConfig};
+use logicng::solver::functions::{BackboneType, ModelEnumerationConfig, enumerate_models_with_config};
 use logicng::solver::minisat::MiniSat;
 
 use crate::trallocator::Trallocator;

@@ -3,9 +3,9 @@ use crate::cardinality_constraints::cc_config::{AmoEncoder, CcConfig};
 use crate::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::formulas::CType::EQ;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::minisat::sat::Tristate::True;
+use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::Tristate::True;
 
 fn configs() -> Vec<CcConfig> {
     vec![

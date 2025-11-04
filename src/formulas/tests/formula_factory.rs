@@ -1,6 +1,6 @@
 mod formula_factory_tests {
-    use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
     use crate::formulas::FormulaType::{And, Equiv, False, Impl, Lit, Not, Or, True};
+    use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
     use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType};
     use crate::util::test_util::string_vars;
     use std::collections::BTreeSet;

@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::usize;
 
 use fastrand::Rng;
 
@@ -854,11 +853,7 @@ impl FormulaRandomizer {
         } else {
             let inner = self.formula(f, max_depth - 1);
             let result = f.not(inner);
-            if max_depth >= 2 && !result.is_not() {
-                self.not(f, max_depth)
-            } else {
-                result
-            }
+            if max_depth >= 2 && !result.is_not() { self.not(f, max_depth) } else { result }
         }
     }
 
@@ -882,11 +877,7 @@ impl FormulaRandomizer {
             let left = self.formula(f, max_depth - 1);
             let right = self.formula(f, max_depth - 1);
             let result = f.implication(left, right);
-            if result.is_impl() {
-                result
-            } else {
-                self.implication(f, max_depth)
-            }
+            if result.is_impl() { result } else { self.implication(f, max_depth) }
         }
     }
 
@@ -910,11 +901,7 @@ impl FormulaRandomizer {
             let left = self.formula(f, max_depth - 1);
             let right = self.formula(f, max_depth - 1);
             let result = f.equivalence(left, right);
-            if result.is_equiv() {
-                result
-            } else {
-                self.equivalence(f, max_depth)
-            }
+            if result.is_equiv() { result } else { self.equivalence(f, max_depth) }
         }
     }
 
@@ -938,11 +925,7 @@ impl FormulaRandomizer {
             let num_operands = self.random.u32(2..self.config.maximum_operands_and);
             let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
             let result = f.and(operands);
-            if result.is_and() {
-                result
-            } else {
-                self.and(f, max_depth)
-            }
+            if result.is_and() { result } else { self.and(f, max_depth) }
         }
     }
 
@@ -966,11 +949,7 @@ impl FormulaRandomizer {
             let num_operands = self.random.u32(2..self.config.maximum_operands_or);
             let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
             let result = f.or(operands);
-            if result.is_or() {
-                result
-            } else {
-                self.or(f, max_depth)
-            }
+            if result.is_or() { result } else { self.or(f, max_depth) }
         }
     }
 
@@ -996,11 +975,7 @@ impl FormulaRandomizer {
         let rhs_offset = u32::from(c_type == LT);
         let rhs = rhs_offset + self.random.u32(0..rhs_bound);
         let cc = f.cc(c_type, rhs, variables);
-        if cc.is_constant() {
-            self.cc(f)
-        } else {
-            cc
-        }
+        if cc.is_constant() { self.cc(f) } else { cc }
     }
 
     /// Returns a random at-most-one constraint.
@@ -1072,11 +1047,7 @@ impl FormulaRandomizer {
         let c_type = self.c_type();
         let rhs = self.random.i64(0..=(max_sum + min_sum)) - min_sum;
         let pbc = f.pbc(c_type, rhs, literals, coefficients);
-        if pbc.is_constant() {
-            self.pbc(f)
-        } else {
-            pbc
-        }
+        if pbc.is_constant() { self.pbc(f) } else { pbc }
     }
 
     /// Returns a random formula with a given maximal depth.
@@ -1212,7 +1183,7 @@ mod tests {
         let (mut num_a, mut num_b, mut num_c) = (0, 0, 0);
         for _ in 0..100 {
             let var = random.variable(f).as_variable().unwrap().name(f).to_string();
-            assert!(vars.contains(&var.to_string()));
+            assert!(vars.contains(&var));
             match var.as_str() {
                 "A" => num_a += 1,
                 "B" => num_b += 1,
@@ -1521,10 +1492,10 @@ mod tests {
         assert!(5 * total_occurrences / 30 / 2 < occurrences["or"] && occurrences["or"] < 5 * total_occurrences / 30 * 2);
         assert!(7 * total_occurrences / 30 / 2 < occurrences["impl"] && occurrences["impl"] < 7 * total_occurrences / 30 * 2);
         assert!(8 * total_occurrences / 30 / 2 < occurrences["equiv"] && occurrences["equiv"] < 8 * total_occurrences / 30 * 2);
-        assert!(occurrences.get("pbc").is_none());
-        assert!(occurrences.get("cc").is_none());
-        assert!(occurrences.get("amo").is_none());
-        assert!(occurrences.get("exo").is_none());
+        assert!(!occurrences.contains_key("pbc"));
+        assert!(!occurrences.contains_key("cc"));
+        assert!(!occurrences.contains_key("amo"));
+        assert!(!occurrences.contains_key("exo"));
     }
 
     #[test]
@@ -1618,7 +1589,7 @@ mod tests {
                 }
             }
             Pbc => *occurrences.entry("pbc").or_insert(0) += 1,
-        };
+        }
         formula.operands(f).iter().for_each(|&op| count_occurrences(occurrences, op, f));
     }
 }

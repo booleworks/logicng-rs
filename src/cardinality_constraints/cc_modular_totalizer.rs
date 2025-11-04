@@ -252,7 +252,7 @@ fn final_adder(
 ) {
     for i in 0..=lupper.len() {
         for j in 0..=rupper.len() {
-            let close_mod = current_cardinality_rhs / md + usize::from(current_cardinality_rhs % md != 0);
+            let close_mod = current_cardinality_rhs / md + usize::from(!current_cardinality_rhs.is_multiple_of(md));
             if md * (i + j) > close_mod * md {
                 continue;
             }

@@ -129,23 +129,19 @@ impl Backbone {
             for var in positive_backbone {
                 complete_backbone.insert(var.pos_lit());
             }
-        };
+        }
         if let Some(negative_backbone) = self.negative_backbone.as_ref() {
             for var in negative_backbone {
                 complete_backbone.insert(var.negate());
             }
-        };
+        }
         complete_backbone
     }
 }
 
 impl ToFormula for Backbone {
     fn to_formula(&self, f: &FormulaFactory) -> EncodedFormula {
-        if self.sat {
-            f.and(self.complete_backbone().iter().map(|&lit| EncodedFormula::from(lit)))
-        } else {
-            f.falsum()
-        }
+        if self.sat { f.and(self.complete_backbone().iter().map(|&lit| EncodedFormula::from(lit))) } else { f.falsum() }
     }
 }
 

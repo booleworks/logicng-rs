@@ -78,16 +78,18 @@ impl<T> AppendOnlyVec<T> {
     /// call `self.len()` explicitly (if e.g. you have counted the number of
     /// elements pushed).
     #[cfg(test)]
-    unsafe fn get_unchecked(&self, idx: usize) -> &T { unsafe {
-        let (array, offset) = indices(idx);
-        // We use a Relaxed load of the pointer, because the length check (which
-        // was supposed to be performed) should ensure that the data we want is
-        // already visible, since self.len() used Ordering::Acquire on
-        // `self.count` which synchronizes with the Ordering::Release write in
-        // `self.push`.
-        let ptr = *self.data[array as usize].get();
-        &*ptr.add(offset)
-    }}
+    unsafe fn get_unchecked(&self, idx: usize) -> &T {
+        unsafe {
+            let (array, offset) = indices(idx);
+            // We use a Relaxed load of the pointer, because the length check (which
+            // was supposed to be performed) should ensure that the data we want is
+            // already visible, since self.len() used Ordering::Acquire on
+            // `self.count` which synchronizes with the Ordering::Release write in
+            // `self.push`.
+            let ptr = *self.data[array as usize].get();
+            &*ptr.add(offset)
+        }
+    }
 
     /// Find the length of the array.
     #[inline]

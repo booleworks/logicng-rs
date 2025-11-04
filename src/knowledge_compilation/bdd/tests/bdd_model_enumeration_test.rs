@@ -10,8 +10,8 @@ mod tests {
     use crate::knowledge_compilation::bdd::orderings::{
         bfs_ordering, dfs_ordering, force_ordering, max_to_min_ordering, min_to_max_ordering,
     };
-    use crate::solver::minisat::sat::Tristate;
     use crate::solver::minisat::MiniSat;
+    use crate::solver::minisat::sat::Tristate;
     use crate::util::n_queens_generator::generate_n_queens;
 
     #[test]

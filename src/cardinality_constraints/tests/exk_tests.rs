@@ -1,8 +1,8 @@
 use crate::cardinality_constraints::cc_config::{CcConfig, ExkEncoder};
 use crate::formulas::{CType, FormulaFactory, Variable};
-use crate::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::minisat::sat::Tristate::{False, True};
+use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
 use crate::solver::minisat::MiniSat;
+use crate::solver::minisat::sat::Tristate::{False, True};
 
 fn configs() -> Vec<CcConfig> {
     vec![CcConfig::new().exk_encoder(ExkEncoder::Totalizer), CcConfig::new().exk_encoder(ExkEncoder::CardinalityNetwork)]

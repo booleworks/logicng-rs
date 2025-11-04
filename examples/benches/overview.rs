@@ -3,7 +3,7 @@ use std::fs;
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::operations::functions::{count_models, ModelCountAlgorithm};
+use logicng::operations::functions::{ModelCountAlgorithm, count_models};
 use logicng::solver::minisat::MiniSat;
 
 #[cfg(feature = "open_wbo")]

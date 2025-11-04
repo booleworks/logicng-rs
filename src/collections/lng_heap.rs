@@ -57,7 +57,7 @@ impl LngHeap {
             self.percolate_down(k_pos, activities);
         } else {
             self.heap.pop();
-        };
+        }
     }
 
     pub fn build(&mut self, ns: &[MsVar], activities: &[f64]) {

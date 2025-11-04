@@ -102,7 +102,7 @@ let formula = "A & ~(B | ~C)".to_formula(&f);
 ```
 
 Once you created the formula you can for example convert it to NNF or CNF or
-solve it with an instance of MiniSat:
+solve it with an instance of MiniSAT:
 
 ```rust
 use logicng::formulas::{FormulaFactory, ToFormula};

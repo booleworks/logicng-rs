@@ -1,5 +1,5 @@
 mod false_test {
-    use crate::util::test_util::{hash, F};
+    use crate::util::test_util::{F, hash};
 
     #[test]
     fn test_type() {

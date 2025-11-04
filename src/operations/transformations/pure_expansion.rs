@@ -9,7 +9,7 @@ const ENCODER: CcEncoder = CcEncoder::new(CcConfig::new().amo_encoder(AmoEncoder
 /// encoding such that the resulting formula is equivalent and free of
 /// pseudo-Boolean constraints.
 pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
-    return match formula.unpack(f) {
+    match formula.unpack(f) {
         Formula::Pbc(_) => panic!("Pure encoding for a PBC of type other than AMO or EXO is currently not supported."),
         Formula::Cc(cc) => {
             if cc.is_amo() || cc.is_exo() {
@@ -28,5 +28,5 @@ pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFor
         Formula::And(ops) => f.and(ops.map(|op| pure_expansion(op, f))),
         Formula::Not(op) => f.not(pure_expansion(op, f)),
         Formula::True | Formula::False | Formula::Lit(_) => formula,
-    };
+    }
 }

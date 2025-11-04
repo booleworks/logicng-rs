@@ -1,9 +1,9 @@
 #![allow(clippy::cast_possible_wrap)]
 
+use CType::{GE, GT, LE, LT};
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::sync::Arc;
-use CType::{GE, GT, LE, LT};
 
 use crate::cardinality_constraints::CcEncoder;
 use crate::datastructures::Assignment;
@@ -454,7 +454,7 @@ impl PbConstraint {
                         max_value += coeff;
                     } else {
                         min_value += coeff;
-                    };
+                    }
                 }
                 FormulaType::True => lhs_fixed += self.coefficients[i],
                 FormulaType::False => {}
@@ -700,18 +700,14 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
 }
 
 fn gcd(small: i64, big: i64) -> i64 {
-    if small == 0 {
-        big
-    } else {
-        gcd(big % small, small)
-    }
+    if small == 0 { big } else { gcd(big % small, small) }
 }
 
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
-    use crate::formulas::pbc_cc::evaluate_coeffs;
     use crate::formulas::CType::{EQ, GE, GT, LE, LT};
+    use crate::formulas::pbc_cc::evaluate_coeffs;
     use crate::formulas::{FormulaFactory, ToFormula};
     use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 

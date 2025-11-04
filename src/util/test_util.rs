@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 
 use std::borrow::Cow;
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};

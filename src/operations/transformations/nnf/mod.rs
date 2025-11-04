@@ -46,19 +46,11 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
         Formula::Not(op) => nnf_rec(op, f, !polarity),
         Formula::Or(ops) => {
             let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
-            if polarity {
-                f.or(new_ops)
-            } else {
-                f.and(new_ops)
-            }
+            if polarity { f.or(new_ops) } else { f.and(new_ops) }
         }
         Formula::And(ops) => {
             let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
-            if polarity {
-                f.and(new_ops)
-            } else {
-                f.or(new_ops)
-            }
+            if polarity { f.and(new_ops) } else { f.or(new_ops) }
         }
         Formula::Equiv((left, right)) => {
             let left_false = nnf_rec(left, f, false);

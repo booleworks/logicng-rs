@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::datastructures::Assignment;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
 use crate::solver::minisat::MiniSat;
 use crate::solver::minisat_config::MiniSatConfig;
 use crate::solver::minisat_config::SolverCnfMethod::{FullPgOnSolver, PgOnSolver};

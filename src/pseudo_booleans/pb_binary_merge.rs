@@ -189,11 +189,7 @@ fn binary_merge(
 
 const fn div_ceil(a: usize, b: usize) -> usize {
     let q = a / b;
-    if a % b == 0 {
-        q
-    } else {
-        q + 1
-    }
+    if a.is_multiple_of(b) { q } else { q + 1 }
 }
 
 fn totalizer(x: Vec<Literal>, f: &FormulaFactory) -> (Vec<EncodedFormula>, Vec<Literal>) {

@@ -154,21 +154,21 @@ struct PGState {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use CancellableCnfAlgorithm::FactorizationWithHandler;
     use CnfAlgorithm::{Advanced, Bdd, Factorization, Tseitin};
+    use std::collections::HashSet;
 
     use crate::datastructures::Assignment;
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula, Variable};
     use crate::handlers::ClauseLimitFactorizationHandler;
     use crate::handlers::FactorizationError::{ClauseLimitReached, DistributionLimitReached};
     use crate::knowledge_compilation::bdd::{BddError, NumberOfNodesBddHandler};
-    use crate::operations::transformations::cnf::advanced::AdvancedFactorizationConfig;
+    use crate::operations::transformations::CnfEncoder;
     use crate::operations::transformations::cnf::CancellationReason::{BddGenerationFailed, FactorizationFailed};
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
+    use crate::operations::transformations::cnf::advanced::AdvancedFactorizationConfig;
     use crate::operations::transformations::cnf::{CancellableCnfAlgorithm, CnfAlgorithm};
-    use crate::operations::transformations::CnfEncoder;
-    use crate::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
 
     const P1: &str = "(x1 | x2) & x3 & x4 & ((x1 & x5 & ~(x6 | x7) | x8) | x9)";
     const P2: &str = "(y1 | y2) & y3 & y4 & ((y1 & y5 & ~(y6 | y7) | y8) | y9)";

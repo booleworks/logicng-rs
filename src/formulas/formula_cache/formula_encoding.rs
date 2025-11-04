@@ -26,11 +26,7 @@ const ENCODING_PBC: u8 = 0x11;
 const ENCODING_LARGE_CACHE: u8 = 0x20;
 
 const fn header(ty: u8, large_cache: bool) -> u8 {
-    if large_cache {
-        ENCODING_LARGE_CACHE | ty
-    } else {
-        ty
-    }
+    if large_cache { ENCODING_LARGE_CACHE | ty } else { ty }
 }
 
 #[allow(clippy::cast_possible_truncation)]

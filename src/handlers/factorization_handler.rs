@@ -68,20 +68,12 @@ impl FactorizationHandler for ClauseLimitFactorizationHandler {
     fn performed_distribution(&mut self) -> Result<(), FactorizationError> {
         self.dists += 1;
         self.aborted = self.dists > self.dists_limit;
-        if self.aborted {
-            Err(FactorizationError::DistributionLimitReached)
-        } else {
-            Ok(())
-        }
+        if self.aborted { Err(FactorizationError::DistributionLimitReached) } else { Ok(()) }
     }
 
     fn created_clause(&mut self, _clause: EncodedFormula) -> Result<(), FactorizationError> {
         self.clauses += 1;
         self.aborted = self.clauses > self.clauses_limit;
-        if self.aborted {
-            Err(FactorizationError::ClauseLimitReached)
-        } else {
-            Ok(())
-        }
+        if self.aborted { Err(FactorizationError::ClauseLimitReached) } else { Ok(()) }
     }
 }

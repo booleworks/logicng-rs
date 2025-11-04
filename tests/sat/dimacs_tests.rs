@@ -2,13 +2,13 @@ extern crate logicng;
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{stdout, BufRead, BufReader, Error, Write};
+use std::io::{BufRead, BufReader, Error, Write, stdout};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 
 use logicng::formulas::Variable;
 use logicng::solver::minisat::sat::Tristate::True;
-use logicng::solver::minisat::sat::{mk_lit, MiniSat2Solver};
+use logicng::solver::minisat::sat::{MiniSat2Solver, mk_lit};
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]

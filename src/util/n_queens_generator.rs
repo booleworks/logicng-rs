@@ -62,7 +62,7 @@ fn generate_vars(n: usize, f: &FormulaFactory) -> Vec<Vec<Variable>> {
     for _ in 0..n {
         let mut name_vec = Vec::new();
         for _ in 0..n {
-            name_vec.push(f.var(&format!("v{kk}")));
+            name_vec.push(f.var(format!("v{kk}")));
             kk += 1;
         }
         var_names.push(name_vec);

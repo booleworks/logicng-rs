@@ -7,11 +7,11 @@ use dashmap::DashMap;
 use itertools::Itertools;
 
 use crate::collections::AppendOnlyVec;
-use crate::formulas::formula_cache::hashable_formula_set::{HashableFormulaSet, SimpleHashAdder};
 use crate::formulas::formula_cache::CACHE_INITIAL_CAPACITY;
+use crate::formulas::formula_cache::hashable_formula_set::{HashableFormulaSet, SimpleHashAdder};
 use crate::formulas::{EncodedFormula, FormulaType};
 
-use super::formula_encoding::{extend_32, Encoding, FormulaEncoding, SmallFormulaEncoding};
+use super::formula_encoding::{Encoding, FormulaEncoding, SmallFormulaEncoding, extend_32};
 
 pub struct NaryFormulaCache {
     vec32: AppendOnlyVec<Box<[SmallFormulaEncoding]>>,
@@ -42,7 +42,7 @@ impl NaryFormulaCache {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    pub fn get_iter(&self, index: FormulaEncoding) -> NaryIterator {
+    pub fn get_iter(&self, index: FormulaEncoding) -> NaryIterator<'_> {
         let container = if index.is_large_cache() {
             let vec = &self.vec64[index.index() as usize];
             NaryCacheContainer::Encoding64(vec)
@@ -146,7 +146,7 @@ impl<'a> NaryIterator<'a> {
     }
 }
 
-impl<'a> Iterator for NaryIterator<'a> {
+impl Iterator for NaryIterator<'_> {
     type Item = EncodedFormula;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -130,7 +130,7 @@ impl CcIncrementalData {
             }
         } else {
             panic!("Cannot encode a new lower bound for an at-least-k constraint")
-        };
+        }
     }
 
     fn add_modular_totalizer_constraints(&mut self, result: &mut dyn EncodingResult, f: &FormulaFactory, rhs: usize) {

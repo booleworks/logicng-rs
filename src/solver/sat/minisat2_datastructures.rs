@@ -72,11 +72,7 @@ impl Tristate {
 
     /// Builds a tristate from a boolean.
     pub const fn from_bool(value: bool) -> Self {
-        if value {
-            True
-        } else {
-            False
-        }
+        if value { True } else { False }
     }
 }
 

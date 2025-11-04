@@ -1,7 +1,7 @@
 use crate::formulas::{CType, EncodedFormula, FormulaFactory, Literal};
+use pest::Parser;
 use pest::error::Error;
 use pest::iterators::Pair;
-use pest::Parser;
 
 #[derive(Parser)]
 #[grammar = "parser/lng_pseudo_boolean_parser.pest"]
@@ -55,11 +55,7 @@ fn parse_disjunction(f: &FormulaFactory, disjunction: Pair<Rule>) -> EncodedForm
         conjs.push(parse_conjunction(f, conjunction));
     }
 
-    if conjs.len() > 1 {
-        f.or(&conjs)
-    } else {
-        conjs[0]
-    }
+    if conjs.len() > 1 { f.or(&conjs) } else { conjs[0] }
 }
 
 fn parse_conjunction(f: &FormulaFactory, conjunction: Pair<Rule>) -> EncodedFormula {
@@ -70,11 +66,7 @@ fn parse_conjunction(f: &FormulaFactory, conjunction: Pair<Rule>) -> EncodedForm
         lits_vec.push(parse_lit(f, lit));
     }
 
-    if lits_vec.len() > 1 {
-        f.and(&lits_vec)
-    } else {
-        lits_vec[0]
-    }
+    if lits_vec.len() > 1 { f.and(&lits_vec) } else { lits_vec[0] }
 }
 
 fn parse_lit(f: &FormulaFactory, lit: Pair<Rule>) -> EncodedFormula {

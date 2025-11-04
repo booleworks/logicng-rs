@@ -20,9 +20,5 @@ pub fn normal_form(root: usize, cnf: bool, f: &FormulaFactory, kernel: &mut BddK
         let term = if cnf { f.or(&literals) } else { f.and(&literals) };
         terms.push(term);
     }
-    if cnf {
-        f.and(&terms)
-    } else {
-        f.or(&terms)
-    }
+    if cnf { f.and(&terms) } else { f.or(&terms) }
 }

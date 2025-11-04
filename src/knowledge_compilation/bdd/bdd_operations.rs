@@ -2,7 +2,7 @@
 use num_bigint::{BigUint, ToBigUint};
 
 use super::bdd_handler::NopBddHandler;
-use super::bdd_kernel::{is_const, is_one, is_zero, BddKernel, BDD_FALSE, BDD_TRUE, MARKOFF, MARKON};
+use super::bdd_kernel::{BDD_FALSE, BDD_TRUE, BddKernel, MARKOFF, MARKON, is_const, is_one, is_zero};
 
 const CACHEID_SATCOU: usize = 0x2;
 const CACHEID_PATHCOU_ONE: usize = 0x4;

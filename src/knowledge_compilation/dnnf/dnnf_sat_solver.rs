@@ -2,7 +2,7 @@
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
-use std::iter::repeat;
+use std::iter::repeat_n;
 use std::rc::Rc;
 
 use bitvec::vec::BitVec;
@@ -10,7 +10,7 @@ use bitvec::vec::BitVec;
 use crate::collections::MsClause;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::solver::minisat::sat::Tristate::Undef;
-use crate::solver::minisat::sat::{mk_lit, ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate};
+use crate::solver::minisat::sat::{ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate, mk_lit};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 pub struct DnnfSatSolver {
@@ -22,7 +22,7 @@ pub struct DnnfSatSolver {
 
 impl DnnfSatSolver {
     pub fn new(mut internal_solver: MiniSat2Solver<()>, number_of_variables: usize) -> Self {
-        internal_solver.dnnf_assignment = Some(repeat(Undef).take(2 * number_of_variables).collect());
+        internal_solver.dnnf_assignment = Some(repeat_n(Undef, 2 * number_of_variables).collect());
         Self { internal_solver, newly_implied_dirty: false, assertion_level: -1, last_learnt: None }
     }
 
@@ -85,13 +85,13 @@ impl DnnfSatSolver {
 
     pub fn newly_implied(&mut self, known_variables: &BitVec, f: &FormulaFactory) -> EncodedFormula {
         let mut implied_operands = Vec::new();
-        if self.newly_implied_dirty {
-            if let Some(&limit) = self.internal_solver.trail_lim.last() {
-                for i in (limit..self.internal_solver.trail.len()).rev() {
-                    let lit = self.internal_solver.trail[i];
-                    if *known_variables.get(Self::var(lit).0).unwrap() {
-                        implied_operands.push(self.int_to_literal(lit));
-                    }
+        if self.newly_implied_dirty
+            && let Some(&limit) = self.internal_solver.trail_lim.last()
+        {
+            for i in (limit..self.internal_solver.trail.len()).rev() {
+                let lit = self.internal_solver.trail[i];
+                if *known_variables.get(Self::var(lit).0).unwrap() {
+                    implied_operands.push(self.int_to_literal(lit));
                 }
             }
         }
@@ -120,7 +120,7 @@ impl DnnfSatSolver {
     }
 
     fn propagate_after_decide(&mut self) -> bool {
-        self.internal_solver.propagate().map_or(true, |conflict| {
+        self.internal_solver.propagate().is_none_or(|conflict| {
             self.handle_conflict(conflict);
             false
         })

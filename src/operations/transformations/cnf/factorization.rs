@@ -27,10 +27,10 @@ fn apply_rec(
 ) -> Result<EncodedFormula, FactorizationError> {
     use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
 
-    if let Some(lc) = local_cache {
-        if let Some(cached) = lc.get(formula) {
-            return Ok(cached);
-        }
+    if let Some(lc) = local_cache
+        && let Some(cached) = lc.get(formula)
+    {
+        return Ok(cached);
     }
 
     if let Some(cached) = f.caches.factorization_cnf.get(formula) {
@@ -43,13 +43,12 @@ fn apply_rec(
         Or(ops) => handle_or(ops, f, handler, local_cache),
         And(ops) => handle_and(ops, f, handler, local_cache),
     }
-    .map(|result| {
+    .inspect(|&result| {
         if f.config.caches.factorization_cnf {
             f.caches.factorization_cnf.insert(formula, result);
         } else {
             local_cache.as_mut().unwrap().insert(formula, result);
         }
-        result
     })
 }
 

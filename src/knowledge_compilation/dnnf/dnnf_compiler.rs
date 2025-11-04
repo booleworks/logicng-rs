@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::iter::repeat;
+use std::iter::repeat_n;
 use std::sync::Arc;
 
 use bitvec::bitvec;
@@ -7,11 +7,11 @@ use bitvec::vec::BitVec;
 use itertools::Itertools;
 
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
-use crate::knowledge_compilation::dnnf::dtree::{min_fill_dtree_generation, DTree, DTreeFactory, DTreeIndex};
 use crate::knowledge_compilation::dnnf::DnnfSatSolver;
+use crate::knowledge_compilation::dnnf::dtree::{DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation};
 use crate::operations::predicates::is_sat;
 use crate::operations::transformations::{backbone_simplification, cnf_subsumption};
-use crate::solver::minisat::sat::{var, MiniSat2Solver, MsVar, Tristate};
+use crate::solver::minisat::sat::{MiniSat2Solver, MsVar, Tristate, var};
 
 /// Represents a formula in DNNF.
 ///
@@ -195,7 +195,7 @@ impl<'a> DnnfCompiler<'a> {
     #[allow(clippy::cast_possible_wrap)]
     fn choose_shannon_variable(&self, tree: DTree, separator: &BitVec) -> MsVar {
         // cached allocation as in Java was significantly slower here, so we rather create a new vector on every call
-        let mut occurrences: Vec<isize> = repeat(-1).take(self.number_of_variables).collect();
+        let mut occurrences: Vec<isize> = repeat_n(-1, self.number_of_variables).collect();
         separator.iter_ones().for_each(|n| occurrences[n] = 0);
 
         self.df.count_unsubsumed_occurrences(tree, &mut occurrences, &self.solver);

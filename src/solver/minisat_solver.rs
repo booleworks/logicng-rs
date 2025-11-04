@@ -9,11 +9,11 @@ use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::Model;
 use crate::explanations::UnsatCore;
 use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
-use crate::operations::transformations::{add_cnf_to_solver, CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry};
+use crate::operations::transformations::{CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver};
 use crate::propositions::Proposition;
 use crate::solver::functions::compute_unsat_core;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
-use crate::solver::minisat::sat::{mk_lit, sign, var, MiniSat2Solver, MsLit, Tristate};
+use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, Tristate, mk_lit, sign, var};
 use crate::solver::minisat::{MiniSatConfig, SolverCnfMethod, SolverState};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
@@ -84,7 +84,9 @@ impl<B> MiniSat<B> {
 
     /// Adds the given formulas to the solver.
     pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) {
-        formulas.iter().for_each(|&formula| self.add(formula, f));
+        for &formula in formulas {
+            self.add(formula, f);
+        }
     }
 
     /// Adds the given formula to the solver.
@@ -156,7 +158,7 @@ impl<B> MiniSat<B> {
                     PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
                 );
             }
-        };
+        }
     }
 
     /// Solves the current problem on the solver.
@@ -269,11 +271,11 @@ impl<B> MiniSat<B> {
     /// - "&lt;=": Cannot be used with right-hand side 1, returns null for
     ///   right-hand side 0, but constraint is added to solver.
     /// - "&gt;": Returns null for right-hand side 0 or number of variables -1,
-    /// but constraint is added to solver. Adds false to solver for right-hand
-    /// side &gt;= number of variables.
+    ///   but constraint is added to solver. Adds false to solver for right-hand
+    ///   side &gt;= number of variables.
     /// - "&gt;=": Returns null for right-hand side 1 or number of variables,
-    /// but constraint is added to solver. Adds false to solver for right-hand
-    /// side &gt; number of variables.
+    ///   but constraint is added to solver. Adds false to solver for right-hand
+    ///   side &gt; number of variables.
     pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> Option<CcIncrementalData> {
         CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(self, cc, f)
     }
@@ -370,6 +372,7 @@ impl<B> MiniSat<B> {
         mk_lit(index, !literal.phase())
     }
 
+    #[allow(clippy::ref_option)]
     pub(crate) fn create_assignment(&self, model: &[bool], relevant_indices: &Option<Vec<MsVar>>) -> Model {
         let capacity = relevant_indices.as_ref().map_or(model.len(), Vec::len);
         let mut pos = Vec::with_capacity(capacity);
@@ -399,7 +402,7 @@ impl<B> MiniSat<B> {
                     }
                 }
             }
-        };
+        }
         Model::new(pos, neg)
     }
 

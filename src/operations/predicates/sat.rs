@@ -1,6 +1,6 @@
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 use crate::solver::minisat::SolverCnfMethod::FactoryCnf;
+use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 use crate::solver::minisat::{MiniSat, MiniSatConfig};
 
 /// A predicate tests whether a formula is satisfiable. A formula is satisfiable

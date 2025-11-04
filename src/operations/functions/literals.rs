@@ -28,7 +28,7 @@ use crate::util::exceptions::panic_unexpected_formula_type;
 /// ].into_iter());
 /// assert_eq!(string_literals(formula, &f), expected)
 /// ```
-pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<StringLiteral> {
+pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<StringLiteral<'_>> {
     formula.literals(f).iter().map(|lit| lit.to_string_lit(f)).collect()
 }
 

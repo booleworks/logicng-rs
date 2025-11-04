@@ -30,11 +30,11 @@ use crate::backbones::Backbone;
 use crate::collections::remove_elem;
 use std::cell::RefCell;
 use std::cmp::Ordering::{Greater, Less};
-use std::cmp::{min, Ordering};
+use std::cmp::{Ordering, min};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
-use crate::collections::{LngHeap, MsClause, MsVariable, LNG_VEC_INIT_SIZE};
+use crate::collections::{LNG_VEC_INIT_SIZE, LngHeap, MsClause, MsVariable};
 use crate::formulas::{Literal, Variable};
 use crate::propositions::Proposition;
 use crate::solver::functions::BackboneType;
@@ -188,7 +188,7 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn reason(&self, lit: MsLit) -> Option<ClauseRef> {
-        return self.var_reasons[var(lit).0].as_ref().cloned();
+        self.var_reasons[var(lit).0].clone()
     }
 
     fn set_reason(&mut self, lit: MsLit, reason: Option<ClauseRef>) {
@@ -197,11 +197,7 @@ impl<B> MiniSat2Solver<B> {
 
     fn value(&self, lit: MsLit) -> Tristate {
         let val = self.v(lit).assignment;
-        if sign(lit) {
-            val.negate()
-        } else {
-            val
-        }
+        if sign(lit) { val.negate() } else { val }
     }
 
     /// Returns the internal representation of a variable, if there is one.
@@ -334,7 +330,7 @@ impl<B> MiniSat2Solver<B> {
             self.learnts_literals += clause.len();
         } else {
             self.clauses_literals += clause.len();
-        };
+        }
     }
 
     pub(crate) fn decision_level(&self) -> usize {
@@ -416,7 +412,7 @@ impl<B> MiniSat2Solver<B> {
                         }
                     } else {
                         self.unchecked_enqueue(first, Some(clause_ref.clone()));
-                    };
+                    }
                 }
             }
             self.watches[p.0].truncate(j_ind);
@@ -521,7 +517,7 @@ impl<B> MiniSat2Solver<B> {
                     }
                     if (self.learnts.len() as isize - self.n_assigns() as isize) as f64 >= self.max_learnts {
                         self.reduce_db();
-                    };
+                    }
                 }
                 let mut next: Option<MsLit> = None;
                 while self.decision_level() < self.assumptions.len() {
@@ -847,7 +843,7 @@ impl<B> MiniSat2Solver<B> {
             } else {
                 self.learnts.swap(i, j);
                 j += 1;
-            };
+            }
         }
         self.learnts.truncate(j);
     }
@@ -1017,11 +1013,7 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn compare_learnt_clauses_2(x_len: usize, x_activity: f64, y_len: usize, y_activity: f64) -> Ordering {
-        if x_len > 2 && (y_len == 2 || x_activity < y_activity) {
-            Less
-        } else {
-            Greater
-        }
+        if x_len > 2 && (y_len == 2 || x_activity < y_activity) { Less } else { Greater }
     }
 
     fn locked(&self, clause_ref: &ClauseRef) -> bool {
@@ -1241,7 +1233,9 @@ impl<B> MiniSat2Solver<B> {
                 new_candidates.push(lit);
             }
         }
-        new_backbone_lits.iter().for_each(|&lit| state.add_backbone_literal(lit));
+        for &lit in &new_backbone_lits {
+            state.add_backbone_literal(lit);
+        }
         state.candidates = new_candidates;
     }
 

@@ -113,11 +113,7 @@ impl Model {
     /// assert_eq!(model2.neg(), &vec![b.variable()]);
     /// ```
     pub fn from_lit(lit: Literal) -> Self {
-        if lit.phase() {
-            Self { pos: vec![lit.variable()], neg: vec![] }
-        } else {
-            Self { pos: vec![], neg: vec![lit.variable()] }
-        }
+        if lit.phase() { Self { pos: vec![lit.variable()], neg: vec![] } } else { Self { pos: vec![], neg: vec![lit.variable()] } }
     }
 
     /// Creates a model from a single vector of literals.

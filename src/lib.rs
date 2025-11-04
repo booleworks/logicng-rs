@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery, missing_docs)]
+#![warn(clippy::all, clippy::pedantic, missing_docs)]
 #![allow(
     clippy::similar_names,
     clippy::must_use_candidate,
