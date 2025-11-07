@@ -8,7 +8,7 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use pest::error::Error;
@@ -38,8 +38,7 @@ const FF_ID_LENGTH: i32 = 4;
 pub(super) const AUX_PREFIX: &str = "@RESERVED_";
 pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>(CNF)|(CC)|(PB))_(?P<INDEX>[0-9]+)$";
 
-static AUX_REGEX_LOCK: OnceLock<Regex> = OnceLock::new(); // TODO replace with LazyLock once available
-
+static AUX_REGEX_LOCK: LazyLock<Regex> = LazyLock::new(|| Regex::new(AUX_REGEX).unwrap());
 struct FilterResult {
     reduced32: Vec<SmallFormulaEncoding>,
     reduced_set32: HashSet<SmallFormulaEncoding>,
@@ -501,8 +500,7 @@ impl FormulaFactory {
     /// let _ = f.parsed_variable("@RESERVED_00_CNF_00"); //Auxiliary variable
     /// ```
     pub fn parsed_variable(&self, name: &str) -> EncodedFormula {
-        let aux_regex = AUX_REGEX_LOCK.get_or_init(|| Regex::new(AUX_REGEX).unwrap());
-        aux_regex.captures(name).map_or_else(
+        AUX_REGEX_LOCK.captures(name).map_or_else(
             || self.variable(name),
             |captures| {
                 if captures["FF_ID"] == self.id {
