@@ -1291,6 +1291,15 @@ impl FormulaFactory {
         )
     }
 
+    pub(crate) fn new_auxiliary_variable(&self, aux_type: AuxVarType) -> Variable {
+        match aux_type {
+            AuxVarType::CNF => self.new_cnf_variable(),
+            AuxVarType::CC => self.new_cc_variable(),
+            AuxVarType::PB => self.new_pb_variable(),
+            AuxVarType::TMP => panic!("Tmp variables cannot be created by an user."),
+        }
+    }
+
     pub(crate) fn new_cnf_variable(&self) -> Variable {
         let n = self.cnf_counter.fetch_add(1, Ordering::SeqCst);
         Variable::Aux(AuxVarType::CNF, n as u64)

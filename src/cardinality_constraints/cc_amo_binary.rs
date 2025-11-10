@@ -1,17 +1,16 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::cast_possible_wrap)]
 
-use crate::cardinality_constraints::encoding_result::EncodingResult;
-use crate::formulas::{FormulaFactory, Literal, Variable};
+use crate::datastructures::EncodingResult;
+use crate::formulas::{AuxVarType, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the binary
 /// encoding due to Doggett, Frisch, Peugniez, and Nightingale.
-pub fn build_amo_binary<R: EncodingResult>(result: &mut R, f: &FormulaFactory, vars: &[Variable]) {
+pub fn build_amo_binary<R: EncodingResult>(result: &mut R, vars: &[Variable]) {
     let vars: Vec<Literal> = vars.iter().map(|var| Literal::new(*var, true)).collect();
-    result.reset();
     let number_of_bits = (vars.len() as f64).log2().ceil() as u32;
     let two_pow_n_bits = 2u64.pow(number_of_bits);
     let k = ((two_pow_n_bits - vars.len() as u64) * 2) as isize;
-    let bits: Vec<Literal> = (0..number_of_bits).map(|_| Literal::new(result.new_cc_variable(f), true)).collect();
+    let bits: Vec<Literal> = (0..number_of_bits).map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true)).collect();
 
     let mut gray_code: isize;
     let mut next_gray: isize;
@@ -25,9 +24,9 @@ pub fn build_amo_binary<R: EncodingResult>(result: &mut R, f: &FormulaFactory, v
         for j in 0..number_of_bits {
             if (gray_code & (1 << j)) == (next_gray & (1 << j)) {
                 if (gray_code & (1 << j)) == 0 {
-                    result.add_clause2(f, vars[index as usize].negate(), bits[j as usize].negate());
+                    result.add_clause(&[vars[index as usize].negate(), bits[j as usize].negate()]);
                 } else {
-                    result.add_clause2(f, vars[index as usize].negate(), bits[j as usize]);
+                    result.add_clause(&[vars[index as usize].negate(), bits[j as usize]]);
                 }
             }
         }
@@ -38,9 +37,9 @@ pub fn build_amo_binary<R: EncodingResult>(result: &mut R, f: &FormulaFactory, v
         gray_code = i ^ (i >> 1);
         for j in 0..number_of_bits {
             if (gray_code & (1 << j)) == 0 {
-                result.add_clause2(f, vars[index as usize].negate(), bits[j as usize].negate());
+                result.add_clause(&[vars[index as usize].negate(), bits[j as usize].negate()]);
             } else {
-                result.add_clause2(f, vars[index as usize].negate(), bits[j as usize]);
+                result.add_clause(&[vars[index as usize].negate(), bits[j as usize]]);
             }
         }
         i += 1;

@@ -9,6 +9,7 @@
 
 use crate::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
+use crate::datastructures::EncodingResultFF;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::pseudo_booleans::pb_config::PbConfig;
 
@@ -140,9 +141,9 @@ fn binary_merge(
             formula.extend(formula_extension);
             new_bucket_card
         } else {
-            let mut temp_result = vec![];
-            let sorted = cc_sort(k, bucket_i.clone(), &mut temp_result, f, InputToOutput);
-            formula.extend(temp_result);
+            let mut temp_result = EncodingResultFF::new(f);
+            let sorted = cc_sort(k, bucket_i.clone(), &mut temp_result, InputToOutput);
+            formula.extend(temp_result.result);
             sorted
         };
         if k <= bucket_i.len() {
@@ -164,9 +165,9 @@ fn binary_merge(
                         formula.extend(formula_extension);
                         bucket_merge_i = new_merge_bucket;
                     } else {
-                        let mut temp_result = vec![];
-                        bucket_merge_i = cc_merge(k, bucket_card_i.clone(), carries.clone(), &mut temp_result, f, InputToOutput);
-                        formula.extend(temp_result);
+                        let mut temp_result = EncodingResultFF::new(f);
+                        bucket_merge_i = cc_merge(k, bucket_card_i.clone(), carries.clone(), &mut temp_result, InputToOutput);
+                        formula.extend(temp_result.result);
                     }
                     if k == bucket_merge_i.len() || config.binary_merge_use_watch_dog && k <= bucket_merge_i.len() {
                         if let Some(gac) = gac_lit {

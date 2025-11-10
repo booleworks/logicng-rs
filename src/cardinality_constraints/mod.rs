@@ -1,7 +1,6 @@
 mod cc_config;
 mod cc_encoder;
 mod cc_incremental_data;
-mod encoding_result;
 
 mod cc_amo_bimander;
 mod cc_amo_binary;
@@ -19,7 +18,6 @@ pub(crate) mod cc_totalizer;
 pub use cc_config::*;
 pub use cc_encoder::*;
 pub use cc_incremental_data::*;
-pub use encoding_result::*;
 
 use cc_amo_bimander::build_amo_bimander;
 use cc_amo_binary::build_amo_binary;

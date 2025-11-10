@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use crate::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::collections::LNG_VEC_INIT_SIZE;
-use crate::datastructures::Model;
+use crate::datastructures::{EncodingResultSatSolver, Model};
 use crate::explanations::UnsatCore;
 use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
 use crate::operations::transformations::{CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver};
@@ -53,7 +53,7 @@ impl MiniSat {
     }
 }
 
-impl<B> MiniSat<B> {
+impl<B: Clone> MiniSat<B> {
     /// Constructs a new SAT solver instance.
     pub fn new_with_backpack() -> Self {
         Self {
@@ -93,7 +93,8 @@ impl<B> MiniSat<B> {
     pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) {
         self.result = Undef;
         if formula.formula_type() == FormulaType::Cc {
-            CcEncoder::new(f.config.cc_config.clone()).encode_on(self, &formula.as_cc(f).unwrap(), f);
+            let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
+            CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap());
         } else {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
@@ -277,7 +278,8 @@ impl<B> MiniSat<B> {
     ///   but constraint is added to solver. Adds false to solver for right-hand
     ///   side &gt; number of variables.
     pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> Option<CcIncrementalData> {
-        CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(self, cc, f)
+        let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
+        CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc)
     }
 
     /// A solver function which returns all unit propagated literals on level 0
