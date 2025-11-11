@@ -21,16 +21,21 @@ crate-type = ["lib"]
 members = ["lib/open_wbo_ffi"]
 
 [dependencies]
-fastrand = "2.0.0"
-regex = "1.9.5"
+fastrand = "2"
+regex = "1.5.5"
 bitvec = "1.0.1"
-itertools = "0.11.0"
-num-bigint = "0.4.4"
-pest = "2.7.3"
-pest_derive = "2.7.3"
-dashmap = "5.5.3"
+itertools = "0.14"
+num-bigint = "0.4.2"
+pest = "2.8"
+pest_derive = "2.8"
+dashmap = "6"
 logicng-open-wbo-sys = { version = "0.1.0-alpha.3", path = "lib/open_wbo_ffi", optional = true }
 logicng-sharp-sat-sys = {version = "0.1.0-alpha.1", path = "lib/sharp_sat_ffi", optional = true }
+
+# bitvec@1.0.1 and wyz@0.5.1 allow tap@1.0.0 as dependency, but only build with
+# tap@1.0.1 or newer. We need to enforce this version to build with
+# -Zminimal-version.
+tap = { version = "1.0.1", optional = true }
 
 [features]
 default = []

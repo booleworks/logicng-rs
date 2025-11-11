@@ -14,8 +14,13 @@ categories = ["external-ffi-bindings"]
 crate-type = ["lib"]
 
 [build-dependencies]
-cxx-build = "1.0.107"
+cxx-build = "1.0.187"
 cmake = "0.1"
 
 [dependencies]
-cxx = "1.0.107"
+cxx = "1.0.187"
+
+# cxx@1.0.187 and cxx-build@1.0.187 allow hashbrown@0.15.0 as dependency, which
+# has a security vulnerability. Thus, we enforce hashbrown@0.15.1 or newer.
+# https://rustsec.org/advisories/RUSTSEC-2024-0402
+hashbrown = { version = "0.15.1", optional = true }

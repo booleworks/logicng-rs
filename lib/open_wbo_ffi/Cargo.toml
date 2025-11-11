@@ -18,7 +18,11 @@ repository = "https://github.com/booleworks/logicng-rs"
 crate-type = ["lib"]
 
 [build-dependencies]
-cxx-build = "1.0.107"
+cxx-build = "1.0.187"
 
 [dependencies]
-cxx = "1.0.107"
+cxx = "1.0.187"
+
+# cxx@1.0.187 and cxx-build@1.0.187 allow hashbrown@0.15.0 as dependency, which
+# has a security vulnerability. Thus, we enforce hashbrown@0.15.1 or newer.
+hashbrown = { version = "0.15.1", optional = true }
