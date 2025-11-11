@@ -176,7 +176,7 @@ mod tests {
     use crate::operations::transformations::{CnfAlgorithm, CnfEncoder};
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     fn test_dtree_generation() {
         use std::fs::File;
         use std::io::{BufRead, BufReader};

@@ -55,7 +55,7 @@ fn configs() -> Vec<PbConfig> {
 }
 
 fn literals(n: usize, f: &FormulaFactory) -> Box<[Literal]> {
-    (0..n).map(|n| f.variable(&format!("v{n}")).as_literal().unwrap()).collect()
+    (0..n).map(|n| f.variable(format!("v{n}")).as_literal().unwrap()).collect()
 }
 
 #[test]

@@ -26,7 +26,7 @@ fn place_in_some_hole(n: usize, prefix: &str, f: &FormulaFactory) -> EncodedForm
         for i in 1..=(n + 1) {
             let mut or_ops = Vec::with_capacity(n);
             for j in 1..=n {
-                or_ops.push(f.variable(&format!("{prefix}{}", n * (i - 1) + j)));
+                or_ops.push(f.variable(format!("{prefix}{}", n * (i - 1) + j)));
             }
             ors.push(f.or(&or_ops));
         }

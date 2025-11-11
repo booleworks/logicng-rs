@@ -58,7 +58,9 @@ fn test_formula_on_solver_with_contradiction() {
             .copied()
             .collect::<HashSet<EncodedFormula>>();
         assert_eq!(on_solver.len(), expected.len());
-        expected.iter().for_each(|fm| assert!(on_solver.contains(fm)));
+        for fm in &expected {
+            assert!(on_solver.contains(fm));
+        }
 
         solver.sat();
         let on_solver = solver.formula_on_solver(f).iter().copied().collect::<HashSet<EncodedFormula>>();
@@ -75,7 +77,9 @@ fn test_formula_on_solver_with_contradiction() {
         .copied()
         .collect::<HashSet<EncodedFormula>>();
         assert_eq!(on_solver.len(), expected.len());
-        expected.iter().for_each(|fm| assert!(on_solver.contains(fm)));
+        for fm in &expected {
+            assert!(on_solver.contains(fm));
+        }
     }
 }
 
@@ -90,5 +94,7 @@ fn compare_formulas(original: &[EncodedFormula], from_solver: &[EncodedFormula],
         .map(Assignment::from)
         .collect::<HashSet<Assignment>>();
     assert_eq!(models1.len(), models2.len());
-    models1.iter().for_each(|m| assert!(models2.contains(m)));
+    for m in &models1 {
+        assert!(models2.contains(m));
+    }
 }

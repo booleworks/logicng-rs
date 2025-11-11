@@ -5,6 +5,7 @@ pub mod file_anonymizer;
 pub mod formula_randomizer;
 pub(crate) mod n_queens_generator;
 #[cfg(test)]
+#[allow(missing_docs)]
 pub mod read_model_counting_examples;
 #[cfg(test)]
 pub(crate) mod test_formula_corner_cases;

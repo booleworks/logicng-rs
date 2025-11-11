@@ -54,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     fn large_bdd_test() {
         let mut f = FormulaFactory::new();
         let expected_count = [0, 2, 10, 4, 40, 92, 352];
@@ -115,7 +115,7 @@ mod tests {
     fn generate_variables(n: usize, f: &FormulaFactory) -> Vec<Variable> {
         let mut result = Vec::new();
         for i in 0..n {
-            result.push(f.var(&format!("v{i}")));
+            result.push(f.var(format!("v{i}")));
         }
         result
     }

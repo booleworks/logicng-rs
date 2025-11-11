@@ -137,7 +137,7 @@ fn test_simple_formulas() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_real_formula_incremental1() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
@@ -168,7 +168,7 @@ fn test_real_formula_incremental1() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_real_formula_incremental2() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
@@ -199,7 +199,7 @@ fn test_real_formula_incremental2() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_real_formula_incremental_decremental1() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
@@ -238,7 +238,7 @@ fn test_real_formula_incremental_decremental1() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_real_formula_incremental_decremental2() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {

@@ -19,7 +19,7 @@ mod drup_tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     pub fn test_unsat_core_from_dimacs() {
         let f = FormulaFactory::new();
         let cnfs = [
@@ -40,7 +40,7 @@ mod drup_tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     pub fn test_unsat_cores_from_large_testset() {
         let f = &FormulaFactory::new();
         let mut count = 0;
@@ -65,7 +65,7 @@ mod drup_tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     pub fn test_unsat_cores_aim_testset() {
         let f = &FormulaFactory::new();
         let mut solvers = solvers();

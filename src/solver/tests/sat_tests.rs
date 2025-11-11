@@ -251,7 +251,7 @@ fn test_pigeon_hole_with_reset() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_pigeon_hole_large() {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
@@ -261,7 +261,7 @@ fn test_pigeon_hole_large() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_different_clause_minimizations() {
     let f = &FormulaFactory::new();
     let solvers = [
@@ -276,7 +276,7 @@ fn test_different_clause_minimizations() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files() {
     let f = &FormulaFactory::new();
@@ -284,7 +284,7 @@ fn test_dimacs_files() {
         .lines()
         .map(|l| {
             let tokens: Vec<String> = l.unwrap().split(';').map(std::string::ToString::to_string).collect();
-            (tokens[0].to_string(), tokens[1].parse().unwrap())
+            (tokens[0].clone(), tokens[1].parse().unwrap())
         })
         .collect();
     for file in fs::read_dir("resources/sat").unwrap() {
@@ -293,7 +293,9 @@ fn test_dimacs_files() {
         if file_name.ends_with(".cnf") {
             let cnf = read_cnf(file.path().to_str().unwrap(), f).unwrap();
             for mut solver in solvers() {
-                cnf.iter().for_each(|&clause| solver.add(clause, f));
+                for &clause in &cnf {
+                    solver.add(clause, f);
+                }
                 assert_eq!(solver.sat() == True, *expected_results.get(&file_name).unwrap());
             }
         }
@@ -436,7 +438,7 @@ fn test_up_zero_literals() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_up_zero_literals_dimacs_files() {
     let f = &FormulaFactory::new();
@@ -446,7 +448,9 @@ fn test_up_zero_literals_dimacs_files() {
         if file_name.ends_with(".cnf") {
             let cnf = read_cnf(file.path().to_str().unwrap(), f).unwrap();
             for mut solver in solvers() {
-                cnf.iter().for_each(|&clause| solver.add(clause, f));
+                for &clause in &cnf {
+                    solver.add(clause, f);
+                }
                 if solver.sat() == True {
                     let up_zero_literals = solver.up_zero_literals().unwrap();
                     let negations = up_zero_literals.iter().map(|lit| EncodedFormula::from(lit.negate()));
@@ -528,7 +532,7 @@ fn test_selection_order_simple02() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files_with_selection_order() {
     let f = &FormulaFactory::new();
@@ -536,7 +540,7 @@ fn test_dimacs_files_with_selection_order() {
         .lines()
         .map(|l| {
             let tokens: Vec<String> = l.unwrap().split(';').map(std::string::ToString::to_string).collect();
-            (tokens[0].to_string(), tokens[1].parse().unwrap())
+            (tokens[0].clone(), tokens[1].parse().unwrap())
         })
         .collect();
     for file in fs::read_dir("resources/sat").unwrap() {
@@ -545,7 +549,9 @@ fn test_dimacs_files_with_selection_order() {
         if file_name.ends_with(".cnf") {
             let cnf = read_cnf(file.path().to_str().unwrap(), f).unwrap();
             for mut solver in solvers() {
-                cnf.iter().for_each(|&clause| solver.add(clause, f));
+                for &clause in &cnf {
+                    solver.add(clause, f);
+                }
                 let selection_order = (*f.and(&cnf).variables(f)).iter().take(10).map(Variable::pos_lit).collect::<Vec<Literal>>();
                 let expected = *expected_results.get(&file_name).unwrap();
                 assert_eq!(solver.sat_with(&SatBuilder::new().selection_order(&selection_order)) == True, expected);

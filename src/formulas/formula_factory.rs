@@ -349,7 +349,7 @@ impl FormulaFactory {
 
     /// Returns the constant `True`.
     ///
-    /// This function is equivalent to [`EncodedFormula::constant(true)`], which
+    /// This function is equivalent to `EncodedFormula::constant(true)`, which
     /// you can call without a reference to a `FormulaFactory`. This also means
     /// that a constant is independent of a factory.
     ///
@@ -372,7 +372,7 @@ impl FormulaFactory {
 
     /// Returns the constant `False`.
     ///
-    /// This function is equivalent to [`EncodedFormula::constant(false)`],
+    /// This function is equivalent to `EncodedFormula::constant(false)`,
     /// which you can call without a reference to a `FormulaFactory`. This also
     /// means that a constant is independent of a factory.
     ///
@@ -984,7 +984,7 @@ impl FormulaFactory {
     /// Returns the _CNF_ form of `formula`.
     ///
     /// You can specify the algorithm for the _CNF_ transformation by
-    /// overwriting [`self.config.cnf_config`]. Be aware that some algorithm (e.
+    /// overwriting `self.config.cnf_config`. Be aware that some algorithm (e.
     /// g. the default configuration) for the CNF transformation may result in a
     /// CNF containing additional auxiliary variables. Also, the result may not
     /// be a semantically equivalent CNF but an equisatisfiable CNF.
@@ -1094,11 +1094,7 @@ impl FormulaFactory {
     /// `evaluate` ensures that a formula evaluates to a `true/false` value by
     /// assuming that literals not in the assignment are unsatisfiable.
     ///
-    /// If you want to restrict the formula only by one literal, you want to use
-    /// `restrict_lit`.
-    ///
     /// [`evaluate`]: FormulaFactory::evaluate
-    /// [`restrict_lit`]: FormulaFactory::restrict_lit
     ///
     /// # Examples
     ///

@@ -87,6 +87,7 @@ impl<T: Ord + Copy> UbTree<T> {
     }
 
     #[cfg(test)]
+    #[allow(missing_docs)]
     pub fn root_nodes(&self) -> &BTreeMap<T, NodeIndex> {
         self.get_children(self.root_nodes)
     }

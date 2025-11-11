@@ -80,7 +80,7 @@ fn test_corner_cases() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_random_small() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
@@ -203,7 +203,7 @@ fn test_additional_variables() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_formula_minimize() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
@@ -217,7 +217,7 @@ fn test_large_formula_minimize() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_formula_maximize() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
@@ -231,7 +231,7 @@ fn test_large_formula_maximize() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_larger_formula_minimize() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
@@ -246,7 +246,7 @@ fn test_larger_formula_minimize() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_larger_formula_maximize() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();

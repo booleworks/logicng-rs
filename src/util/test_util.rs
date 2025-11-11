@@ -9,11 +9,11 @@ use std::hash::{Hash, Hasher};
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, StringLiteral, ToFormula, ToStringLiteral, Variable};
 
-pub fn string_vars(elements: &'static str) -> BTreeSet<Cow<str>> {
+pub fn string_vars(elements: &'static str) -> BTreeSet<Cow<'static, str>> {
     elements.split(' ').map(Cow::from).collect()
 }
 
-pub fn string_lits(elements: &str) -> BTreeSet<StringLiteral> {
+pub fn string_lits(elements: &str) -> BTreeSet<StringLiteral<'_>> {
     elements.split(' ').map(|x| x.to_string().to_string_literal()).collect()
 }
 

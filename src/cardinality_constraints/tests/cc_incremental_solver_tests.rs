@@ -91,7 +91,7 @@ fn test_simple_incremental_alk() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_upper_bound_amk() {
     for config in [&configs()[0], &configs()[2]] {
         for mut solver in solvers() {
@@ -113,7 +113,7 @@ fn test_large_upper_bound_amk() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_lower_bound_alk() {
     for config in [&configs()[0], &configs()[2]] {
         for mut solver in solvers() {

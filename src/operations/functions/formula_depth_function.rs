@@ -97,7 +97,7 @@ mod test {
         let ff = F::new();
         let mut formula = ff.PBC1;
         for i in 0..10 {
-            let var = ff.f.variable(&format!("X{i}"));
+            let var = ff.f.variable(format!("X{i}"));
             formula = if i % 2 == 0 { ff.f.or([formula, var]) } else { ff.f.and([formula, var]) }
         }
         assert_eq!(10, formula_depth(formula, &ff.f));

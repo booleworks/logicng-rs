@@ -13,7 +13,7 @@ const fn configs() -> [CcConfig; 3] {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_amk_performance() {
     for config in configs() {
         let f = &mut FormulaFactory::new();

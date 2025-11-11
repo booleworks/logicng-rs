@@ -120,7 +120,7 @@ fn test_simple_incremental_alk() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_upper_bound_amk() {
     for encoder in [&encoders()[0], &encoders()[2]] {
         let f = &FormulaFactory::new();
@@ -143,7 +143,7 @@ fn test_large_upper_bound_amk() {
 }
 
 #[test]
-#[cfg_attr(not(feature = "long_running_tests"), ignore)]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_large_lower_bound_alk() {
     for encoder in [&encoders()[0], &encoders()[2]] {
         let f = &FormulaFactory::new();

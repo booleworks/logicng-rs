@@ -251,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     fn test_large_formulas() {
         let f = &FormulaFactory::new();
         let cnf1 = read_cnf("resources/dnnf/both_bdd_dnnf_1.cnf", f).unwrap();
@@ -267,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
     fn test_all_small_formulas() {
         let f = &FormulaFactory::new();
         BufReader::new(File::open("resources/formulas/small_formulas.txt").unwrap())
