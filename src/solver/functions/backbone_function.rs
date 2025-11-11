@@ -5,7 +5,7 @@ use crate::solver::minisat::MiniSat;
 use BackboneType::{OnlyNegative, OnlyPositive};
 
 /// Types of backbones
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash)]
 pub enum BackboneType {
     /// Backbones that only contain positive literals.
     OnlyPositive,
@@ -28,6 +28,7 @@ impl BackboneType {
 }
 
 /// Configuration for backbones.
+#[derive(Eq, PartialEq, Clone, Debug, Hash)]
 pub struct BackboneConfig {
     variables: Vec<Variable>,
     backbone_type: BackboneType,

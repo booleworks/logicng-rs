@@ -1,7 +1,7 @@
 use crate::solver::minisat::sat::Tristate;
 
 /// A MiniSAT Variable
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct MsVariable {
     pub assignment: Tristate,
     pub level: Option<usize>,

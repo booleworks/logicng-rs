@@ -1,5 +1,5 @@
 /// The encoder for at-most-one and exactly-one constraints.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AmoEncoder {
     /// Pure encoding.
     Pure,
@@ -32,7 +32,7 @@ pub enum AmoEncoder {
 }
 
 /// The encoder for at-most-k constraints.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AmkEncoder {
     /// Totalizer encoding.
     Totalizer,
@@ -45,7 +45,7 @@ pub enum AmkEncoder {
 }
 
 /// The encoder for at-least-k constraints.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AlkEncoder {
     /// Totalizer encoding.
     Totalizer,
@@ -58,7 +58,7 @@ pub enum AlkEncoder {
 }
 
 /// The encoder for exactly-k constraints.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum ExkEncoder {
     /// Totalizer encoding.
     Totalizer,
@@ -69,7 +69,7 @@ pub enum ExkEncoder {
 }
 
 /// The group size for the Bimander encoding.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum BimanderGroupSize {
     /// Half.
     Half,
@@ -80,7 +80,7 @@ pub enum BimanderGroupSize {
 }
 
 /// Configuration for the [`CcEncoder`](`crate::cardinality_constraints::CcEncoder`).
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct CcConfig {
     /// Encoder for at-most-one constraints.
     pub amo_encoder: AmoEncoder,

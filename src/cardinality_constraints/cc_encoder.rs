@@ -11,7 +11,7 @@ use super::{
 };
 
 /// An encoder for cardinality constraints.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Hash, Eq, PartialEq)]
 pub struct CcEncoder {
     config: CcConfig,
 }

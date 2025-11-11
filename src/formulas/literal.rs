@@ -268,7 +268,7 @@ impl ToFormula for Literal {
 /// makes them unsuited for external use cases. `StringLiteral` allows you to
 /// have literals and variables that are not bound to a `FormulaFactory`.
 /// _LogicNG_ provides some functions to easily convert between those types.
-#[derive(PartialOrd, PartialEq, Ord, Eq, Debug, Clone)]
+#[derive(PartialOrd, PartialEq, Ord, Eq, Debug, Clone, Hash)]
 pub struct StringLiteral<'a> {
     /// name of the literal
     pub name: Cow<'a, str>,

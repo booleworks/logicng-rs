@@ -13,6 +13,7 @@ const SEL_PREFIX: &str = "@SEL_OPT";
 /// number of positive assigned literals. I.e. when minimizing over a set of
 /// variables you can compute a model with a globally minimal number of positive
 /// assigned literals.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct OptimizationFunction {
     literals: Vec<Literal>,
     result_model_variables: BTreeSet<Variable>,

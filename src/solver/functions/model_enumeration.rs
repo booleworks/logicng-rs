@@ -26,6 +26,7 @@ use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, MsVar, mk_lit};
 ///                     .additional_variables(my_additional_variables)
 ///                     .max_models(100);
 /// ```
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ModelEnumerationConfig {
     /// Variables over which the model enumeration should iterate.
     pub variables: Option<Box<[Variable]>>,

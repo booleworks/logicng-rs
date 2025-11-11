@@ -23,6 +23,7 @@ use std::num::Wrapping;
 
 use crate::collections::LNG_VEC_INIT_SIZE;
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct DrupResult {
     pub trivial_unsat: bool,
     pub unsat_core: Vec<Vec<isize>>,
@@ -37,6 +38,7 @@ pub fn drup_compute(original_problem: Vec<Vec<isize>>, proof: Vec<Vec<isize>>) -
     }
 }
 
+#[derive(Debug)]
 struct Solver {
     original_problem: Vec<Vec<isize>>,
     proof: Vec<Vec<isize>>,

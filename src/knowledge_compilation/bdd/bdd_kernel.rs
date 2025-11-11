@@ -39,7 +39,7 @@ pub(super) struct Operand {
 }
 
 /// Statistics for a BDD kernel.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BddStatistics {
     /// Number of new nodes ever produced.
     pub produced: usize,
@@ -74,6 +74,7 @@ impl Operand {
 }
 
 /// The BUDDY kernel.
+#[derive(Debug)]
 #[rustfmt::skip]
 pub struct BddKernel {
     pub(crate) var2idx: BTreeMap<Variable, usize>,

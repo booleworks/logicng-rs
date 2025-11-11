@@ -1,5 +1,5 @@
 /// Pseudo-boolean constraint encoding algorithms.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum PbAlgorithm {
     /// SWC algorithm.
     Swc,
@@ -12,7 +12,7 @@ pub enum PbAlgorithm {
 }
 
 /// Configuration for [`PbEncoder`](`crate::pseudo_booleans::PbEncoder`).
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct PbConfig {
     /// Algorithm used to encoded pseudo-boolean constraint.
     pub pb_algorithm: PbAlgorithm,

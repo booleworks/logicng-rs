@@ -15,7 +15,7 @@ pub trait FactorizationHandler: ComputationHandler {
 }
 
 /// Reasons for a handler to abort.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FactorizationError {
     /// The number of allowed clause is exceeded.
     ClauseLimitReached,

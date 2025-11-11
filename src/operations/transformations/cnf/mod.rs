@@ -19,7 +19,7 @@ pub use advanced::*;
 const DEFAULT_BOUNDARY_FOR_FACTORIZATION: u64 = 12;
 
 /// Types of _CNF_ algorithms.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CnfAlgorithm {
     /// Transformation of a formula in _CNF_ by factorization.
     Factorization,
@@ -73,6 +73,7 @@ impl CnfAlgorithm {
 ///
 /// An encoder is capable of keeping a state over multiple calculation, which is
 /// used by the algorithm to yield faster/better results.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CnfEncoder {
     /// Algorithm used by this encoder.
     pub algorithm: CnfAlgorithm,
@@ -132,7 +133,7 @@ impl CancellableCnfAlgorithm {
 }
 
 /// Errors emitted by [`CancellableCnfAlgorithm`]s if the calculation gets canceled.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CancellationReason {
     /// Emitted by factorization algorithms.
     FactorizationFailed(FactorizationError),

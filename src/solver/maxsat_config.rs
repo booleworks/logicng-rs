@@ -1,5 +1,5 @@
 /// The pseudo-boolean encoding.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum PbEncoding {
     /// SWC encoding.
     Swc,
@@ -10,7 +10,7 @@ pub enum PbEncoding {
 }
 
 /// The cardinality encoding.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum CardinalEncoding {
     /// Cardinality Networks encoding.
     CNetworks,
@@ -21,7 +21,7 @@ pub enum CardinalEncoding {
 }
 
 /// The weight strategy.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum WeightStrategy {
     /// No strategy.
     None,
@@ -32,7 +32,7 @@ pub enum WeightStrategy {
 }
 
 /// The verbosity of the solver.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Verbosity {
     /// No verbosity.
     None,
@@ -41,7 +41,7 @@ pub enum Verbosity {
 }
 
 /// Symmetry of the solver.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Symmetry {
     /// No symmetry.
     None,
@@ -50,7 +50,7 @@ pub enum Symmetry {
 }
 
 /// Merge strategy of the solver.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum MergeStrategy {
     /// Sequential strategy.
     Sequential,
@@ -61,7 +61,7 @@ pub enum MergeStrategy {
 }
 
 /// Graph type used the solver.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum GraphType {
     /// Vig.
     Vig,
@@ -90,7 +90,7 @@ pub enum GraphType {
 /// configurations. Some algorithms do only work under certain combinations of
 /// settings and the algorithms will ignore settings which are not relevant for
 /// it. The default configuration works for all algorithms.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct MaxSatConfig {
     /// Pseudo-boolean encoding
     pub pb_encoding: PbEncoding,

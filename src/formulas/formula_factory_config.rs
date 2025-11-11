@@ -11,7 +11,7 @@ use super::CacheConfig;
 /// more information about themself.
 ///
 /// [`FormulaFactory`]: super::FormulaFactory
-#[derive(Clone)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct FormulaFactoryConfig {
     /// Specifies the exact handling of cardinality constraints. In particular,
     /// the encoding algorithms.

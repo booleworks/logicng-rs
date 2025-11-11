@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 type NodeIndex = usize;
 type ChildrenIndex = usize;
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct UbNode<T: Ord> {
     children: ChildrenIndex,
     set: Option<BTreeSet<T>>,
@@ -28,6 +29,7 @@ impl<T: Ord> UbNode<T> {
 /// C.f. `A New Method to Index and Query Sets`, Hoffmann and Koehler, 1999.
 /// Note that, we've only implemented the parts of an `UbTree` that we actually
 /// use.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UbTree<T: Ord> {
     root_nodes: ChildrenIndex,
     nodes: Vec<UbNode<T>>,

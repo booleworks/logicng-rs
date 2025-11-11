@@ -20,7 +20,7 @@ use super::bdd_handler::{BddError, BddHandler, NopBddHandler};
 use super::bdd_operations::support;
 
 /// The internal representation of a BDD.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub struct Bdd {
     index: usize,
 }

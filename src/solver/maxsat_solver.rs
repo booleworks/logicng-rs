@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::fmt::Debug;
 
 /// Algorithms support for solving the MaxSAT problem with a [`MaxSatSolver`].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Algorithm {
     /// Weighted Boolean Optimization
     Wbo,
@@ -60,7 +60,7 @@ pub struct MaxSatStats {
 }
 
 /// Result returned by an MaxSAT algorithm.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum MaxSatResult {
     /// The hard clauses on the solver are already unsatisfiable, optimization
     /// could not be performed.
@@ -147,7 +147,7 @@ impl MaxSatSolver {
     ///
     /// Basic usage:
     /// ```
-    /// # use logicng::solver::maxsat::*;   
+    /// # use logicng::solver::maxsat::*;
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let config = MaxSatConfig::default();

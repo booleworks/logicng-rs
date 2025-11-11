@@ -6,7 +6,7 @@ use crate::propositions::Proposition;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 
 /// Internal representation of a variable on the solver.
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct MsVar(pub usize);
 
@@ -16,7 +16,7 @@ impl MsVar {
 }
 
 /// Internal representation of a literal on the solver.
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct MsLit(pub usize);
 
@@ -38,7 +38,7 @@ pub struct MsWatcher {
 }
 
 /// A tristate constant.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum Tristate {
     /// True
     True,
@@ -77,7 +77,7 @@ impl Tristate {
 }
 
 /// The different methods for clause minimization.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum ClauseMinimization {
     /// No minimization is performed.
     None,
@@ -88,7 +88,7 @@ pub enum ClauseMinimization {
 }
 
 /// Class containing the information required for generating a proof.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub struct ProofInformation<Backpack> {
     pub(crate) clause: Vec<isize>,
     pub(crate) proposition: Option<Proposition<Backpack>>,

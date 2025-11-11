@@ -2,7 +2,7 @@
 ///
 /// You can obtain the current state of a [`MiniSat`](`crate::solver::minisat::MiniSat`)-Solver by calling
 /// [`MiniSat::save_state()`](`crate::solver::minisat::MiniSat::save_state`).
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct SolverState {
     pub(crate) id: usize,
     pub(crate) state: [usize; 7],

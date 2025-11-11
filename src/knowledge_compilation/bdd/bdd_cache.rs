@@ -2,6 +2,7 @@ use num_bigint::{BigUint, ToBigUint};
 
 use super::bdd_prime::prime_gte;
 
+#[derive(Debug)]
 struct BddCacheEntry {
     a: Option<usize>,
     b: usize,
@@ -19,6 +20,7 @@ impl BddCacheEntry {
     }
 }
 
+#[derive(Debug)]
 pub struct BddCache {
     table: Vec<BddCacheEntry>,
 }

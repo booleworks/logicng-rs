@@ -7,12 +7,14 @@ pub type EdgeIndex = usize;
 
 /// A simple data structure for a hypergraph with a generic
 /// node content type.
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Hypergraph<T> {
     nodes: BTreeMap<NodeIndex, HypergraphNode<T>>,
     edges: BTreeMap<EdgeIndex, HypergraphEdge>,
 }
 
 /// A node in the hypergraph with a content of type `T`.
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct HypergraphNode<T> {
     /// Content of the node.
     pub content: T,
@@ -23,6 +25,7 @@ pub struct HypergraphNode<T> {
 }
 
 /// An edge in the hypergraph connecting one ore more nodes.
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct HypergraphEdge {
     /// Nodes connected by this edge.
     pub nodes: Vec<NodeIndex>,

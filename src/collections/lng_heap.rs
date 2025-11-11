@@ -2,7 +2,7 @@ use crate::collections::grow_to;
 use crate::solver::minisat::sat::MsVar;
 
 /// A heap for the SAT solver's variable ordering.
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct LngHeap {
     pub heap: Vec<MsVar>,
     pub indices: Vec<usize>,

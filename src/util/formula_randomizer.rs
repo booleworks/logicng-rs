@@ -672,6 +672,7 @@ impl FormulaRandomizerConfig {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
 struct FormulaTypeProbabilities {
     constant: f32,
     literal: f32,
@@ -687,6 +688,7 @@ struct FormulaTypeProbabilities {
     phase: f32,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 struct CTypeProbabilities {
     le: f32,
     lt: f32,
@@ -699,6 +701,7 @@ struct CTypeProbabilities {
 ///
 /// The formula types included in the generated formulas can be configured with
 /// a [`FormulaRandomizerConfig`].
+#[derive(Clone, Debug, PartialEq)]
 pub struct FormulaRandomizer {
     config: FormulaRandomizerConfig,
     random: Rng,

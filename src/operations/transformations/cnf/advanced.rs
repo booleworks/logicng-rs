@@ -33,7 +33,7 @@ fn single_advanced_encoding(
 }
 
 /// Configuration for advanced _CNF_ algorithms.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct AdvancedFactorizationConfig {
     distribution_boundary: u64,
     created_clause_boundary: u64,

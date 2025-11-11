@@ -1,5 +1,5 @@
 /// Error raised by a [`BddHandler`].
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BddError {
     /// Error raised by [`NumberOfNodesBddHandler`].
     NodeLimitReached,
@@ -16,12 +16,12 @@ pub trait BddHandler {
 }
 
 /// A BDD handler which does never cancel the BDD computation.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct NopBddHandler {}
 impl BddHandler for NopBddHandler {}
 
 /// A BDD handler which cancels the build process after a given number of added nodes.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NumberOfNodesBddHandler {
     bound: usize,
     count: usize,
