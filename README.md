@@ -5,12 +5,9 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)]()
 [![Crates.io](https://img.shields.io/crates/v/logicng.svg)](https://crates.io/crates/logicng)
 [![Docs](https://docs.rs/logicng/badge.svg)](https://docs.rs/logicng)
-<a href="https://blog.rust-lang.org/2023/06/01/Rust-1.70.0.html"><img alt="Rustc Version 1.70.0+" src="https://img.shields.io/badge/rustc-1.70.0%2B-lightgrey.svg"/></a>
+<a href="https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/"><img alt="Rustc Version 1.88.0+" src="https://img.shields.io/badge/rustc-1.88.0%2B-lightgrey.svg"/></a>
 
 # A Library for Creating, Manipulating, and Solving Boolean Formulas
-
-__THIS IS AN ALPHA VERSION! THE API MAY STILL CHANGE IN SIGNIFICANT WAYS! THE
-PROGRAM IS NOT FULLY TESTED, DO NOT USE IN PRODUCTION!__
 
 ## Introduction
 
@@ -50,6 +47,9 @@ functionalities:
   [Open-WBO](https://github.com/sat-group/open-wbo)), activate via feature
   `open_wbo`
 - Knowledge compilation with BDDs or DNNFs
+- Model counting with DNNFs or
+  [SharpSAT](https://github.com/marcthurley/sharpSAT) (activate via feature
+  `sharp_sat`)
 
 ## Philosophy
 
@@ -119,10 +119,10 @@ let result = miniSat.sat();
 
 ## Features
 
-| Feature    | Description                            |
-| ---------- | -------------------------------------- |
-| `open_wbo` | Activates MaxSAT solving with Open-WBO |
-
+| Feature     | Description                                         |
+| ----------- | --------------------------------------------------- |
+| `open_wbo`  | Activates MaxSAT solving with Open-WBO.             |
+| `sharp_sat` | Activates model counting using the SharpSAT solver. |
 
 ## Funding
 
