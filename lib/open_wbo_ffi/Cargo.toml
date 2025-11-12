@@ -1,6 +1,6 @@
 [package]
 name = "logicng-open-wbo-sys"
-version = "0.1.0-alpha.3"
+version = "0.1.0"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
 edition = "2024"
 build = "build.rs"

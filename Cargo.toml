@@ -1,6 +1,6 @@
 [package]
 name = "logicng"
-version = "0.1.0-alpha.3"
+version = "0.1.0"
 authors = ["BooleWorks GmbH <info@booleworks.com>"]
 edition = "2024"
 include = ["/src"]
@@ -29,8 +29,8 @@ num-bigint = "0.4.2"
 pest = "2.8"
 pest_derive = "2.8"
 dashmap = "6"
-logicng-open-wbo-sys = { version = "0.1.0-alpha.3", path = "lib/open_wbo_ffi", optional = true }
-logicng-sharp-sat-sys = {version = "0.1.0-alpha.1", path = "lib/sharp_sat_ffi", optional = true }
+logicng-open-wbo-sys = { version = "0.1.0", path = "lib/open_wbo_ffi", optional = true }
+logicng-sharp-sat-sys = {version = "0.1.0", path = "lib/sharp_sat_ffi", optional = true }
 
 # bitvec@1.0.1 and wyz@0.5.1 allow tap@1.0.0 as dependency, but only build with
 # tap@1.0.1 or newer. We need to enforce this version to build with
