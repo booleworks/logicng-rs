@@ -37,7 +37,7 @@ pub enum FormulaType {
     False,
 }
 
-/// A unpacked representation of an [`EncodedFormula`]. Allows access to the
+/// An unpacked representation of an [`EncodedFormula`]. Allows access to the
 /// operands of the formula.
 ///
 /// You can obtain a `Formula` from a `EncodedFormula` by calling [`EncodedFormula::unpack()`].
@@ -134,7 +134,7 @@ impl EncodedFormula {
     ///   operands as `EncodedFormula`s.
     /// - If the formula is a `Pbc` or `Cc` it returns a shared reference to the
     ///   objects stored in the `FormulaFactory`.
-    /// - If the formula is a n-ary operator (`And` and `Or`) it returns a
+    /// - If the formula is an n-ary operator (`And` and `Or`) it returns a
     ///   `NaryIterator`, which holds a reference to the operands in the
     ///   `FormulaFactory`. The `NaryIterator` can be used to iterate over those
     ///   operands. If you want to dissolve the reference to the `FormulaFactory`
@@ -393,7 +393,7 @@ impl EncodedFormula {
     }
 
     /// Returns `true` if this formula is a pseudo-boolean constraint, but not
-    /// an cardinality constraint.
+    /// a cardinality constraint.
     ///
     /// # Examples
     ///
@@ -412,7 +412,7 @@ impl EncodedFormula {
         matches!(self.formula_type(), FormulaType::Pbc)
     }
 
-    /// Returns `true` if this formula is atomic. A atomic formula is a constant,
+    /// Returns `true` if this formula is atomic. An atomic formula is a constant,
     /// literal, cardinality constraint, or pseudo boolean constraint.
     ///
     /// # Examples
@@ -793,7 +793,7 @@ impl EncodedFormula {
     ///
     /// This function panics, if the passed formula is not a clause or a term. A
     /// formula is a clause/term if all operands of the `n-ary` operators are
-    /// literals or the formula is a literal or a constant. Otherwise it will
+    /// literals or the formula is a literal or a constant. Otherwise, it will
     /// panic!
     ///
     /// # Example
@@ -863,12 +863,12 @@ impl EncodedFormula {
         functions::number_of_atoms(self, f)
     }
 
-    /// Returns the number of internal nodes of this formula. A internal node is
+    /// Returns the number of internal nodes of this formula. An internal node is
     /// a node as it exists in the `FormulaFactory`. So each atom is exactly one
     /// node.
     ///
     /// There is a similar function [`number_of_nodes`], which returns a
-    /// more intuitive result, by counting the literals/variables within a atom.
+    /// more intuitive result, by counting the literals/variables within an atom.
     /// For example, the constraint `a + b = 1` is one internal node, but
     /// [`number_of_nodes`] counts two additional nodes for `a` and `b`.
     ///
@@ -900,7 +900,7 @@ impl EncodedFormula {
     ///
     /// Unlike [`number_of_internal_nodes`], which returns the real number of
     /// nodes as they exist in the `FormulaFactory`, `number_of_nodes` also
-    /// counts the literals/variables within a atom. For example, the constraint
+    /// counts the literals/variables within an atom. For example, the constraint
     /// `a + b = 1` is one internal node, but `number_of_nodes` counts two
     /// additional nodes for `a` and `b`.
     ///
@@ -1012,7 +1012,7 @@ impl EncodedFormula {
 
     /// Returns `true` if this formula contains `formula`, `false` otherwise.
     ///
-    /// This is very similar to asking wether `formula` is a sub-formula of this
+    /// This is very similar to asking whether `formula` is a sub-formula of this
     /// formula. But not quite the same, because a `FormulaFactory` stores some
     /// formulas differently: For example a literal `~a` does not contain the
     /// literal/variable `a`. Or `a & b` does contain `b & a`.
@@ -1302,7 +1302,7 @@ pub trait ToFormula {
 impl ToFormula for str {
     /// Parses a string into a `Formula`.
     ///
-    /// It only work if the passed string also
+    /// It only works if the passed string also
     /// is a valid function. So you need to be sure, that the input string is
     /// valid. If you are not sure, whether the input is a valid formula, you should use [`parse`]
     ///

@@ -101,10 +101,10 @@ enum NaryCacheContainer<'a> {
 ///
 /// This iterator keeps a reference to the data structure in the
 /// [`FormulaFactory`](`crate::formulas::FormulaFactory`) storing the encoded operands of a nary-operator. This
-/// allows to decoded all operands lazily when they are need.
+/// allows to decode all operands lazily when they are need.
 ///
 /// You can resolve the reference by cloning the iterator with [`Self::into_owned()`].
-/// This clones and decodes all values into a owned iterator. In some cases this
+/// This clones and decodes all values into an owned iterator. In some cases this
 /// is necessary to deal with the borrow checker.
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct NaryIterator<'a> {
@@ -132,7 +132,7 @@ impl<'a> NaryIterator<'a> {
         self.len == 0
     }
 
-    /// Returns a owned version of this iterator. It clones and decodes all
+    /// Returns an owned version of this iterator. It clones and decodes all
     /// operands, such that it no longer needs the reference into the
     /// [`FormulaFactory`](`crate::formulas::FormulaFactory`).
     pub fn into_owned(self) -> IntoIter<EncodedFormula> {

@@ -1,7 +1,7 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use std::collections::BTreeSet;
 
-/// This class represents a backbone.
+/// This struct represents a backbone.
 ///
 /// A backbone of a formula is a set of literals (positive and/or negative)
 /// which are present in their respective polarity in every model of the given
@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 /// - Negative backbone variables: Variables that occur negative in each model
 ///   of the formula
 /// - Optional variables: Variables that are neither in the positive nor in the
-///   negative backbone. Therefore these variables can be assigned to true or
+///   negative backbone. Therefore, these variables can be assigned to true or
 ///   false.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Backbone {

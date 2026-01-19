@@ -32,7 +32,7 @@ pub enum LitType {
 /// it is easier to use `EncodedFormula`.
 ///
 /// There are multiple ways to create a new `Literal`:
-/// - If you new a new literal from scratch, you can use the [`FormulaFactory`]
+/// - If you create a new literal from scratch, you can use the [`FormulaFactory`]
 ///   function [`lit()`] to get a new instance of the explicit type, [`literal()`]
 ///   to get it directly as a `EncodedFormula`.
 /// - If you already have a `Variable` that you want to use as a literal, you
@@ -90,7 +90,7 @@ impl Literal {
         if phase { Self::Pos(variable) } else { Self::Neg(variable) }
     }
 
-    /// Returns the inherit variable of this literal.
+    /// Returns the internal variable of this literal.
     ///
     /// # Examples
     ///
@@ -158,7 +158,7 @@ impl Literal {
         self.variable().name(f)
     }
 
-    /// Returns the name of the variable of this literal, if the variable is a
+    /// Returns the name of the variable of this literal, if the variable is an
     /// auxiliary variable. Otherwise, it will return `None`.
     ///
     /// # Example
@@ -295,7 +295,7 @@ impl<'a> StringLiteral<'a> {
         StringLiteral { name: Cow::from(name), phase }
     }
 
-    /// Creates a new `StringLiteral` with a owned string for the name.
+    /// Creates a new `StringLiteral` with an owned string for the name.
     ///
     /// `phase` describes the value of the literal. So `true` will yield a
     /// positive literal, and `false` a negated literal.
@@ -332,7 +332,7 @@ impl<'a> StringLiteral<'a> {
         StringLiteral::new(name, true)
     }
 
-    /// Creates a new `StringLiteral` representing a variable with a owned
+    /// Creates a new `StringLiteral` representing a variable with an owned
     /// string for the name.
     ///
     /// This function is equivalent to `StringLiteral::new_owned(name, true)`.

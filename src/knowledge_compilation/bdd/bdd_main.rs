@@ -48,7 +48,7 @@ impl Bdd {
     }
 
     /// Returns whether this BDD represents a contradiction.
-    pub const fn is_contradicion(&self) -> bool {
+    pub const fn is_contradiction(&self) -> bool {
         self.index == BDD_FALSE
     }
 

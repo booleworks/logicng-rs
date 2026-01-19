@@ -28,16 +28,16 @@ mod tests {
     #[test]
     fn test_contradiction() {
         let b = B::new();
-        assert!(b.FALSE.is_contradicion());
-        assert!(!b.TRUE.is_contradicion());
-        assert!(!b.VAR.is_contradicion());
-        assert!(!b.LIT.is_contradicion());
-        assert!(!b.IMPL.is_contradicion());
-        assert!(!b.EQUIV.is_contradicion());
-        assert!(!b.OR.is_contradicion());
-        assert!(!b.AND.is_contradicion());
-        assert!(!b.FORMULA.is_contradicion());
-        assert!(!b.CC.is_contradicion());
+        assert!(b.FALSE.is_contradiction());
+        assert!(!b.TRUE.is_contradiction());
+        assert!(!b.VAR.is_contradiction());
+        assert!(!b.LIT.is_contradiction());
+        assert!(!b.IMPL.is_contradiction());
+        assert!(!b.EQUIV.is_contradiction());
+        assert!(!b.OR.is_contradiction());
+        assert!(!b.AND.is_contradiction());
+        assert!(!b.FORMULA.is_contradiction());
+        assert!(!b.CC.is_contradiction());
     }
 
     #[test]

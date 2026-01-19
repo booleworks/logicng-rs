@@ -24,7 +24,7 @@ pub struct HypergraphNode<T> {
     pub edges: Vec<EdgeIndex>,
 }
 
-/// An edge in the hypergraph connecting one ore more nodes.
+/// An edge in the hypergraph connecting one or more nodes.
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct HypergraphEdge {
     /// Nodes connected by this edge.
@@ -47,7 +47,7 @@ impl<T> Hypergraph<T> {
         index
     }
 
-    /// Adds an edge to the hypergraph
+    /// Adds an edge to the hypergraph.
     pub fn add_edge(&mut self, nodes: Vec<NodeIndex>) -> EdgeIndex {
         let index = self.edges.len();
         let edge = HypergraphEdge { nodes, index };
@@ -105,7 +105,7 @@ impl HypergraphEdge {
         let mut cog = 0;
         for node in &self.nodes {
             let level = node_ordering.get(node);
-            assert!(level.is_some(), "Could not finde the node index {node} in the node ordering.");
+            assert!(level.is_some(), "Could not find the node index {node} in the node ordering.");
             cog += level.unwrap();
         }
         cog as f64 / self.nodes.len() as f64

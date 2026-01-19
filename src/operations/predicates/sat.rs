@@ -40,7 +40,7 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
 }
 
 /// A predicate indicating whether a given formula is a tautology, that is,
-/// always holds, regardless of the assignment. An example for an tautology is
+/// always holds, regardless of the assignment. An example for a tautology is
 /// `(A & B) | (~A & B) | (A & ~B) | (~A & ~B)`.
 ///
 /// ```
@@ -74,16 +74,16 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
 /// be tested the same way by creating an implication `f.implication(f1, f2)`
 /// instead.
 pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> bool {
-    let negeated_formula = f.negate(formula);
-    f.caches.sat.get(negeated_formula).map_or_else(
+    let negated_formula = f.negate(formula);
+    f.caches.sat.get(negated_formula).map_or_else(
         || {
             let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-            solver.add(negeated_formula, f);
+            solver.add(negated_formula, f);
             let sat = solver.sat();
             if f.config.caches.sat {
                 match sat {
-                    True => f.caches.sat.insert(negeated_formula, true),
-                    False => f.caches.sat.insert(negeated_formula, false),
+                    True => f.caches.sat.insert(negated_formula, true),
+                    False => f.caches.sat.insert(negated_formula, false),
                     Undef => {}
                 }
             }

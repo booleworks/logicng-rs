@@ -18,7 +18,7 @@ this build step. The code is included with a Git submodule at
 this submodule first via `git submodule update --init`.
 
 Building is tested on macOS and Linux and should usually just require an
-installed C++ compiler toolchain an the GMP library which can be installed e.g.
+installed C++ compiler toolchain and the GMP library which can be installed e.g.
 on macOS with the popular package manager [Homebrew](https://brew.sh/)
 
 ```bash

@@ -46,7 +46,7 @@ impl MiniSat {
         Self::new_with_backpack()
     }
 
-    /// Constructs a new SAT solver instance bases on a configuration.
+    /// Constructs a new SAT solver instance based on a configuration.
     #[must_use]
     pub fn from_config(config: MiniSatConfig) -> Self {
         Self::from_config_with_backpack(config)
@@ -68,7 +68,7 @@ impl<B: Clone> MiniSat<B> {
         }
     }
 
-    /// Constructs a new SAT solver instance bases on a configuration.
+    /// Constructs a new SAT solver instance based on a configuration.
     pub fn from_config_with_backpack(config: MiniSatConfig) -> Self {
         Self {
             underlying_solver: MiniSat2Solver::new_with_config(&config),

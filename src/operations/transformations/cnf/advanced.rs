@@ -85,7 +85,7 @@ impl AdvancedFactorizationConfig {
         self
     }
 
-    /// Creates an new handler based on this configuration.
+    /// Creates a new handler based on this configuration.
     pub fn handler(&self) -> Box<dyn FactorizationHandler> {
         Box::new(ClauseLimitFactorizationHandler::new(self.distribution_boundary, self.created_clause_boundary))
     }

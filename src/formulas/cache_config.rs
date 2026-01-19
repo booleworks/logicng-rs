@@ -4,7 +4,7 @@
 /// Specifies which type of operations are allowed to cache their results.
 ///
 /// A `FormulaFactory` can make use of caches to store already calculated
-/// results of operations. Whether to use caches for a operations, depends on
+/// results of operations. Whether to use caches for an operation, depends on
 /// the application and is a trade-off between write/read operations and
 /// recalculating already known results. With larger and more complex formulas,
 /// it becomes more likely that a cache improves the performance.

@@ -121,12 +121,12 @@ pub fn number_of_atoms(formula: EncodedFormula, f: &FormulaFactory) -> u64 {
     }
 }
 
-/// Returns the number of internal nodes of this formula. A internal node is
+/// Returns the number of internal nodes of this formula. An internal node is
 /// a node as it exists in the `FormulaFactory`. So each atom is exactly one
 /// node.
 ///
 /// There is a similar function [`number_of_nodes`], which returns a
-/// more intuitive result, by counting the literals/variables within a atom.
+/// more intuitive result, by counting the literals/variables within an atom.
 /// For example, the constraint `a + b = 1` is one internal node, but
 /// [`number_of_nodes`] counts two additional nodes for `a` and `b`.
 ///
@@ -159,7 +159,7 @@ pub fn number_of_internal_nodes(formula: EncodedFormula, f: &FormulaFactory) -> 
 ///
 /// Unlike [`number_of_internal_nodes`], which returns the real number of
 /// nodes as they exist in the `FormulaFactory`, `number_of_nodes` also
-/// counts the literals/variables within a atom. For example, the constraint
+/// counts the literals/variables within an atom. For example, the constraint
 /// `a + b = 1` is one internal node, but `number_of_nodes` counts two
 /// additional nodes for `a` and `b`.
 ///

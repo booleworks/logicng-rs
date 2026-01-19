@@ -12,7 +12,7 @@ pub struct UnsatCore<Backpack> {
 
 impl<B> UnsatCore<B> {
     /// Constructs a new unsatisfiable core.
-    pub fn new(proposition: Vec<Proposition<B>>, is_mus: bool) -> Self {
-        Self { propositions: proposition, is_mus }
+    pub fn new(propositions: Vec<Proposition<B>>, is_mus: bool) -> Self {
+        Self { propositions: propositions, is_mus }
     }
 }

@@ -11,9 +11,9 @@ use crate::formulas::{FormulaFactory, Literal, StringLiteral, Variable};
 /// not check for duplicates. For that you have to use [`Assignment`], which
 /// uses hash-sets to store the variables.
 ///
-/// # Conversion to `Assignment` and vice-versa
+/// # Conversion to `Assignment` and vice versa
 ///
-/// Depending of your use case it might be better to have a `Model` or an
+/// Depending on your use case it might be better to have a `Model` or an
 /// [`Assignment`]. Both data-structures implement the `From` trait, such that
 /// you can easily swap between both.
 ///
@@ -29,7 +29,7 @@ use crate::formulas::{FormulaFactory, Literal, StringLiteral, Variable};
 /// let assignment = Assignment::from(model);
 /// ```
 ///
-/// /// Convert from [`Assignment`] to `Model`:
+/// Convert from [`Assignment`] to `Model`:
 /// ```
 /// # use crate::logicng::formulas::FormulaFactory;
 /// # use crate::logicng::datastructures::{Model, Assignment};
@@ -65,7 +65,8 @@ impl Model {
     pub fn new<P, N>(pos: P, neg: N) -> Self
     where
         P: Into<Vec<Variable>>,
-        N: Into<Vec<Variable>>, {
+        N: Into<Vec<Variable>>,
+    {
         Self { pos: pos.into(), neg: neg.into() }
     }
 

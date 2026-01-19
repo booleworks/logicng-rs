@@ -22,7 +22,7 @@ impl<'a> Anonymizer<'a> {
         Self::with_prefix("v", f)
     }
 
-    /// Create a new `Anonymizer` with an custom prefix.
+    /// Create a new `Anonymizer` with a custom prefix.
     pub fn with_prefix(prefix: &str, f: &'a FormulaFactory) -> Self {
         Self { prefix: prefix.to_owned(), substitution: Substitution::new(), counter: 0, factory: f }
     }
@@ -40,7 +40,7 @@ impl<'a> Anonymizer<'a> {
         self.factory.substitute(formula, &self.substitution)
     }
 
-    /// Returns the substitions used by this anonymizer.
+    /// Returns the substitution used by this anonymizer.
     pub const fn substitution(&self) -> &Substitution {
         &self.substitution
     }

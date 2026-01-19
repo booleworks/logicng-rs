@@ -68,7 +68,7 @@ fn handle_trivial_case<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) ->
             }
         }
     }
-    panic!("Should be a trivial unsat core, but did not found one.");
+    panic!("Should be a trivial unsat core, but did not find one.");
 }
 
 fn get_formula_for_vector<B>(solver: &MiniSat<B>, vector: &Vec<isize>, f: &FormulaFactory) -> EncodedFormula {

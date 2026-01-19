@@ -51,7 +51,7 @@ fn watch_equality(w1: &MsWatcher, w2: &MsWatcher) -> bool {
 ///
 /// This is an actual implementation of a SAT-Solver. It exposes a lot of
 /// internal details, which might be handy to manipulate/tweak the solver in a
-/// certain way. Usually, this is not necessary and you want to use the wrapper
+/// certain way. Usually, this is not necessary, and you want to use the wrapper
 /// [`MiniSat`](`crate::solver::minisat::MiniSat`).
 #[allow(clippy::struct_excessive_bools)]
 pub struct MiniSat2Solver<Backpack> {

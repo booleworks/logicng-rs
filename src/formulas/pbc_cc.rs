@@ -16,7 +16,6 @@ use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::FormulaType;
 
-
 /// Comparison types for pseudo-Boolean constraints.
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum CType {
@@ -65,7 +64,7 @@ pub enum CType {
 /// For that, you can use [`cc()`] in [`FormulaFactory`]. That function also
 /// checks that your input is reasonable.
 ///
-/// Additionally to [`cc()`], there are also [`amo()`] and [`exo()`] constructor
+/// Additionally, to [`cc()`], there are also [`amo()`] and [`exo()`] constructor
 /// functions in `FormulaFactory`. Those are abbreviations for common
 /// cardinality constraints:
 /// - `amo()`: `v_1 + v_2 + ... + v_n <= 1` (_at most one_)
@@ -94,8 +93,8 @@ pub enum CType {
 /// ```
 ///
 /// [`cc()`]: FormulaFactory::cc
-/// [`amo()`]: FormulaFactory::cc
-/// [`exo()`]: FormulaFactory::cc
+/// [`amo()`]: FormulaFactory::amo
+/// [`exo()`]: FormulaFactory::exo
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct CardinalityConstraint {
     /// variables on the left side of the cardinality constraint.
@@ -143,7 +142,7 @@ pub struct CardinalityConstraint {
 /// On very few occasions you want to have a pure `PbConstraint` instance. More
 /// common is a pseudo-boolean constraint as a [`EncodedFormula`]. For that, you
 /// can use [`pbc()`] in [`FormulaFactory`]. That function also checks that your
-/// input is reasonable and it creates a [`CardinalityConstraint`], if your
+/// input is reasonable, and it creates a [`CardinalityConstraint`], if your
 /// input is a cardinality constraint problem. By doing that, we can ensure that
 /// no `PbConstraint` instance is a cardinality constraint problem.
 ///

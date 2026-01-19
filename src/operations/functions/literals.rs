@@ -39,7 +39,7 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 ///
 /// This function panics, if the passed formula is not a clause or a term. A
 /// formula is a clause/term if all operands of the `n-ary` operators are
-/// literals or the formula is a literal or a constant. Otherwise it will
+/// literals or the formula is a literal or a constant. Otherwise, it will
 /// panic!
 ///
 /// # Example

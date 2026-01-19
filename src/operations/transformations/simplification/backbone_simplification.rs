@@ -4,8 +4,8 @@ use crate::solver::functions::BackboneConfig;
 use crate::solver::functions::BackboneType::PositiveAndNegative;
 use crate::solver::minisat::MiniSat;
 
-/// This class simplifies a formula by computing its backbone and propagating it
-/// through the formula.
+/// This function simplifies a formula by computing its backbone and
+/// propagating it through the formula.
 ///
 /// # Example
 ///
