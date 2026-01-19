@@ -225,7 +225,6 @@ mod tests {
 
     use super::SharpSatSolver;
 
-
     #[test]
     fn empty_solver() {
         let solver = SharpSatSolver::new();

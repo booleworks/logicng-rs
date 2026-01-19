@@ -34,7 +34,9 @@ pub fn lits_list(elements: &str, f: &FormulaFactory) -> Vec<Literal> {
 }
 
 pub fn hash<H>(element: H) -> u64
-where H: Hash {
+where
+    H: Hash,
+{
     let mut hasher = DefaultHasher::new();
     element.hash(&mut hasher);
     hasher.finish()

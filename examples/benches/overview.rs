@@ -35,7 +35,6 @@ fn sat() {
 
     let start = std::time::Instant::now();
 
-
     for formula in formulas {
         let mut solver = MiniSat::new();
         solver.add(formula, &f);

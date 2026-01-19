@@ -51,7 +51,6 @@ impl CcIncrementalData {
         Self { amk_encoder: None, alk_encoder: Some(alk_encoder), vector1, vector2: None, md: 0, n_vars, current_rhs: rhs }
     }
 
-
     /// Tightens the upper bound of an at-most-k constraint and returns the resulting formula.
     pub fn new_upper_bound(&mut self, f: &FormulaFactory, rhs: u32) -> Vec<EncodedFormula> {
         let mut result = EncodingResultFF::new(f);

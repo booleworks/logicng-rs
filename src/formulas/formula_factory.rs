@@ -4,7 +4,6 @@
 //! s.t. it is guaranteed that equivalent formulas (in terms of associativity
 //! and commutativity) are hold exactly once in memory.
 
-
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -614,7 +613,8 @@ impl FormulaFactory {
     pub fn and<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -657,7 +657,8 @@ impl FormulaFactory {
     pub fn or<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -705,7 +706,8 @@ impl FormulaFactory {
     pub fn clause<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<Literal>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         self.or(operands.into_iter().map(|lit| EncodedFormula::from(*lit.borrow())))
     }
 
@@ -968,7 +970,8 @@ impl FormulaFactory {
     pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> EncodedFormula
     where
         L: Into<Box<[Literal]>>,
-        C: Into<Box<[i64]>>, {
+        C: Into<Box<[i64]>>,
+    {
         let l = literals.into();
         let c = coefficients.into();
         assert_eq!(l.len(), c.len(), "The number of literals and coefficients in a pseudo-boolean constraint must be the same.");
@@ -1174,7 +1177,6 @@ impl FormulaFactory {
         self.substitute(formula, &substitution)
     }
 
-
     /// Shrinks the `FormulaFactory` as much as possible.
     ///
     /// A `FormulaFactory` makes use of data structures that might allocate more
@@ -1334,7 +1336,8 @@ impl FormulaFactory {
     fn prepare_nary<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Option<FilterResult>
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut filter_result = FilterResult {
             reduced32: Vec::new(),
             reduced_set32: HashSet::default(),
@@ -1348,7 +1351,8 @@ impl FormulaFactory {
     fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut is_large = false;
         for op in ops {
             let owned = *op.borrow();

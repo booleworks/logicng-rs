@@ -13,7 +13,6 @@ use crate::datastructures::EncodingResultFF;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::pseudo_booleans::pb_config::PbConfig;
 
-
 pub fn encode_binary_merge(
     config: &PbConfig,
     mut lits: Vec<Literal>,

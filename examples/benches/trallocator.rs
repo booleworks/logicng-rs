@@ -49,7 +49,9 @@ impl<A: GlobalAlloc> Trallocator<A> {
     }
 
     pub fn measure<F>(&self, op: F) -> u64
-    where F: FnOnce() {
+    where
+        F: FnOnce(),
+    {
         let start = self.get();
         op();
         let end = self.get();
