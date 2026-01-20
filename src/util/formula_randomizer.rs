@@ -99,7 +99,7 @@ impl FormulaRandomizerConfig {
         }
     }
 
-    /// Builds a basic configuration with with default settings. Additionally,
+    /// Builds a basic configuration with default settings. Additionally,
     /// it generates `num_vars` variables and adds them to the configuration.
     ///
     /// # Example
@@ -527,7 +527,7 @@ impl FormulaRandomizerConfig {
     /// Sets the maximum absolute value of a coefficient in a pseudo boolean
     /// constraint.
     ///
-    /// Whether the coefficient is positive or negative is depends on
+    /// Whether the coefficient is positive or negative depends on
     /// `self.weight_pbc_coeff_positive` and `weight_pbc_coeff_negative`.
     ///
     /// # Example

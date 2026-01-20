@@ -50,7 +50,7 @@ pub struct MiniSatConfig {
 pub enum SolverCnfMethod {
     /// Calls the
     /// [`FormulaFactory::cnf_of()`](`crate::formulas::FormulaFactory`) method
-    /// to convert formulas to CNF. Therefore the CNF including all auxiliary
+    /// to convert formulas to CNF. Therefore, the CNF including all auxiliary
     /// variables will be added to the formula factory.
     FactoryCnf,
     /// A solver-internal implementation of Plaisted-Greenbaum. Auxiliary

@@ -15,7 +15,7 @@ pub use bdd_kernel::*;
 pub use bdd_main::*;
 
 /// We deviate from the convention of putting unit tests in the source file in this case,
-/// s.t. the file don't become too large
+/// s.t. the file doesn't become too large
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests;

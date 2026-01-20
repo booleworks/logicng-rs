@@ -17,9 +17,9 @@ use super::model::Model;
 /// stores an assignment, but uses vectors instead of sets. Making it easier to
 /// create, but slower to use.
 ///
-/// # Conversion to `Model` and vice-versa
+/// # Conversion to `Model` and vice versa
 ///
-/// Depending of your use case it might be better to have a [`Model`] or an
+/// Depending on your use case it might be better to have a [`Model`] or an
 /// `Assignment`. Both data-structures implement the `From` trait, such that you
 /// can easily swap between both.
 ///
@@ -35,7 +35,7 @@ use super::model::Model;
 /// let assignment = Assignment::from(model);
 /// ```
 ///
-/// /// Convert from `Assignment` to [`Model`]:
+/// Convert from `Assignment` to [`Model`]:
 /// ```
 /// # use crate::logicng::formulas::FormulaFactory;
 /// # use crate::logicng::datastructures::{Model, Assignment};

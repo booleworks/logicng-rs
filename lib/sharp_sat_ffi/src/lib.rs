@@ -9,7 +9,7 @@ pub mod ffi {
         /// Creates a new instance of a SharpSAT solver.
         ///
         /// This function is generated using `cxx` and the returned value is a
-        /// pointer/opaque type referencing the a internal _SharpSAT_ type.
+        /// pointer/opaque type referencing the internal _SharpSAT_ type.
         ///
         /// # Safety
         ///

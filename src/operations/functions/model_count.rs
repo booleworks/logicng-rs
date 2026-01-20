@@ -26,7 +26,7 @@ pub enum ModelCountAlgorithm {
         cache_size: usize,
     },
     #[cfg(feature = "sharp_sat")]
-    /// Model counting using the sharp-sat libary. Requires `sharp_sat` feature to be activiated.
+    /// Model counting using the sharp-sat library. Requires `sharp_sat` feature to be activated.
     SharpSat,
 }
 

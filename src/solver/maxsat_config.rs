@@ -36,7 +36,7 @@ pub enum WeightStrategy {
 pub enum Verbosity {
     /// No verbosity.
     None,
-    /// Print intermediated results and stats.
+    /// Print intermediate results and stats.
     Some,
 }
 
@@ -60,7 +60,7 @@ pub enum MergeStrategy {
     Binary,
 }
 
-/// Graph type used the solver.
+/// Graph type used by the solver.
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum GraphType {
     /// Vig.
@@ -266,8 +266,8 @@ impl MaxSatConfig {
     /// Updates [`Symmetry`].
     ///
     /// Possible values:
-    /// - `None` (default)
-    /// - `Sym(limit: i32)`
+    /// - `None`
+    /// - `Sym(limit: i32)` (default with i32::MAX)
     ///
     /// `Symmetry` is used by
     /// [`Algorithm::Wbo`](crate::solver::maxsat::Algorithm).
@@ -315,7 +315,7 @@ impl MaxSatConfig {
         self
     }
 
-    /// Updates the `bmo` setting. By default `bmo` is active.
+    /// Updates the `bmo` setting. By default, `bmo` is active.
     ///
     /// `bmo` is used by
     /// [`Algorithm::LinearSu`](crate::solver::maxsat::Algorithm).

@@ -69,7 +69,7 @@ mod maxsat_solver;
 /// # MaxSAT Algorithms in LogicNG
 ///
 /// LogicNG Rust does not implement the algorithms itself, but makes use of
-/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as an library. `OpenWBO` allows
+/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as a library. `OpenWBO` allows
 /// you to use different algorithms, depending on your MaxSAT flavor and your
 /// specific use case. There are two orthogonal strategies to solve MaxSAT
 /// problems:
@@ -97,7 +97,7 @@ mod maxsat_solver;
 /// All algorithms in LogicNG support partial MaxSAT. `MSU3` and `PartMSU3` do
 /// not support weighted clauses/formulas.
 ///
-/// The `LinearSU` stands for Linear SAT-UNSAT and it means that all sat-calls
+/// The `LinearSU` stands for Linear SAT-UNSAT, and it means that all sat-calls
 /// on the SAT-Solver are SAT except for the last call. That means: We start
 /// with a version without soft formulas on the SAT solver (which is SAT as long
 /// as the conjunction of the hard formulas evaluate to `true`). Then we add
@@ -304,7 +304,7 @@ mod maxsat_solver;
 /// result is the sum of weights of the *unsatisfied* clauses.
 ///
 /// But what when you want to know the minimal number of satisfied clauses? Then
-/// you have to adjust your problem modelling accordingly.  Let us consider a
+/// you have to adjust your problem modeling accordingly.  Let us consider a
 /// small example:
 ///
 /// ```
@@ -367,9 +367,9 @@ pub mod maxsat {
     pub use super::maxsat_solver::*;
 }
 
-/// Provides are solver of solver for the #SAT problem. It uses an external C++
-/// solver based in the [implementation from Marc
-/// Thurley](https://github.com/marcthurley/sharpSAT).
+/// Provides a solver for the #SAT problem. It uses an external C++ solver
+/// based on the [implementation from Marc Thurley]
+/// (https://github.com/marcthurley/sharpSAT).
 ///
 /// In order to use this module you need to enable the `sharp_sat` feature and
 /// ensure the library compiles properly on your device (this is usually the
@@ -397,6 +397,6 @@ pub mod maxsat {
 pub mod sharpsat;
 
 /// We deviate from the convention of putting unit tests in the source file in this case,
-/// s.t. the file don't become too large
+/// s.t. the file doesn't become too large
 #[cfg(test)]
 pub(crate) mod tests;

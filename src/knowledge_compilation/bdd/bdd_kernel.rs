@@ -31,7 +31,7 @@ struct Node {
     next: usize,
 }
 
-/// A operation, which can be applied on a BDD.
+/// An operation which can be applied on a BDD.
 #[derive(Debug)]
 pub(super) struct Operand {
     op_code: usize,

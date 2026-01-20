@@ -17,13 +17,13 @@ pub trait FactorizationHandler: ComputationHandler {
 /// Reasons for a handler to abort.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FactorizationError {
-    /// The number of allowed clause is exceeded.
+    /// The number of allowed clauses is exceeded.
     ClauseLimitReached,
     /// The number of allowed distributions is exceeded.
     DistributionLimitReached,
 }
 
-/// A no-operation hander for factorizations. This handler does never abort or
+/// A no-operation handler for factorizations. This handler does never abort or
 /// interrupt a calculation.
 pub struct NopFactorizationHandler {}
 
@@ -31,7 +31,7 @@ impl ComputationHandler for NopFactorizationHandler {}
 
 impl FactorizationHandler for NopFactorizationHandler {}
 
-/// A clause limiting handler. This handler does abort if the number of
+/// A clause limiting handler. This handler aborts if the number of
 /// distributions or the number of new clauses exceed the specified limits.
 pub struct ClauseLimitFactorizationHandler {
     /// Indicates whether the handler is aborted.

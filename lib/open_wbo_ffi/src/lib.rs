@@ -90,7 +90,7 @@ pub mod ffi {
         /// Creates a _OpenWBO_ MaxSAT instance with the LinearSU algorithm and the given configuration.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -100,7 +100,7 @@ pub mod ffi {
         /// Creates a _OpenWBO_ MaxSAT instance with the WBO algorithm and the given configuration.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -110,7 +110,7 @@ pub mod ffi {
         /// Creates a _OpenWBO_ MaxSAT instance with the OLL algorithm and the given configuration.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -120,7 +120,7 @@ pub mod ffi {
         /// Creates a _OpenWBO_ MaxSAT instance with the PART-MSU3 algorithm and the given configuration.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -130,7 +130,7 @@ pub mod ffi {
         /// Creates a _OpenWBO_ MaxSAT instance with the MSU3 algorithm and the given configuration.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -140,7 +140,7 @@ pub mod ffi {
         /// Creates a new _OpenWBO_ formula for MaxSAT problems.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -150,7 +150,7 @@ pub mod ffi {
         /// Creates a new _OpenWBO_ clause. Which can be added to a _OpenWBO_ formula.
         ///
         /// This function is generated using `cxx` and the returned value is a pointer/opaque type referencing
-        /// the a internal _OpenWBO_ type.
+        /// the internal _OpenWBO_ type.
         ///
         /// # Safety
         ///
@@ -158,8 +158,9 @@ pub mod ffi {
         pub unsafe fn new_clause() -> *mut Clause;
 
         /// Adds a literal to a clause and to the formula, the clause will be added to.
-        /// The variable name is the absolute value of a integer. If the value is negative, the literal is seen as negated.
-        /// `0` is a invalid input.
+        /// The variable name is the absolute value of an integer. If the value is negative, the
+        /// literal is seen as negated.
+        /// `0` is an invalid input.
         ///
         /// This function is generated using `cxx`.
         ///
@@ -184,7 +185,8 @@ pub mod ffi {
         ///
         /// # Safety
         ///
-        /// We flag all FFI-functions as unsafe. This function fails, if the passed weight is a invalid value.
+        /// We flag all FFI-functions as unsafe. This function fails, if the passed weight is an
+        /// invalid value.
         /// You need to use `get_error()` to check for that.
         pub unsafe fn add_soft_clause(formula: *mut MaxSATFormula, weight: u64, clause: *mut Clause);
 

@@ -77,7 +77,7 @@ const SEL_PREFIX: &str = "@SEL_SOFT_";
 /// A solver for the MaxSAT problem.
 ///
 /// [`MaxSatSolver`] does not implement the algorithms itself, but makes use of
-/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as an library. `OpenWBO` allows
+/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as a library. `OpenWBO` allows
 /// you to use different algorithms, depending on your MaxSAT flavor and your
 /// specific use case.
 ///
@@ -245,7 +245,7 @@ impl MaxSatSolver {
 
     /// Adds a soft formula to the solver.
     ///
-    /// A soft formula is associated with an weight. The MaxSAT solver minimizes
+    /// A soft formula is associated with a weight. The MaxSAT solver minimizes
     /// the sum of weights of unsatisfied soft formula. If an algorithm does not
     /// support the weighted MaxSAT problem, the weight must be equals to 1.
     ///
@@ -266,7 +266,7 @@ impl MaxSatSolver {
     /// # }
     /// ```
     ///
-    /// Adding a weighted formula to an non-weighted algorithm, will return a
+    /// Adding a weighted formula to a non-weighted algorithm, will return a
     /// [`MaxSatError::IllegalWeightedClause`](`MaxSatError`) error:
     /// ```
     /// # use logicng::solver::maxsat::*;

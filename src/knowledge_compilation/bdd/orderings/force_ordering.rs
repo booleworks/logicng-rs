@@ -7,7 +7,7 @@ use crate::graphs::{Hypergraph, NodeIndex, hypergraph_from_cnf};
 use super::dfs_ordering::dfs_ordering;
 
 /// Simple implementation of the FORCE BDD variable ordering due to Aloul,
-/// Markov, and Sakallah.  This ordering only works for CNF formulas.  A formulas
+/// Markov, and Sakallah.  This ordering only works for CNF formulas.  A formula
 /// has to be converted to CNF before this ordering is called.
 pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variable> {
     let mut original_variables = (*formula.variables(f)).clone();

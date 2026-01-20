@@ -14,7 +14,7 @@ pub enum PbAlgorithm {
 /// Configuration for [`PbEncoder`](`crate::pseudo_booleans::PbEncoder`).
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct PbConfig {
-    /// Algorithm used to encoded pseudo-boolean constraint.
+    /// Algorithm used to encode the pseudo-boolean constraint.
     pub pb_algorithm: PbAlgorithm,
     /// Setting for general arc consistency in binary merge encoding.
     pub binary_merge_use_gac: bool,

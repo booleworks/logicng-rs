@@ -4,7 +4,7 @@ use std::io::{BufWriter, Write};
 
 use crate::formulas::{EncodedFormula, FormulaFactory};
 
-/// Writes a `Formula` to a file. If the file already exists, its contents will be overridden.
+/// Writes a `Formula` to a file. If the file already exists, its contents will be overwritten.
 ///
 /// If the formula is a conjunction, each of its operands will be written in a separate line.
 ///

@@ -29,6 +29,7 @@ pub struct DrupResult {
     pub unsat_core: Vec<Vec<isize>>,
 }
 
+/// Compute the DUP result for a specific internal problem representation.
 pub fn drup_compute(original_problem: Vec<Vec<isize>>, proof: Vec<Vec<isize>>) -> DrupResult {
     let mut s = Solver::new(original_problem, proof);
     if s.parse() {
@@ -181,7 +182,7 @@ impl Solver {
         let last_ptr = self.lemmas;
         let mut checked = self.adlemmas;
         let mut buffer = Vec::<isize>::with_capacity(LNG_VEC_INIT_SIZE);
-        let mut time: isize; // redundant according to IntelliJ = *self.db.get_unsafe(lemmas_ptr - 1);
+        let mut time: isize;
 
         let goto_post_process = self.processed_ptr < self.assigned_ptr && !self.propagate();
         self.forced_ptr = self.processed_ptr;
@@ -191,7 +192,6 @@ impl Solver {
             while !goto_verification {
                 flag = false;
                 buffer.clear();
-                // redundant according to IntelliJ:  time = *self.db.get_unsafe(lemmas_ptr - 1);
                 clause_ptr = lemmas_ptr;
                 loop {
                     ad = self.adlist[checked as usize];

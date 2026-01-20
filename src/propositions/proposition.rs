@@ -22,12 +22,12 @@ impl<T> Clone for Proposition<T> {
 }
 
 impl<T> Proposition<T> {
-    /// Constructs a new proposition for a formulas.
+    /// Constructs a new proposition for a formula.
     pub const fn new(formula: EncodedFormula) -> Self {
         Self { formula, backpack: None }
     }
 
-    /// Constructs a new proposition for a formulas with an assositated value (backpack).
+    /// Constructs a new proposition for a formula with an assositated value (backpack).
     pub fn with_backpack(formula: EncodedFormula, backpack: T) -> Self {
         Self { formula, backpack: Some(Rc::new(backpack)) }
     }

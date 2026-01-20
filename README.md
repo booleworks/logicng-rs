@@ -25,7 +25,7 @@ values for emission and consumption.
 
 ## Implemented Algorithms
 
-The Rust version of LogicNG currently provides -among others- the following key
+The Rust version of LogicNG currently provides - among others - the following key
 functionalities:
 
 - Support for Boolean formulas, cardinality constraints, and pseudo-Boolean
@@ -54,7 +54,7 @@ functionalities:
 ## Philosophy
 
 The most important philosophy of the library is to avoid unnecessary object
-creation. Therefore formulas can only be generated via formula factories. A
+creation. Therefore, formulas can only be generated via formula factories. A
 formula factory assures that a formula is only created once in memory. If
 another instance of the same formula is created by the user, the already
 existing one is returned by the factory. This leads to a small memory footprint

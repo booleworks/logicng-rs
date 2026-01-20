@@ -4,7 +4,7 @@ pub enum BddError {
     /// Error raised by [`NumberOfNodesBddHandler`].
     NodeLimitReached,
     /// Error raised if a timeout is reached.
-    TimoutReached,
+    TimeoutReached,
 }
 
 /// Handler for BDD operations.

@@ -4,7 +4,6 @@
 //! s.t. it is guaranteed that equivalent formulas (in terms of associativity
 //! and commutativity) are hold exactly once in memory.
 
-
 use std::borrow::{Borrow, Cow};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
@@ -1173,7 +1172,6 @@ impl FormulaFactory {
         substitution.insert(variable, substitute);
         self.substitute(formula, &substitution)
     }
-
 
     /// Shrinks the `FormulaFactory` as much as possible.
     ///

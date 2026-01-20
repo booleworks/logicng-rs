@@ -17,7 +17,6 @@ pub fn read_cnf(f: &FormulaFactory) -> Vec<(EncodedFormula, BigUint)> {
     read(&PathBuf::from(PATH).join("cnfs"), f)
 }
 
-
 fn read(path: &Path, f: &FormulaFactory) -> Vec<(EncodedFormula, BigUint)> {
     let files = fs::read_dir(path).unwrap();
     let mut res = Vec::new();

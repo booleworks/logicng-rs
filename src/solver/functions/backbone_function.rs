@@ -16,7 +16,7 @@ pub enum BackboneType {
 }
 
 impl BackboneType {
-    /// Returns `true` if and only if the type of backbone allows to contains
+    /// Returns `true` if and only if the type of backbone contains
     /// literals with the given phase.
     pub const fn matches_phase(&self, phase: bool) -> bool {
         match self {

@@ -60,7 +60,6 @@ impl FromStr for AuxVarType {
     }
 }
 
-
 /// Boolean variables.
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug, Ord, PartialOrd)]
 pub enum Variable {
@@ -268,7 +267,7 @@ impl TryFrom<FormulaEncoding> for Variable {
             FormulaType::Lit(LitType::Pos(VarType::FF) | LitType::Neg(VarType::FF)) => {
                 Ok(Self::FF(FormulaEncoding::encode(enc.index(), FormulaType::Lit(LitType::Pos(VarType::FF)), true)))
             }
-            _ => Err(format!("Cannot convert {:?} to an variable!", enc.formula_type())),
+            _ => Err(format!("Cannot convert {:?} to a variable!", enc.formula_type())),
         }
     }
 }
