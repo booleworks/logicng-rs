@@ -43,7 +43,7 @@ fn test_amo_1() {
         let var = f.variable("v0").as_variable().unwrap();
         let cc = f.cc(LE, 1, (&[var]) as &[Variable]);
         assert!(f.nnf_of(cc).is_verum());
-        assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).is_empty());
+        assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap().is_empty());
     }
 }
 

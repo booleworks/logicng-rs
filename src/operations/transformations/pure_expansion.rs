@@ -13,7 +13,8 @@ pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFor
         Formula::Pbc(_) => panic!("Pure encoding for a PBC of type other than AMO or EXO is currently not supported."),
         Formula::Cc(cc) => {
             if cc.is_amo() || cc.is_exo() {
-                let mut enc = ENCODER.encode(cc, f);
+                // TODO error handling
+                let mut enc = ENCODER.encode(cc, f).unwrap();
                 if cc.is_exo() {
                     enc.push(f.or(cc.variables.iter().map(|v| v.to_formula(f))));
                 }

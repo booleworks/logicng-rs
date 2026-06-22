@@ -94,7 +94,8 @@ impl<B: Clone> MiniSat<B> {
         self.result = Undef;
         if formula.formula_type() == FormulaType::Cc {
             let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
-            CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap());
+            // TODO error handling
+            let _ = CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap());
         } else {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
@@ -279,7 +280,8 @@ impl<B: Clone> MiniSat<B> {
     ///   side &gt; number of variables.
     pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> Option<CcIncrementalData> {
         let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
-        CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc)
+        // TODO error handling
+        CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc).unwrap()
     }
 
     /// A solver function which returns all unit propagated literals on level 0

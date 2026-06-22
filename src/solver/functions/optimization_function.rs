@@ -94,11 +94,12 @@ impl OptimizationFunction {
             if current_bound == selectors.len() {
                 return Some(self.mk_result_model(&internal_model, solver));
             }
-            incremental_data.as_mut().unwrap().new_lower_bound_for_solver(
-                solver,
-                f,
-                u32::try_from(current_bound).expect("rhs of cc too large") + 1,
-            );
+            // TODO error handling
+            incremental_data
+                .as_mut()
+                .unwrap()
+                .new_lower_bound_for_solver(solver, f, u32::try_from(current_bound).expect("rhs of cc too large") + 1)
+                .expect("should not go wrong");
         }
         Some(self.mk_result_model(&internal_model, solver))
     }

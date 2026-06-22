@@ -19,6 +19,8 @@ pub mod cardinality_constraints;
 mod collections;
 /// Various datastructures.
 pub mod datastructures;
+/// Public library errors
+pub mod errors;
 /// Tools for analyzing unsatisfiable results.
 pub mod explanations;
 /// Types and datastructures to represent and manage formulas effectively.

@@ -43,7 +43,7 @@ fn test_exo_1() {
         let var = f.variable("v0").as_variable().unwrap();
         let cc = f.cc(EQ, 1, &([var]) as &[Variable]);
         assert_eq!(f.nnf_of(cc), f.variable("v0"));
-        assert_eq!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f), vec![f.variable("v0")]);
+        assert_eq!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap(), vec![f.variable("v0")]);
     }
 }
 

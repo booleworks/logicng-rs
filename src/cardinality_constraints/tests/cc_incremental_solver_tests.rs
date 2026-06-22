@@ -29,24 +29,24 @@ fn test_simple_incremental_amk() {
 
             let mut inc_data = solver.add_incremental_cc(&f.cc(LE, 9, vars).as_cc(f).unwrap(), f).unwrap();
             assert_eq!(solver.sat(), True);
-            inc_data.new_upper_bound_for_solver(solver, f, 8);
+            let _ = inc_data.new_upper_bound_for_solver(solver, f, 8);
             assert_eq!(solver.sat(), True);
-            inc_data.new_upper_bound_for_solver(solver, f, 7);
+            let _ = inc_data.new_upper_bound_for_solver(solver, f, 7);
             assert_eq!(solver.sat(), True);
-            inc_data.new_upper_bound_for_solver(solver, f, 6);
+            let _ = inc_data.new_upper_bound_for_solver(solver, f, 6);
             assert_eq!(solver.sat(), True);
-            inc_data.new_upper_bound_for_solver(solver, f, 5);
+            let _ = inc_data.new_upper_bound_for_solver(solver, f, 5);
             assert_eq!(solver.sat(), True);
-            inc_data.new_upper_bound_for_solver(solver, f, 4);
+            let _ = inc_data.new_upper_bound_for_solver(solver, f, 4);
             assert_eq!(solver.sat(), True);
 
             if solver.underlying_solver.config.incremental {
                 let state = solver.save_state();
-                inc_data.new_upper_bound_for_solver(solver, f, 3);
+                let _ = inc_data.new_upper_bound_for_solver(solver, f, 3);
                 assert_eq!(solver.sat(), False);
                 solver.load_state(&state);
                 assert_eq!(solver.sat(), True);
-                inc_data.new_upper_bound_for_solver(solver, f, 2);
+                let _ = inc_data.new_upper_bound_for_solver(solver, f, 2);
                 assert_eq!(solver.sat(), False);
             }
         }
@@ -66,24 +66,24 @@ fn test_simple_incremental_alk() {
 
             let mut inc_data = solver.add_incremental_cc(&f.cc(GE, 2, vars).as_cc(f).unwrap(), f).unwrap();
             assert_eq!(solver.sat(), True);
-            inc_data.new_lower_bound_for_solver(solver, f, 3);
+            let _ = inc_data.new_lower_bound_for_solver(solver, f, 3);
             assert_eq!(solver.sat(), True);
-            inc_data.new_lower_bound_for_solver(solver, f, 4);
+            let _ = inc_data.new_lower_bound_for_solver(solver, f, 4);
             assert_eq!(solver.sat(), True);
-            inc_data.new_lower_bound_for_solver(solver, f, 5);
+            let _ = inc_data.new_lower_bound_for_solver(solver, f, 5);
             assert_eq!(solver.sat(), True);
-            inc_data.new_lower_bound_for_solver(solver, f, 6);
+            let _ = inc_data.new_lower_bound_for_solver(solver, f, 6);
             assert_eq!(solver.sat(), True);
-            inc_data.new_lower_bound_for_solver(solver, f, 7);
+            let _ = inc_data.new_lower_bound_for_solver(solver, f, 7);
             assert_eq!(solver.sat(), True);
 
             if solver.underlying_solver.config.incremental {
                 let state = solver.save_state();
-                inc_data.new_lower_bound_for_solver(solver, f, 8);
+                let _ = inc_data.new_lower_bound_for_solver(solver, f, 8);
                 assert_eq!(solver.sat(), False);
                 solver.load_state(&state);
                 assert_eq!(solver.sat(), True);
-                inc_data.new_lower_bound_for_solver(solver, f, 9);
+                let _ = inc_data.new_lower_bound_for_solver(solver, f, 9);
                 assert_eq!(solver.sat(), False);
             }
         }
@@ -105,7 +105,7 @@ fn test_large_upper_bound_amk() {
             let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
             while solver.sat() == True {
                 current_bound -= 1;
-                inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);
+                let _ = inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);
             }
             assert_eq!(current_bound, 41);
         }
@@ -127,7 +127,7 @@ fn test_large_lower_bound_alk() {
             let mut inc_data = solver.add_incremental_cc(&f.cc(GE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
             while solver.sat() == True {
                 current_bound += 1;
-                inc_data.new_lower_bound_for_solver(&mut solver, f, current_bound);
+                let _ = inc_data.new_lower_bound_for_solver(&mut solver, f, current_bound);
             }
             assert_eq!(current_bound, 88);
         }
@@ -147,7 +147,7 @@ fn test_very_large_modular_totalizer_amk() {
     let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
     while solver.sat() == True {
         current_bound -= 1;
-        inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);
+        let _ = inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);
     }
     assert_eq!(current_bound, 233);
 }

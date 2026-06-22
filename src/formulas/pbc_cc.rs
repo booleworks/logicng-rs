@@ -261,7 +261,8 @@ impl CardinalityConstraint {
         if let Some(cached) = f.caches.cc_encoding.get(&index) {
             return cached.clone();
         }
-        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f));
+        // TODO error handling
+        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f).unwrap());
         if f.config.caches.cc_encoding {
             f.caches.cc_encoding.insert(index, result.clone());
         }
