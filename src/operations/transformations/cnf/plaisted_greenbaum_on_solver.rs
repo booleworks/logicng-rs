@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use Literal::{Neg, Pos};
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
@@ -45,15 +46,15 @@ pub fn add_cnf_to_solver<B>(
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
-) {
-    // TODO error handling
-    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula).unwrap() } else { formula };
+) -> LngResult<()> {
+    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula)? } else { formula };
     if working_formula.is_cnf(f) {
         add_cnf(solver, working_formula, proposition, f, config);
     } else if let Some(top_level_vars) = compute_transformation(working_formula, proposition.clone(), solver, f, cache, config, true, true)
     {
         add_clause(solver, &top_level_vars, proposition, config);
     }
+    Ok(())
 }
 
 fn add_cnf<B>(

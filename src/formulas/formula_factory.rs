@@ -1144,11 +1144,11 @@ impl FormulaFactory {
     /// let mut substitutions = HashMap::new();
     /// substitutions.insert(f.var("a"), "c => d".to_formula(&f));
     ///
-    /// let substituted = f.substitute(formula, &substitutions);
+    /// let substituted = f.substitute(formula, &substitutions).unwrap();
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute(&self, formula: EncodedFormula, substitution: &Substitution) -> EncodedFormula {
+    pub fn substitute(&self, formula: EncodedFormula, substitution: &Substitution) -> LngResult<EncodedFormula> {
         transformations::substitute(formula, substitution, self)
     }
 
@@ -1168,11 +1168,11 @@ impl FormulaFactory {
     /// let variable = f.var("a");
     /// let substitute = "c => d".to_formula(&f);
     ///
-    /// let substituted = f.substitute_var(formula, variable, substitute);
+    /// let substituted = f.substitute_var(formula, variable, substitute).unwrap();
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute_var(&self, formula: EncodedFormula, variable: Variable, substitute: EncodedFormula) -> EncodedFormula {
+    pub fn substitute_var(&self, formula: EncodedFormula, variable: Variable, substitute: EncodedFormula) -> LngResult<EncodedFormula> {
         let mut substitution = HashMap::new();
         substitution.insert(variable, substitute);
         self.substitute(formula, &substitution)

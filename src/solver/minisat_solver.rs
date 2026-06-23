@@ -104,7 +104,8 @@ impl<B: Clone> MiniSat<B> {
                     self.add_clause_set(cnf, None, f);
                 }
                 SolverCnfMethod::PgOnSolver => {
-                    add_cnf_to_solver(
+                    // TODO error handling
+                    let _ = add_cnf_to_solver(
                         &mut self.underlying_solver,
                         formula,
                         None,
@@ -114,7 +115,8 @@ impl<B: Clone> MiniSat<B> {
                     );
                 }
                 SolverCnfMethod::FullPgOnSolver => {
-                    add_cnf_to_solver(
+                    // TODO error handling
+                    let _ = add_cnf_to_solver(
                         &mut self.underlying_solver,
                         formula,
                         None,
@@ -143,7 +145,8 @@ impl<B: Clone> MiniSat<B> {
                 self.add_clause_set(cnf, Some(proposition), f);
             }
             SolverCnfMethod::PgOnSolver => {
-                add_cnf_to_solver(
+                // TODO error handling
+                let _ = add_cnf_to_solver(
                     &mut self.underlying_solver,
                     proposition.formula,
                     Some(proposition),
@@ -153,7 +156,8 @@ impl<B: Clone> MiniSat<B> {
                 );
             }
             SolverCnfMethod::FullPgOnSolver => {
-                add_cnf_to_solver(
+                // TODO error handling
+                let _ = add_cnf_to_solver(
                     &mut self.underlying_solver,
                     proposition.formula,
                     Some(proposition),

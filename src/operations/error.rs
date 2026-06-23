@@ -24,4 +24,13 @@ pub enum OperationError {
 
     #[error("the formula is not a clause or term")]
     NotClauseOrTerm,
+
+    #[error("substitution of a formula for a variable in a cc or pbc")]
+    SubstFormCcPbc,
+
+    #[error("subsumption can only be applied to cnf")]
+    SubsumptionNoCnf,
+
+    #[error("subsumption can only be applied to dnf")]
+    SubsumptionNoDnf,
 }

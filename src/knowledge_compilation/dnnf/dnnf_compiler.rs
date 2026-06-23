@@ -32,7 +32,8 @@ pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> DnnfFormula 
     // TODO error handling
     let cnf = f.cnf_of(formula).unwrap();
     let simplified = backbone_simplification(cnf, f);
-    let subsumption = cnf_subsumption(simplified, f);
+    // TODO error handling
+    let subsumption = cnf_subsumption(simplified, f).unwrap();
     DnnfFormula { formula: DnnfCompiler::new(subsumption, f).compile(), original_variables }
 }
 

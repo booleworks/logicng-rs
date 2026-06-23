@@ -4,8 +4,8 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
 use crate::handlers::{FactorizationHandler, NopFactorizationHandler};
 
 /// Constructs the _DNF_ of the given formula by using factorization.
-pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
-    factorization_dnf_with_handler(formula, f, &mut NopFactorizationHandler {}).expect("Nop Handler never aborts.")
+pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+    factorization_dnf_with_handler(formula, f, &mut NopFactorizationHandler {})
 }
 
 /// Constructs the _DNF_ of the given formula by using factorization with a
@@ -142,11 +142,11 @@ mod tests {
         test_dnf("a & b => x | y", "~a | ~b | x | y");
         test_dnf("a <=> b", "(a & b) | (~a & ~b)");
         test_dnf("~a <=> ~b", "(a & b) | (~a & ~b)");
-        assert!(factorization_dnf(f.parse("a => b").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~a => ~b").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("a & b => x | y").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("a <=> b").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~a <=> b").unwrap(), f).is_dnf(f));
+        assert!(factorization_dnf(f.parse("a => b").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~a => ~b").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("a & b => x | y").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("a <=> b").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~a <=> b").unwrap(), f).unwrap().is_dnf(f));
     }
 
     #[test]
@@ -160,14 +160,14 @@ mod tests {
         );
         test_dnf("~(a & b) | c | ~(x | ~y)", "~a | ~b | c | ~x & y ");
         test_dnf("a & b & (~x | ~y)", "~x & a & b | ~y & a & b ");
-        assert!(factorization_dnf(f.parse("a & b").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("x | y").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f,).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f,).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("a | b | (~x & ~y)").unwrap(), f).is_dnf(f));
-        assert!(factorization_dnf(f.parse("a | b | (~x & ~y)").unwrap(), f).is_dnf(f));
+        assert!(factorization_dnf(f.parse("a & b").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("x | y").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f,).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f,).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("a | b | (~x & ~y)").unwrap(), f).unwrap().is_dnf(f));
+        assert!(factorization_dnf(f.parse("a | b | (~x & ~y)").unwrap(), f).unwrap().is_dnf(f));
     }
 
     #[test]
@@ -209,6 +209,6 @@ mod tests {
 
     fn test_dnf(original: &str, expected: &str) {
         let f = &FormulaFactory::new();
-        assert_eq!(factorization_dnf(f.parse(original).unwrap(), f), f.parse(expected).unwrap());
+        assert_eq!(factorization_dnf(f.parse(original).unwrap(), f).unwrap(), f.parse(expected).unwrap());
     }
 }

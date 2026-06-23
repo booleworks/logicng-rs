@@ -379,7 +379,7 @@ mod test {
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            transformations::factorization_dnf(formula1, &f);
+            transformations::factorization_dnf(formula1, &f).unwrap();
             assert!(f.caches.dnf.len() > 0);
         }
 
@@ -390,7 +390,7 @@ mod test {
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            transformations::factorization_dnf(formula1, &f);
+            transformations::factorization_dnf(formula1, &f).unwrap();
             assert_eq!(f.caches.dnf.len(), 0);
         }
 
@@ -505,7 +505,7 @@ mod test {
             let s1 = f.caches.is_dnf.len();
             assert!(s1 > 0);
 
-            let formula2 = transformations::factorization_dnf(formula1, &f);
+            let formula2 = transformations::factorization_dnf(formula1, &f).unwrap();
             let s2 = f.caches.is_dnf.len();
             assert!(s2 > s1);
             assert!(predicates::is_dnf(formula2, &f));
@@ -522,7 +522,7 @@ mod test {
             assert!(!predicates::is_dnf(formula1, &f));
             assert_eq!(f.caches.is_dnf.len(), 0);
 
-            let formula2 = transformations::factorization_dnf(formula1, &f);
+            let formula2 = transformations::factorization_dnf(formula1, &f).unwrap();
             assert_eq!(f.caches.is_dnf.len(), 0);
             assert!(predicates::is_dnf(formula2, &f));
             assert_eq!(f.caches.is_dnf.len(), 0);
