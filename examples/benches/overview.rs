@@ -65,7 +65,7 @@ fn model_counting() {
 
     let start = std::time::Instant::now();
     for formula in formulas {
-        count_models(formula, ModelCountAlgorithm::Dnnf, &f);
+        let _ = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
     }
     println!("Rust Model Counting (Dnnf): {}s", start.elapsed().as_secs_f32());
 }

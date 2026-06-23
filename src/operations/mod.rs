@@ -12,3 +12,7 @@ pub mod predicates;
 /// This value can be a simple integer e.g. the depth of a formula, or a more
 /// complex result type, like the list of sub-formulas.
 pub mod functions;
+
+/// Module errors
+mod error;
+pub(crate) use error::OperationError;

@@ -36,7 +36,7 @@ pub fn parallel(thread_count: usize) {
                     break;
                 }
                 let formula = read_formula(&paths_l[c], &f_l).unwrap();
-                let expanded = pure_expansion(formula, &f_l);
+                let expanded = pure_expansion(formula, &f_l).unwrap();
                 let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
                     AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
                 ));
