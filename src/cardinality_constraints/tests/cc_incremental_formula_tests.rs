@@ -53,8 +53,8 @@ fn test_simple_incremental_amk() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f), f);
-        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f), f);
+        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, 9, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
@@ -88,8 +88,8 @@ fn test_simple_incremental_alk() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f), f);
-        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f), f);
+        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, 2, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
@@ -128,7 +128,7 @@ fn test_large_upper_bound_amk() {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = num_lits - 1;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 42, vars.clone()).as_cc(f).unwrap().encode(f), f);
+        solver.add_all(&f.cc(GE, 42, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
@@ -151,7 +151,7 @@ fn test_large_lower_bound_alk() {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = 2;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(LE, 87, vars.clone()).as_cc(f).unwrap().encode(f), f);
+        solver.add_all(&f.cc(LE, 87, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();

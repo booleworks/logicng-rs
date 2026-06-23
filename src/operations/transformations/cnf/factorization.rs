@@ -39,7 +39,8 @@ fn apply_rec(
 
     match formula.unpack(f) {
         Lit(_) | True | False => Ok(formula),
-        Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => apply_rec(f.nnf_of(formula), f, handler, local_cache),
+        // TODO error handling
+        Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => apply_rec(f.nnf_of(formula).unwrap(), f, handler, local_cache),
         Or(ops) => handle_or(ops, f, handler, local_cache),
         And(ops) => handle_and(ops, f, handler, local_cache),
     }

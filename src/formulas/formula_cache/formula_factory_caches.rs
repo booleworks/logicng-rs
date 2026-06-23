@@ -271,13 +271,13 @@ mod test {
             let formula1 = "a + b = 1".to_formula(&f);
             let formula2 = "a + c = 1".to_formula(&f);
 
-            formula1.as_cc(&f).unwrap().encode(&f);
+            let _ = formula1.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 1);
 
-            formula2.as_cc(&f).unwrap().encode(&f);
+            let _ = formula2.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 2);
 
-            formula1.as_cc(&f).unwrap().encode(&f);
+            let _ = formula1.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 2);
         }
 
@@ -289,13 +289,13 @@ mod test {
             let formula1 = "a + b = 1".to_formula(&f);
             let formula2 = "a + c = 1".to_formula(&f);
 
-            formula1.as_cc(&f).unwrap().encode(&f);
+            let _ = formula1.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 0);
 
-            formula2.as_cc(&f).unwrap().encode(&f);
+            let _ = formula2.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 0);
 
-            formula1.as_cc(&f).unwrap().encode(&f);
+            let _ = formula1.as_cc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.cc_encoding.len(), 0);
         }
 
@@ -343,14 +343,14 @@ mod test {
             let formula1 = "~(b | ~a)".to_formula(&f);
             let formula2 = "~(b | ~(a & c))".to_formula(&f);
 
-            transformations::nnf(formula1, &f);
+            let _ = transformations::nnf(formula1, &f);
             assert_eq!(f.caches.nnf.len(), 1);
 
-            transformations::nnf(formula2, &f);
+            let _ = transformations::nnf(formula2, &f);
             assert!(f.caches.nnf.len() > 1);
 
             let s = f.caches.nnf.len();
-            transformations::nnf(formula1, &f);
+            let _ = transformations::nnf(formula1, &f);
             assert_eq!(f.caches.nnf.len(), s);
         }
 
@@ -362,13 +362,13 @@ mod test {
             let formula1 = "~(b | ~a)".to_formula(&f);
             let formula2 = "~(b | ~(a & c))".to_formula(&f);
 
-            transformations::nnf(formula1, &f);
+            let _ = transformations::nnf(formula1, &f);
             assert_eq!(f.caches.nnf.len(), 0);
 
-            transformations::nnf(formula2, &f);
+            let _ = transformations::nnf(formula2, &f);
             assert_eq!(f.caches.nnf.len(), 0);
 
-            transformations::nnf(formula1, &f);
+            let _ = transformations::nnf(formula1, &f);
             assert_eq!(f.caches.nnf.len(), 0);
         }
 
@@ -471,7 +471,7 @@ mod test {
             let s1 = f.caches.is_nnf.len();
             assert!(s1 > 0);
 
-            let formula2 = transformations::nnf(formula1, &f);
+            let formula2 = transformations::nnf(formula1, &f).unwrap();
             let s2 = f.caches.is_nnf.len();
             assert!(s2 > s1);
             assert!(predicates::is_nnf(formula2, &f));
@@ -488,7 +488,7 @@ mod test {
             assert!(!predicates::is_nnf(formula1, &f));
             assert_eq!(f.caches.is_nnf.len(), 0);
 
-            let formula2 = transformations::nnf(formula1, &f);
+            let formula2 = transformations::nnf(formula1, &f).unwrap();
             assert_eq!(f.caches.is_nnf.len(), 0);
             assert!(predicates::is_nnf(formula2, &f));
             assert_eq!(f.caches.is_nnf.len(), 0);

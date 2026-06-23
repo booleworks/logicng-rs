@@ -206,7 +206,8 @@ fn build_rec(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel
             }
             Ok(res)
         }
-        Cc(_) | Pbc(_) => build_rec(f.nnf_of(formula), f, kernel, handler),
+        // TODO error handling
+        Cc(_) | Pbc(_) => build_rec(f.nnf_of(formula).unwrap(), f, kernel, handler),
     }
 }
 

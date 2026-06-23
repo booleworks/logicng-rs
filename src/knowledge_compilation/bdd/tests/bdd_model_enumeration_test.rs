@@ -20,7 +20,7 @@ mod tests {
         f.config.cc_config = CcConfig::new().amo_encoder(AmoEncoder::Pure);
         let variables = generate_variables(100, &f);
         let constraint = f.exo(variables);
-        let constraint = f.nnf_of(constraint);
+        let constraint = f.nnf_of(constraint).unwrap();
         let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000);
         let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
         assert_eq!(bdd.model_count(&mut kernel), 100.to_biguint().unwrap());
@@ -33,7 +33,7 @@ mod tests {
         f.config.cc_config = CcConfig::new().amo_encoder(AmoEncoder::Pure);
         let variables = generate_variables(100, &f);
         let constraint = f.amo(variables);
-        let constraint = f.nnf_of(constraint);
+        let constraint = f.nnf_of(constraint).unwrap();
         let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000);
         let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
         assert_eq!(bdd.model_count(&mut kernel), 101.to_biguint().unwrap());
@@ -46,7 +46,7 @@ mod tests {
         f.config.cc_config = CcConfig::new().amo_encoder(AmoEncoder::Pure);
         let variables = generate_variables(15, &f);
         let constraint = f.cc(CType::EQ, 8, variables);
-        let constraint = f.nnf_of(constraint);
+        let constraint = f.nnf_of(constraint).unwrap();
         let mut kernel = BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000);
         let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
         assert_eq!(bdd.model_count(&mut kernel), 6435.to_biguint().unwrap());

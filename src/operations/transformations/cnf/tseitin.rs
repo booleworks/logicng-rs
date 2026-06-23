@@ -13,7 +13,8 @@ pub(super) fn tseitin_cnf_with_boundary(
     factorization_boundary: u64,
     state: &mut TseitinState,
 ) -> EncodedFormula {
-    let nnf = f.nnf_of(formula);
+    // TODO error handling
+    let nnf = f.nnf_of(formula).unwrap();
     if nnf.is_cnf(f) {
         nnf
     } else if nnf.number_of_atoms(f) < factorization_boundary {

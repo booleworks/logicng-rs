@@ -484,10 +484,10 @@ mod pb_constraint_tests {
     fn test_nnf() {
         let f = &FormulaFactory::new();
         let (pb1, _, cc1, _, amo1, _, exo1, _) = generate_formulas(f);
-        assert_eq!(f.literal("a", false), f.nnf_of(pb1));
-        assert_eq!(f.literal("a", false), f.nnf_of(cc1));
-        assert_eq!(f.verum(), f.nnf_of(amo1));
-        assert_eq!(f.literal("a", true), f.nnf_of(exo1));
+        assert_eq!(f.literal("a", false), f.nnf_of(pb1).unwrap());
+        assert_eq!(f.literal("a", false), f.nnf_of(cc1).unwrap());
+        assert_eq!(f.verum(), f.nnf_of(amo1).unwrap());
+        assert_eq!(f.literal("a", true), f.nnf_of(exo1).unwrap());
     }
 
     #[test]

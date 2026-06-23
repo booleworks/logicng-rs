@@ -11,7 +11,8 @@ pub(super) fn pg_on_formula(
     boundary_for_factorization: u64,
     state: &mut PGState,
 ) -> EncodedFormula {
-    let nnf = f.nnf_of(formula);
+    // TODO error handling
+    let nnf = f.nnf_of(formula).unwrap();
     if nnf.is_cnf(f) {
         nnf
     } else if nnf.number_of_atoms(f) < boundary_for_factorization {

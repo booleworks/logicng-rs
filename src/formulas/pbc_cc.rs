@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use crate::cardinality_constraints::CcEncoder;
 use crate::datastructures::Assignment;
+use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::pseudo_booleans::PbEncoder;
@@ -256,17 +257,16 @@ impl CardinalityConstraint {
     /// let formula = "a + b = 1".to_formula(&f).as_cc(&f).unwrap();
     /// let encoded = formula.encode(&f);
     /// ```
-    pub fn encode(&self, f: &FormulaFactory) -> Arc<[EncodedFormula]> {
+    pub fn encode(&self, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
         let index = f.ccs.lookup(self).expect("Cardinality Constraint must be present in FF");
         if let Some(cached) = f.caches.cc_encoding.get(&index) {
-            return cached.clone();
+            return Ok(cached.clone());
         }
-        // TODO error handling
-        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f).unwrap());
+        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f)?);
         if f.config.caches.cc_encoding {
             f.caches.cc_encoding.insert(index, result.clone());
         }
-        result
+        Ok(result)
     }
 
     /// Evaluates this constraint based on `assignment`.

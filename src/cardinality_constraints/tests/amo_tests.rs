@@ -31,7 +31,7 @@ fn test_amo_0() {
     for config in configs() {
         f.config.cc_config = config.clone();
         let cc = f.cc(LE, 0, (&[]) as &[Variable]);
-        assert!(f.nnf_of(cc).is_verum());
+        assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
 
@@ -42,7 +42,7 @@ fn test_amo_1() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
         let cc = f.cc(LE, 1, (&[var]) as &[Variable]);
-        assert!(f.nnf_of(cc).is_verum());
+        assert!(f.nnf_of(cc).unwrap().is_verum());
         assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap().is_empty());
     }
 }

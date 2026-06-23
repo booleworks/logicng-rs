@@ -28,7 +28,8 @@ impl PbEncoder {
                 let pbc = normalized.as_pbc(f).unwrap();
                 self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, f).into()
             }
-            FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f),
+            // TODO error handling
+            FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f).unwrap(),
             FormulaType::And => {
                 let operands = normalized.operands(f);
                 let mut result = Vec::with_capacity(operands.len());
@@ -38,7 +39,8 @@ impl PbEncoder {
                             result.extend(&mut self.encode(&op.as_pbc(f).unwrap(), f).iter());
                         }
                         FormulaType::Cc => {
-                            result.extend(&mut op.as_cc(f).unwrap().encode(f).iter());
+                            // TODO error handling
+                            result.extend(&mut op.as_cc(f).unwrap().encode(f).unwrap().iter());
                         }
                         _ => panic_unexpected_formula_type(op, Some(f)),
                     }

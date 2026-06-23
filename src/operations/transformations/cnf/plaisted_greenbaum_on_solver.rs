@@ -46,7 +46,8 @@ pub fn add_cnf_to_solver<B>(
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
 ) {
-    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula) } else { formula };
+    // TODO error handling
+    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula).unwrap() } else { formula };
     if working_formula.is_cnf(f) {
         add_cnf(solver, working_formula, proposition, f, config);
     } else if let Some(top_level_vars) = compute_transformation(working_formula, proposition.clone(), solver, f, cache, config, true, true)
@@ -261,7 +262,9 @@ fn handle_nary<B>(
 }
 
 fn add_clause<'a, B, L>(solver: &mut MiniSat2Solver<B>, clause: L, proposition: Option<Proposition<B>>, config: PgOnSolverConfig)
-where L: IntoIterator<Item = &'a Literal> {
+where
+    L: IntoIterator<Item = &'a Literal>,
+{
     let clause_vec = clause
         .into_iter()
         .map(|lit| {

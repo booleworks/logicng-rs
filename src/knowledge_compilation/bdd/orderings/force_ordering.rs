@@ -11,7 +11,8 @@ use super::dfs_ordering::dfs_ordering;
 /// has to be converted to CNF before this ordering is called.
 pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variable> {
     let mut original_variables = (*formula.variables(f)).clone();
-    let nnf = f.nnf_of(formula);
+    // TODO error handling
+    let nnf = f.nnf_of(formula).unwrap();
     original_variables.extend((*nnf.variables(f)).clone());
     let cnf = f.cnf_of(nnf);
     let hypergraph = hypergraph_from_cnf(cnf, f);

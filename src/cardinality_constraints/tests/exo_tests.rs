@@ -31,7 +31,7 @@ fn test_exo_0() {
     for config in configs() {
         f.config.cc_config = config.clone();
         let cc = f.cc(EQ, 0, (&[]) as &[Variable]);
-        assert!(f.nnf_of(cc).is_verum());
+        assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
 
@@ -42,7 +42,7 @@ fn test_exo_1() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
         let cc = f.cc(EQ, 1, &([var]) as &[Variable]);
-        assert_eq!(f.nnf_of(cc), f.variable("v0"));
+        assert_eq!(f.nnf_of(cc).unwrap(), f.variable("v0"));
         assert_eq!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap(), vec![f.variable("v0")]);
     }
 }
