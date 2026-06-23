@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
 use crate::datastructures::Assignment;
+use crate::errors::{LngError, LngResult};
 use crate::formulas::{FormulaFactory, Literal, StringLiteral, Variable};
 
 #[derive(Debug, Clone)]
@@ -65,7 +66,8 @@ impl Model {
     pub fn new<P, N>(pos: P, neg: N) -> Self
     where
         P: Into<Vec<Variable>>,
-        N: Into<Vec<Variable>>, {
+        N: Into<Vec<Variable>>,
+    {
         Self { pos: pos.into(), neg: neg.into() }
     }
 
@@ -164,7 +166,8 @@ impl Model {
     /// ```
     /// # use logicng::datastructures::Model;
     /// # use logicng::formulas::FormulaFactory;
-    /// # fn main() -> Result<(), String> {
+    /// # use logicng::errors::LngResult;
+    /// # fn main() -> LngResult<()> {
     /// let f = FormulaFactory::new();
     ///
     /// let a = f.var("a");
@@ -190,7 +193,7 @@ impl Model {
     ///
     /// assert!(model.is_err());
     /// ```
-    pub fn from_names(pos: &[&str], neg: &[&str], f: &FormulaFactory) -> Result<Self, String> {
+    pub fn from_names(pos: &[&str], neg: &[&str], f: &FormulaFactory) -> LngResult<Self> {
         let pos = names_to_indices(pos, f)?;
         let neg = names_to_indices(neg, f)?;
         Ok(Self { pos, neg })
@@ -416,13 +419,13 @@ impl<M: AsRef<Model>> From<M> for Assignment {
     }
 }
 
-fn names_to_indices(names: &[&str], f: &FormulaFactory) -> Result<Vec<Variable>, String> {
+fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<Vec<Variable>> {
     let mut result = Vec::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
             Some(i) => Variable::FF(i),
             None => {
-                return Err(format!("Variable {} is not known in the given FormulaFactory", *name));
+                return Err(LngError::UnknownVariable { var: name.to_string() });
             }
         };
         result.push(index);

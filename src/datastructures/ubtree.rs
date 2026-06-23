@@ -47,12 +47,13 @@ impl<T: Ord + Copy> UbTree<T> {
         let mut nodes = self.root_nodes;
         let mut node = None;
         for element in &set {
-            let n = if self.children_maps[nodes].contains_key(element) {
-                *self.children_maps[nodes].get(element).unwrap()
-            } else {
-                let new_node = self.new_node();
-                self.children_maps[nodes].insert(*element, new_node);
-                new_node
+            let n = match self.children_maps[nodes].get(element) {
+                Some(&n) => n,
+                None => {
+                    let new_node = self.new_node();
+                    self.children_maps[nodes].insert(*element, new_node);
+                    new_node
+                }
             };
             nodes = self.nodes[n].children;
             node = Some(n);

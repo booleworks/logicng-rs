@@ -10,4 +10,7 @@ pub type LngResult<T> = Result<T, LngError>;
 pub enum LngError {
     #[error("cardinality constraint: {0}")]
     Cc(#[from] CcError),
+
+    #[error("variable {var:?} is not known in the given formula factory")]
+    UnknownVariable { var: String },
 }
