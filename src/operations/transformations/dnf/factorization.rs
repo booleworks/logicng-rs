@@ -1,6 +1,7 @@
+use crate::errors::LngResult;
 use crate::formulas::operation_cache::OperationCache;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
-use crate::handlers::{FactorizationError, FactorizationHandler, NopFactorizationHandler};
+use crate::handlers::{FactorizationHandler, NopFactorizationHandler};
 
 /// Constructs the _DNF_ of the given formula by using factorization.
 pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
@@ -13,7 +14,7 @@ pub fn factorization_dnf_with_handler(
     formula: EncodedFormula,
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> LngResult<EncodedFormula> {
     handler.started();
     if f.config.caches.dnf {
         apply_rec(formula, f, handler, &mut None)
@@ -27,7 +28,7 @@ fn apply_rec(
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> LngResult<EncodedFormula> {
     let cached =
         local_cache.as_ref().map_or_else(|| f.caches.dnf.get(formula), |c| c.get(formula).map_or_else(|| f.caches.dnf.get(formula), Some));
 
@@ -36,8 +37,7 @@ fn apply_rec(
             use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
             let result = match formula.unpack(f) {
                 Lit(_) | True | False => Ok(formula),
-                // TODO error handling
-                Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => apply_rec(f.nnf_of(formula).unwrap(), f, handler, local_cache),
+                Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => apply_rec(f.nnf_of(formula)?, f, handler, local_cache),
                 Or(ops) => handle_or(ops, f, handler, local_cache),
                 And(ops) => handle_and(ops, f, handler, local_cache),
             };
@@ -63,7 +63,7 @@ fn handle_or(
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> LngResult<EncodedFormula> {
     compute_nops(operands, f, handler, cache).map(|nops| f.or(nops))
 }
 
@@ -72,7 +72,7 @@ fn handle_and(
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> LngResult<EncodedFormula> {
     compute_nops(operands, f, handler, cache).and_then(|nops| {
         let mut result = *nops.first().unwrap();
         for &op in nops.iter().skip(1) {
@@ -87,7 +87,7 @@ fn compute_nops(
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<Vec<EncodedFormula>, FactorizationError> {
+) -> LngResult<Vec<EncodedFormula>> {
     let mut nops = Vec::with_capacity(operands.len());
     for op in operands {
         nops.push(apply_rec(op, f, handler, cache)?);
@@ -100,7 +100,7 @@ fn distribute(
     f2: EncodedFormula,
     f: &FormulaFactory,
     handler: &mut impl FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> LngResult<EncodedFormula> {
     handler.performed_distribution()?;
     if f1.is_or() || f2.is_or() {
         let mut nops = Vec::new();

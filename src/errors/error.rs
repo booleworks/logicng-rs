@@ -5,7 +5,7 @@ use crate::{cardinality_constraints::CcError, operations::OperationError};
 pub type LngResult<T> = Result<T, LngError>;
 
 /// A generic LogicNG error
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum LngError {
     #[error("cardinality constraint: {0}")]

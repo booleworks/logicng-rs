@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum CcError {
     #[error("right hand side of cardinality constraint is too large for this architecture: {rhs:?}")]

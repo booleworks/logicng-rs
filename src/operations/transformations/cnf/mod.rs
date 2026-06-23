@@ -6,8 +6,9 @@ mod tseitin;
 
 use std::collections::HashMap;
 
+use crate::errors::LngError;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
-use crate::handlers::{FactorizationError, FactorizationHandler};
+use crate::handlers::FactorizationHandler;
 use crate::knowledge_compilation::bdd::{Bdd, BddError, BddHandler, BddKernel};
 //use advanced::{advanced_cnf_encoding, AdvancedFactorizationConfig};
 use factorization::{factorization_cnf, factorization_cnf_with_handler};
@@ -136,7 +137,7 @@ impl CancellableCnfAlgorithm {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CancellationReason {
     /// Emitted by factorization algorithms.
-    FactorizationFailed(FactorizationError),
+    FactorizationFailed(LngError),
     /// Emitted by BDD algorithms.
     BddGenerationFailed(BddError),
 }
@@ -160,10 +161,11 @@ mod tests {
     use std::collections::HashSet;
 
     use crate::datastructures::Assignment;
+    use crate::errors::LngError;
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula, Variable};
     use crate::handlers::ClauseLimitFactorizationHandler;
-    use crate::handlers::FactorizationError::{ClauseLimitReached, DistributionLimitReached};
     use crate::knowledge_compilation::bdd::{BddError, NumberOfNodesBddHandler};
+    use crate::operations::OperationError;
     use crate::operations::transformations::CnfEncoder;
     use crate::operations::transformations::cnf::CancellationReason::{BddGenerationFailed, FactorizationFailed};
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
@@ -310,8 +312,8 @@ mod tests {
         let cnf1 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(5, 10000))).transform(phi1, f);
         let cnf2 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(10000, 5))).transform(phi1, f);
         let cnf3 = FactorizationWithHandler(Box::new(ClauseLimitFactorizationHandler::new(10000, 10000))).transform(phi1, f);
-        assert_eq!(cnf1, Err(FactorizationFailed(DistributionLimitReached)));
-        assert_eq!(cnf2, Err(FactorizationFailed(ClauseLimitReached)));
+        assert_eq!(cnf1, Err(FactorizationFailed(LngError::Operation(OperationError::FactorizationDistributionLimit))));
+        assert_eq!(cnf2, Err(FactorizationFailed(LngError::Operation(OperationError::FactorizationClauseLimit))));
         assert!(cnf3.is_ok());
 
         let cnf1 = CancellableCnfAlgorithm::BddWithHandler(Box::new(NumberOfNodesBddHandler::new(10))).transform(phi1, f);

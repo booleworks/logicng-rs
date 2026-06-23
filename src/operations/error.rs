@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum OperationError {
     #[error("pure expansion for a PBC is not supported")]
@@ -15,4 +15,10 @@ pub enum OperationError {
 
     #[error("expected model counting variables to contain all of the formulas' variables")]
     MCNotAllVars,
+
+    #[error("the clause limit was reached during factorization")]
+    FactorizationClauseLimit,
+
+    #[error("the distribution limit was reached during factorization")]
+    FactorizationDistributionLimit,
 }
