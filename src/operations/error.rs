@@ -21,4 +21,7 @@ pub enum OperationError {
 
     #[error("the distribution limit was reached during factorization")]
     FactorizationDistributionLimit,
+
+    #[error("the formula is not a clause or term")]
+    NotClauseOrTerm,
 }

@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::sync::Arc;
 
+use crate::errors::LngResult;
 use crate::formulas::{CardinalityConstraint, FormulaFactory, Literal, PbConstraint, StringLiteral, Variable};
 use crate::operations::{functions, predicates};
 
@@ -813,10 +814,10 @@ impl EncodedFormula {
     /// let formula3 = "~a & b & c".to_formula(&f);
     /// let formula4 = "~a | b | c".to_formula(&f);
     ///
-    /// assert_eq!(formula1.literals_for_clause_or_term(&f), vec![]);
-    /// assert_eq!(formula2.literals_for_clause_or_term(&f), vec![a]);
-    /// assert_eq!(formula3.literals_for_clause_or_term(&f), vec![a, b, c]);
-    /// assert_eq!(formula4.literals_for_clause_or_term(&f), vec![a, b, c]);
+    /// assert_eq!(formula1.literals_for_clause_or_term(&f).unwrap(), vec![]);
+    /// assert_eq!(formula2.literals_for_clause_or_term(&f).unwrap(), vec![a]);
+    /// assert_eq!(formula3.literals_for_clause_or_term(&f).unwrap(), vec![a, b, c]);
+    /// assert_eq!(formula4.literals_for_clause_or_term(&f).unwrap(), vec![a, b, c]);
     /// ```
     ///
     /// Panic behavior:
@@ -834,7 +835,7 @@ impl EncodedFormula {
     /// //formula1.literals_for_clause_or_term(&f); //PANIC!
     /// //formula2.literals_for_clause_or_term(&f); //PANIC!
     /// ```
-    pub fn literals_for_clause_or_term(self, f: &FormulaFactory) -> Vec<Literal> {
+    pub fn literals_for_clause_or_term(self, f: &FormulaFactory) -> LngResult<Vec<Literal>> {
         functions::literals_for_clause_or_term(self, f)
     }
 

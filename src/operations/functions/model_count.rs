@@ -61,7 +61,8 @@ pub fn count_models_with_vars(
     let count = count_formula(cnf, algorithm, f);
 
     let dont_care_vars = relevant_vars.difference(&cnf.variables(f)).count();
-    let factor = BigUint::from(2_usize).pow(u32::try_from(dont_care_vars).expect("Too many dont-care variables"));
+    let dc_size = u32::try_from(dont_care_vars).map_err(|_| OperationError::MCTooManyDontCares)?;
+    let factor = BigUint::from(2_usize).pow(dc_size);
     Ok(count * factor)
 }
 

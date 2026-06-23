@@ -360,7 +360,8 @@ impl<B: Clone> MiniSat<B> {
 
     fn add_clause(&mut self, clause: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) {
         self.result = Undef;
-        let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f));
+        // TODO error handling
+        let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f).unwrap());
         self.underlying_solver.add_clause(clause_vec, proposition);
     }
 

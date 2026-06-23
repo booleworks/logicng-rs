@@ -15,4 +15,4 @@ pub mod functions;
 
 /// Module errors
 mod error;
-pub(crate) use error::OperationError;
+pub use error::OperationError;

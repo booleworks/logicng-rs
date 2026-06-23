@@ -19,7 +19,7 @@ pub(crate) mod cc_totalizer;
 pub use cc_config::*;
 pub use cc_encoder::*;
 pub use cc_incremental_data::*;
-pub(crate) use error::CcError;
+pub use error::CcError;
 
 use cc_amo_bimander::build_amo_bimander;
 use cc_amo_binary::build_amo_binary;
