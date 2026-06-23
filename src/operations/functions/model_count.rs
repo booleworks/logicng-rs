@@ -57,7 +57,7 @@ pub fn count_models_with_vars(
 
     let mut cnf_encoder =
         CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
-    let cnf = cnf_encoder.transform(pure_expansion(formula, f)?, f);
+    let cnf = cnf_encoder.transform(pure_expansion(formula, f)?, f)?;
     let count = count_formula(cnf, algorithm, f);
 
     let dont_care_vars = relevant_vars.difference(&cnf.variables(f)).count();
@@ -155,7 +155,8 @@ fn encode_as_cnf(formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<V
     let mut cnf_encoder =
         CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
     let expanded = formulas.iter().map(|&formula| pure_expansion(formula, f)).collect::<Result<Vec<_>, _>>()?;
-    Ok(expanded.iter().map(|formula| cnf_encoder.transform(*formula, f)).collect())
+    let transformed = expanded.iter().map(|formula| cnf_encoder.transform(*formula, f)).collect::<Result<Vec<_>, _>>()?;
+    Ok(transformed)
 }
 
 fn simplify(formulas: &[EncodedFormula], f: &FormulaFactory) -> (BTreeSet<Variable>, Vec<EncodedFormula>) {

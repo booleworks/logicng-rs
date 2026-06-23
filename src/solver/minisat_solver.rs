@@ -99,7 +99,8 @@ impl<B: Clone> MiniSat<B> {
         } else {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
-                    let cnf = f.cnf_of(formula);
+                    // TODO error handling
+                    let cnf = f.cnf_of(formula).unwrap();
                     self.add_clause_set(cnf, None, f);
                 }
                 SolverCnfMethod::PgOnSolver => {
@@ -137,7 +138,8 @@ impl<B: Clone> MiniSat<B> {
         self.result = Undef;
         match self.config.cnf_method {
             SolverCnfMethod::FactoryCnf => {
-                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f);
+                // TODO error handling
+                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f).unwrap();
                 self.add_clause_set(cnf, Some(proposition), f);
             }
             SolverCnfMethod::PgOnSolver => {

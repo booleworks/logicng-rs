@@ -29,7 +29,8 @@ pub struct DnnfFormula {
 /// Compiles the given formula to a DNNF instance.
 pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> DnnfFormula {
     let original_variables = formula.variables(f);
-    let cnf = f.cnf_of(formula);
+    // TODO error handling
+    let cnf = f.cnf_of(formula).unwrap();
     let simplified = backbone_simplification(cnf, f);
     let subsumption = cnf_subsumption(simplified, f);
     DnnfFormula { formula: DnnfCompiler::new(subsumption, f).compile(), original_variables }

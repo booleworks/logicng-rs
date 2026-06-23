@@ -1016,12 +1016,12 @@ impl FormulaFactory {
     /// let f = FormulaFactory::new();
     ///
     /// let formula1 = "(a & b) | c".to_formula(&f);
-    /// let cnf = f.cnf_of(formula1);
+    /// let cnf = f.cnf_of(formula1).unwrap();
     ///
     /// assert_eq!(cnf.to_string(&f), "(a | c) & (b | c)");
     /// ```
     #[must_use]
-    pub fn cnf_of(&self, formula: EncodedFormula) -> EncodedFormula {
+    pub fn cnf_of(&self, formula: EncodedFormula) -> LngResult<EncodedFormula> {
         CnfEncoder::stateless(self.config.cnf_config.clone()).transform(formula, self)
     }
 

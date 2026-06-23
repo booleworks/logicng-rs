@@ -14,7 +14,8 @@ pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variab
     // TODO error handling
     let nnf = f.nnf_of(formula).unwrap();
     original_variables.extend((*nnf.variables(f)).clone());
-    let cnf = f.cnf_of(nnf);
+    // TODO error handling
+    let cnf = f.cnf_of(nnf).unwrap();
     let hypergraph = hypergraph_from_cnf(cnf, f);
     let mut node_map = HashMap::new();
     for i in 0..hypergraph.number_of_nodes() {

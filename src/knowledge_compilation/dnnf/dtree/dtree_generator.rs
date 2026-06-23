@@ -190,7 +190,7 @@ mod tests {
         let mut df = DTreeFactory::new();
         let formulas = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap());
         let formula = f.and(formulas);
-        let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(formula, f);
+        let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(formula, f).unwrap();
         let tree = min_fill_dtree_generation(cnf, f, &mut df);
         println!("{}", tree.to_string(&df, f));
     }

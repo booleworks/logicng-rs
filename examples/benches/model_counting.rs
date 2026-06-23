@@ -40,7 +40,7 @@ pub fn parallel(thread_count: usize) {
                 let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
                     AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
                 ));
-                let cnf_formula = cnf_encoder.transform(expanded, &f_l);
+                let cnf_formula = cnf_encoder.transform(expanded, &f_l).unwrap();
                 let dnnf = compile_dnnf(cnf_formula, &f_l);
                 count(&dnnf, &f_l);
             }

@@ -6,7 +6,7 @@ mod tseitin;
 
 use std::collections::HashMap;
 
-use crate::errors::LngError;
+use crate::errors::{LngError, LngResult};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::handlers::FactorizationHandler;
 use crate::knowledge_compilation::bdd::{Bdd, BddError, BddHandler, BddKernel};
@@ -40,9 +40,9 @@ pub enum CnfAlgorithm {
 
 impl CnfAlgorithm {
     /// Transform the given formula into a _CNF_ formula.
-    fn transform(&self, formula: EncodedFormula, f: &FormulaFactory, state: &mut CnfEncoder) -> EncodedFormula {
+    fn transform(&self, formula: EncodedFormula, f: &FormulaFactory, state: &mut CnfEncoder) -> LngResult<EncodedFormula> {
         if formula.is_cnf(f) {
-            return formula;
+            return Ok(formula);
         }
         match self {
             Self::Factorization => factorization_cnf(formula, f),
@@ -64,7 +64,7 @@ impl CnfAlgorithm {
             Self::Advanced(config) => advanced_cnf_encoding(formula, f, config, state),
             Self::Bdd => {
                 let mut kernel = BddKernel::new_with_num_vars(formula.variables(f).len(), 10_000, 10_000);
-                Bdd::from_formula(formula, f, &mut kernel).cnf(f, &mut kernel)
+                Ok(Bdd::from_formula(formula, f, &mut kernel).cnf(f, &mut kernel))
             }
         }
     }
@@ -103,7 +103,7 @@ impl CnfEncoder {
     }
 
     /// Transform a formula with the algorithm of this encoder.
-    pub fn transform(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
+    pub fn transform(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
         self.algorithm.clone().transform(formula, f, self)
     }
 }
@@ -182,16 +182,16 @@ mod tests {
         let f = &mut FormulaFactory::new();
         let phi1 = P1.to_formula(f);
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = Factorization;
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         assert_eq!(
-            CnfEncoder::new(Factorization).transform(phi1, f),
+            CnfEncoder::new(Factorization).transform(phi1, f).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
     }
@@ -203,14 +203,14 @@ mod tests {
         let phi2 = P2.to_formula(f);
         f.config.cnf_config = Tseitin;
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = TseitinWithBoundary(8);
-        assert_eq!(f.cnf_of(phi1), "(@RESERVED_FF42_CNF_0 | ~x1) & (@RESERVED_FF42_CNF_0 | ~x2) & (~@RESERVED_FF42_CNF_0 | x1 | x2) & (~@RESERVED_FF42_CNF_1 | x1) & (~@RESERVED_FF42_CNF_1 | x5) & (~@RESERVED_FF42_CNF_1 | ~x6) & (~@RESERVED_FF42_CNF_1 | ~x7) & (@RESERVED_FF42_CNF_1 | ~x1 | ~x5 | x6 | x7) & (@RESERVED_FF42_CNF_2 | ~@RESERVED_FF42_CNF_1) & (@RESERVED_FF42_CNF_2 | ~x8) & (@RESERVED_FF42_CNF_2 | ~x9) & (~@RESERVED_FF42_CNF_2 | @RESERVED_FF42_CNF_1 | x8 | x9) & @RESERVED_FF42_CNF_0 & x3 & x4 & @RESERVED_FF42_CNF_2".to_formula(f));
+        assert_eq!(f.cnf_of(phi1).unwrap(), "(@RESERVED_FF42_CNF_0 | ~x1) & (@RESERVED_FF42_CNF_0 | ~x2) & (~@RESERVED_FF42_CNF_0 | x1 | x2) & (~@RESERVED_FF42_CNF_1 | x1) & (~@RESERVED_FF42_CNF_1 | x5) & (~@RESERVED_FF42_CNF_1 | ~x6) & (~@RESERVED_FF42_CNF_1 | ~x7) & (@RESERVED_FF42_CNF_1 | ~x1 | ~x5 | x6 | x7) & (@RESERVED_FF42_CNF_2 | ~@RESERVED_FF42_CNF_1) & (@RESERVED_FF42_CNF_2 | ~x8) & (@RESERVED_FF42_CNF_2 | ~x9) & (~@RESERVED_FF42_CNF_2 | @RESERVED_FF42_CNF_1 | x8 | x9) & @RESERVED_FF42_CNF_0 & x3 & x4 & @RESERVED_FF42_CNF_2".to_formula(f));
         f.config.cnf_config = TseitinWithBoundary(11);
         assert_eq!(
-            f.cnf_of(phi2),
+            f.cnf_of(phi2).unwrap(),
             "(y1 | y2) & y3 & y4 & (y1 | y8 | y9) & (y5 | y8 | y9) & (~y6 | y8 | y9) & (~y7 | y8 | y9)".to_formula(f)
         );
     }
@@ -223,19 +223,19 @@ mod tests {
         let phi1_vars = phi1.variables(f).iter().copied().collect();
         f.config.cnf_config = CnfAlgorithm::PlaistedGreenbaum;
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f),
         );
         f.config.cnf_config = CnfAlgorithm::PlaistedGreenbaumWithBoundary(8);
         assert!(equivalent_models(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "@RESERVED_FF42_CNF_1 & x3 & x4 & @RESERVED_FF42_CNF_2 & (~@RESERVED_FF42_CNF_1 | x1 | x2) & (~@RESERVED_FF42_CNF_2 | @RESERVED_FF42_CNF_3 | x8 | x9) & (~@RESERVED_FF42_CNF_3 | x1) & (~@RESERVED_FF42_CNF_3 | x5) & (~@RESERVED_FF42_CNF_3 | ~x6) & (~@RESERVED_FF42_CNF_3 | ~x7)".to_formula(f),
             phi1_vars,
             f
         ));
         f.config.cnf_config = CnfAlgorithm::PlaistedGreenbaumWithBoundary(11);
         assert_eq!(
-            f.cnf_of(phi2),
+            f.cnf_of(phi2).unwrap(),
             "(y1 | y2) & y3 & y4 & (y1 | y8 | y9) & (y5 | y8 | y9) & (~y6 | y8 | y9) & (~y7 | y8 | y9)".to_formula(f)
         );
     }
@@ -247,13 +247,13 @@ mod tests {
         let phi2 = P2.to_formula(f);
         let phi3 = P3.to_formula(f);
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = Advanced(
             AdvancedFactorizationConfig::default().created_clause_boundary(5).atom_boundary(3).fallback_algorithm(TseitinWithBoundary(3)),
         );
-        let formula = f.cnf_of(phi2);
+        let formula = f.cnf_of(phi2).unwrap();
         assert_eq!(formula, "(y1 | y2) & y3 & y4 & (~@RESERVED_FF42_CNF_0 | y1) & (~@RESERVED_FF42_CNF_0 | y5) & (~@RESERVED_FF42_CNF_0 | ~y6) & (~@RESERVED_FF42_CNF_0 | ~y7) & (@RESERVED_FF42_CNF_0 | ~y1 | ~y5 | y6 | y7) & (@RESERVED_FF42_CNF_0 | y8 | y9)".to_formula(f));
         f.config.cnf_config = Advanced(
             AdvancedFactorizationConfig::default()
@@ -262,7 +262,7 @@ mod tests {
                 .atom_boundary(3)
                 .fallback_algorithm(TseitinWithBoundary(3)),
         );
-        assert_eq!(f.cnf_of(phi3), "(z1 | z2) & z3 & z4 & (~@RESERVED_FF42_CNF_2 | z1) & (~@RESERVED_FF42_CNF_2 | z5) & (~@RESERVED_FF42_CNF_2 | ~z6) & (~@RESERVED_FF42_CNF_2 | ~z7) & (@RESERVED_FF42_CNF_2 | ~z1 | ~z5 | z6 | z7) & (@RESERVED_FF42_CNF_2 | z8 | z9)".to_formula(f));
+        assert_eq!(f.cnf_of(phi3).unwrap(), "(z1 | z2) & z3 & z4 & (~@RESERVED_FF42_CNF_2 | z1) & (~@RESERVED_FF42_CNF_2 | z5) & (~@RESERVED_FF42_CNF_2 | ~z6) & (~@RESERVED_FF42_CNF_2 | ~z7) & (@RESERVED_FF42_CNF_2 | ~z1 | ~z5 | z6 | z7) & (@RESERVED_FF42_CNF_2 | z8 | z9)".to_formula(f));
     }
 
     #[test]
@@ -272,13 +272,13 @@ mod tests {
         let phi2 = P2.to_formula(f);
         let phi3 = P3.to_formula(f);
         assert_eq!(
-            f.cnf_of(phi1),
+            f.cnf_of(phi1).unwrap(),
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = Advanced(
             AdvancedFactorizationConfig::default().created_clause_boundary(5).atom_boundary(3).fallback_algorithm(TseitinWithBoundary(3)),
         );
-        let formula = f.cnf_of(phi2);
+        let formula = f.cnf_of(phi2).unwrap();
         assert_eq!(formula, "(y1 | y2) & y3 & y4 & (~@RESERVED_FF42_CNF_0 | y1) & (~@RESERVED_FF42_CNF_0 | y5) & (~@RESERVED_FF42_CNF_0 | ~y6) & (~@RESERVED_FF42_CNF_0 | ~y7) & (@RESERVED_FF42_CNF_0 | ~y1 | ~y5 | y6 | y7) & (@RESERVED_FF42_CNF_0 | y8 | y9)".to_formula(f));
         f.config.cnf_config = Advanced(
             AdvancedFactorizationConfig::default()
@@ -287,7 +287,7 @@ mod tests {
                 .atom_boundary(3)
                 .fallback_algorithm(TseitinWithBoundary(3)),
         );
-        assert_eq!(f.cnf_of(phi3), "(z1 | z2) & z3 & z4 & (~@RESERVED_FF42_CNF_2 | z1) & (~@RESERVED_FF42_CNF_2 | z5) & (~@RESERVED_FF42_CNF_2 | ~z6) & (~@RESERVED_FF42_CNF_2 | ~z7) & (@RESERVED_FF42_CNF_2 | ~z1 | ~z5 | z6 | z7) & (@RESERVED_FF42_CNF_2 | z8 | z9)".to_formula(f));
+        assert_eq!(f.cnf_of(phi3).unwrap(), "(z1 | z2) & z3 & z4 & (~@RESERVED_FF42_CNF_2 | z1) & (~@RESERVED_FF42_CNF_2 | z5) & (~@RESERVED_FF42_CNF_2 | ~z6) & (~@RESERVED_FF42_CNF_2 | ~z7) & (@RESERVED_FF42_CNF_2 | ~z1 | ~z5 | z6 | z7) & (@RESERVED_FF42_CNF_2 | z8 | z9)".to_formula(f));
     }
 
     #[test]
@@ -300,9 +300,9 @@ mod tests {
         let phi2_vars = phi2.variables(f).iter().copied().collect();
         let phi3_vars = phi3.variables(f).iter().copied().collect();
         f.config.cnf_config = Bdd;
-        assert!(equivalent_models(phi1, f.cnf_of(phi1), phi1_vars, f));
-        assert!(equivalent_models(phi2, f.cnf_of(phi2), phi2_vars, f));
-        assert!(equivalent_models(phi3, f.cnf_of(phi3), phi3_vars, f));
+        assert!(equivalent_models(phi1, f.cnf_of(phi1).unwrap(), phi1_vars, f));
+        assert!(equivalent_models(phi2, f.cnf_of(phi2).unwrap(), phi2_vars, f));
+        assert!(equivalent_models(phi3, f.cnf_of(phi3).unwrap(), phi3_vars, f));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
 use crate::handlers::{ClauseLimitFactorizationHandler, FactorizationHandler};
 use crate::operations::transformations::cnf::CnfAlgorithm::Tseitin;
@@ -12,10 +13,11 @@ pub fn advanced_cnf_encoding(
     f: &FormulaFactory,
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
-) -> EncodedFormula {
+) -> LngResult<EncodedFormula> {
     if formula.is_and() {
-        let new_ops = formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state));
-        f.and(new_ops)
+        let new_ops =
+            formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state)).collect::<Result<Vec<_>, _>>()?;
+        Ok(f.and(new_ops))
     } else {
         single_advanced_encoding(formula, f, config, state)
     }
@@ -26,10 +28,9 @@ fn single_advanced_encoding(
     f: &FormulaFactory,
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
-) -> EncodedFormula {
-    CancellableCnfAlgorithm::FactorizationWithHandler(config.handler())
-        .transform(formula, f)
-        .unwrap_or_else(|_| (*config.fallback_algorithm).transform(formula, f, state))
+) -> LngResult<EncodedFormula> {
+    let factorized = CancellableCnfAlgorithm::FactorizationWithHandler(config.handler()).transform(formula, f);
+    if let Ok(res) = factorized { Ok(res) } else { (*config.fallback_algorithm).transform(formula, f, state) }
 }
 
 /// Configuration for advanced _CNF_ algorithms.

@@ -1,3 +1,4 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal};
 use crate::operations::functions::sub_nodes;
 use crate::operations::transformations::cnf::factorization::factorization_cnf;
@@ -12,11 +13,10 @@ pub(super) fn tseitin_cnf_with_boundary(
     f: &FormulaFactory,
     factorization_boundary: u64,
     state: &mut TseitinState,
-) -> EncodedFormula {
-    // TODO error handling
-    let nnf = f.nnf_of(formula).unwrap();
+) -> LngResult<EncodedFormula> {
+    let nnf = f.nnf_of(formula)?;
     if nnf.is_cnf(f) {
-        nnf
+        Ok(nnf)
     } else if nnf.number_of_atoms(f) < factorization_boundary {
         factorization_cnf(nnf, f)
     } else {
@@ -25,7 +25,7 @@ pub(super) fn tseitin_cnf_with_boundary(
         }
         let tseitin = state.formula[&nnf];
         let top_level = state.variable[&nnf];
-        restrict_lit(tseitin, top_level, f)
+        Ok(restrict_lit(tseitin, top_level, f))
     }
 }
 
@@ -100,7 +100,7 @@ mod tests {
         let f = &FormulaFactory::new();
         let formula = f.parse("~(~(a | b) <=> ~(x | y))").unwrap();
         let mut state = TseitinState::default();
-        let tseitin = tseitin_cnf_with_boundary(formula, f, 0, &mut state);
+        let tseitin = tseitin_cnf_with_boundary(formula, f, 0, &mut state).unwrap();
         assert!(tseitin.is_cnf(f));
     }
 
@@ -110,7 +110,7 @@ mod tests {
         let f = &FormulaFactory::new();
         let formula: EncodedFormula = f.parse(&formula_string).unwrap();
         let mut state = TseitinState::default();
-        let cnf = tseitin_cnf_with_boundary(formula, f, 0, &mut state);
+        let cnf = tseitin_cnf_with_boundary(formula, f, 0, &mut state).unwrap();
         assert!(cnf.is_cnf(f));
     }
 }

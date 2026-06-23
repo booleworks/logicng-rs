@@ -73,7 +73,7 @@ fn main() {
         GLOBAL.print_memory(&format!("[{file_name}] Tseitin created"));
 
         let start = Instant::now();
-        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f);
+        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f).unwrap();
         if PRINT_PERFORMANCE {
             println!("[{}] PG CNF: {:?}", file_name, start.elapsed());
         }
