@@ -1,10 +1,10 @@
 use crate::formulas::operation_cache::OperationCache;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
-use crate::handlers::{FactorizationError, FactorizationHandler, NopFactorizationHandler};
+use crate::handlers::{ComputationHandler, LngComputation, LngEvent, LngResult, NopHandler};
 
 /// Constructs the _DNF_ of the given formula by using factorization.
 pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
-    factorization_dnf_with_handler(formula, f, &mut NopFactorizationHandler {}).expect("Nop Handler never aborts.")
+    factorization_dnf_with_handler(formula, f, &mut NopHandler::new()).result().expect("Nop Handler never aborts.")
 }
 
 /// Constructs the _DNF_ of the given formula by using factorization with a
@@ -12,22 +12,25 @@ pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> Encoded
 pub fn factorization_dnf_with_handler(
     formula: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
-    handler.started();
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<EncodedFormula> {
+    if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Factorization)) {
+        return LngResult::Canceled(LngEvent::ComputationStarted(LngComputation::Factorization));
+    }
     if f.config.caches.dnf {
         apply_rec(formula, f, handler, &mut None)
     } else {
         apply_rec(formula, f, handler, &mut Some(OperationCache::new()))
     }
+    .into()
 }
 
 fn apply_rec(
     formula: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     local_cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     let cached =
         local_cache.as_ref().map_or_else(|| f.caches.dnf.get(formula), |c| c.get(formula).map_or_else(|| f.caches.dnf.get(formula), Some));
 
@@ -39,19 +42,17 @@ fn apply_rec(
                 Pbc(_) | Cc(_) | Equiv(_) | Impl(_) | Not(_) => apply_rec(f.nnf_of(formula), f, handler, local_cache),
                 Or(ops) => handle_or(ops, f, handler, local_cache),
                 And(ops) => handle_and(ops, f, handler, local_cache),
-            };
-            if let Ok(res) = result {
-                if let Some(c) = local_cache.as_mut() {
-                    c.insert(formula, res);
-                }
-                if f.config.caches.dnf {
-                    f.caches.dnf.insert(formula, res);
-                }
-                if f.config.caches.is_dnf {
-                    f.caches.is_dnf.insert(res, true);
-                }
+            }?;
+            if let Some(c) = local_cache.as_mut() {
+                c.insert(formula, result);
             }
-            result
+            if f.config.caches.dnf {
+                f.caches.dnf.insert(formula, result);
+            }
+            if f.config.caches.is_dnf {
+                f.caches.is_dnf.insert(result, true);
+            }
+            Ok(result)
         },
         Ok,
     )
@@ -60,18 +61,18 @@ fn apply_rec(
 fn handle_or(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     compute_nops(operands, f, handler, cache).map(|nops| f.or(nops))
 }
 
 fn handle_and(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<EncodedFormula, FactorizationError> {
+) -> Result<EncodedFormula, LngEvent> {
     compute_nops(operands, f, handler, cache).and_then(|nops| {
         let mut result = *nops.first().unwrap();
         for &op in nops.iter().skip(1) {
@@ -84,9 +85,9 @@ fn handle_and(
 fn compute_nops(
     operands: NaryIterator,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
+    handler: &mut dyn ComputationHandler,
     cache: &mut Option<OperationCache<EncodedFormula>>,
-) -> Result<Vec<EncodedFormula>, FactorizationError> {
+) -> Result<Vec<EncodedFormula>, LngEvent> {
     let mut nops = Vec::with_capacity(operands.len());
     for op in operands {
         nops.push(apply_rec(op, f, handler, cache)?);
@@ -98,9 +99,11 @@ fn distribute(
     f1: EncodedFormula,
     f2: EncodedFormula,
     f: &FormulaFactory,
-    handler: &mut impl FactorizationHandler,
-) -> Result<EncodedFormula, FactorizationError> {
-    handler.performed_distribution()?;
+    handler: &mut dyn ComputationHandler,
+) -> Result<EncodedFormula, LngEvent> {
+    if !handler.should_resume(LngEvent::DistributionPerformed) {
+        return Err(LngEvent::DistributionPerformed);
+    }
     if f1.is_or() || f2.is_or() {
         let mut nops = Vec::new();
         let or = if f1.is_or() { f1 } else { f2 };
@@ -111,13 +114,17 @@ fn distribute(
         Ok(f.or(&nops))
     } else {
         let result = f.and([f1, f2]);
-        handler.created_clause(result).map(|()| result)
+        if handler.should_resume(LngEvent::FactorizationCreatedClause(result)) {
+            Ok(result)
+        } else {
+            Err(LngEvent::FactorizationCreatedClause(result))
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::handlers::ClauseLimitFactorizationHandler;
+    use crate::operations::transformations::AdvancedFactorizationHandler;
 
     use super::*;
 
@@ -187,23 +194,24 @@ mod tests {
         let f = &FormulaFactory::new();
 
         let formula = f.parse("(~(~(a | b) => ~(x | y))) & ((a | x) => ~(b | y))").unwrap();
-        let mut handler = ClauseLimitFactorizationHandler::new(100, 2);
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(2));
         let result = factorization_dnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_err());
-        assert!(handler.aborted);
+        assert!(result.is_canceled());
+        assert!(handler.canceled());
 
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(2));
         let formula = f.parse("~(a | b)").unwrap();
         let result = factorization_dnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_ok());
-        assert!(!handler.aborted);
+        assert!(result.is_success());
+        assert!(!handler.canceled());
 
-        let mut handler = ClauseLimitFactorizationHandler::new(100, 100);
+        let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(100));
         let formula = f.parse("~(~(a2 | b2) <=> ~(x2 | y2))").unwrap();
         let result = factorization_dnf_with_handler(formula, f, &mut handler);
-        assert!(result.is_ok());
-        assert!(!handler.aborted);
-        assert_eq!(handler.dists, 15);
-        assert_eq!(handler.clauses, 10);
+        assert!(result.is_success());
+        assert!(!handler.canceled());
+        assert_eq!(handler.current_distribution(), 15);
+        assert_eq!(handler.current_clause(), 10);
     }
 
     fn test_dnf(original: &str, expected: &str) {
