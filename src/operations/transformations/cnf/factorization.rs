@@ -1,6 +1,6 @@
 use crate::formulas::operation_cache::OperationCache;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
-use crate::handlers::{ComputationHandler, LngComputation, LngEvent, LngResult, NopHandler};
+use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 
 pub fn factorization_cnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
     factorization_cnf_with_handler(formula, f, &mut NopHandler {}).result().expect("Nop Handler never aborts.")
@@ -10,9 +10,9 @@ pub fn factorization_cnf_with_handler(
     formula: EncodedFormula,
     f: &FormulaFactory,
     handler: &mut dyn ComputationHandler,
-) -> LngResult<EncodedFormula> {
+) -> CancelableResult<EncodedFormula> {
     if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Factorization)) {
-        return LngResult::Canceled(LngEvent::ComputationStarted(LngComputation::Factorization));
+        return CancelableResult::Canceled(LngEvent::ComputationStarted(LngComputation::Factorization));
     }
     if f.config.caches.factorization_cnf {
         apply_rec(formula, f, handler, &mut None).into()

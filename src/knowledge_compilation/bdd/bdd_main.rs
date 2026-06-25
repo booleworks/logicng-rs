@@ -5,7 +5,7 @@ use num_bigint::BigUint;
 use crate::datastructures::Model;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 
-use crate::handlers::{ComputationHandler, LngComputation, LngEvent, LngResult, NopHandler};
+use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 use crate::knowledge_compilation::bdd::bdd_construction::{
     and, bdd_high, bdd_low, bdd_var, equivalence, exists, for_all, implication, ith_var, nith_var, not, or,
 };
@@ -37,13 +37,13 @@ impl Bdd {
         f: &FormulaFactory,
         kernel: &mut BddKernel,
         handler: &mut dyn ComputationHandler,
-    ) -> LngResult<Self> {
+    ) -> CancelableResult<Self> {
         if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Bdd)) {
-            return LngResult::Canceled(LngEvent::ComputationStarted(LngComputation::Bdd));
+            return CancelableResult::Canceled(LngEvent::ComputationStarted(LngComputation::Bdd));
         }
         match build_rec(formula, f, kernel, handler) {
-            Ok(index) => LngResult::Ok(Self { index }),
-            Err(event) => LngResult::Canceled(event),
+            Ok(index) => CancelableResult::Ok(Self { index }),
+            Err(event) => CancelableResult::Canceled(event),
         }
     }
 

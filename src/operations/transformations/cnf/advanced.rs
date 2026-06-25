@@ -94,7 +94,7 @@ impl AdvancedFactorizationConfig {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct AdvancedFactorizationHandler {
+pub struct AdvancedFactorizationHandler {
     distribution_boundary: Option<u64>,
     created_clause_boundary: Option<u64>,
     canceled: bool,

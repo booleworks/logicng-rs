@@ -8,7 +8,7 @@ mod tseitin;
 use std::collections::HashMap;
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
-use crate::handlers::{ComputationHandler, LngResult, NopHandler};
+use crate::handlers::{CancelableResult, ComputationHandler, NopHandler};
 use bdd::*;
 use factorization::factorization_cnf_with_handler;
 use plaisted_greenbaum_on_formula::pg_on_formula;
@@ -49,34 +49,34 @@ impl CnfAlgorithm {
         f: &FormulaFactory,
         state: &mut CnfEncoder,
         handler: &mut dyn ComputationHandler,
-    ) -> LngResult<EncodedFormula> {
+    ) -> CancelableResult<EncodedFormula> {
         if formula.is_cnf(f) {
-            return LngResult::Ok(formula);
+            return CancelableResult::Ok(formula);
         }
         match self {
             Self::Factorization => factorization_cnf_with_handler(formula, f, handler),
-            Self::Tseitin => LngResult::Ok(tseitin_cnf_with_boundary(
+            Self::Tseitin => CancelableResult::Ok(tseitin_cnf_with_boundary(
                 formula,
                 f,
                 DEFAULT_BOUNDARY_FOR_FACTORIZATION,
                 state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
             )),
-            Self::TseitinWithBoundary(boundary) => LngResult::Ok(tseitin_cnf_with_boundary(
+            Self::TseitinWithBoundary(boundary) => CancelableResult::Ok(tseitin_cnf_with_boundary(
                 formula,
                 f,
                 *boundary,
                 state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
             )),
-            Self::PlaistedGreenbaum => LngResult::Ok(pg_on_formula(
+            Self::PlaistedGreenbaum => CancelableResult::Ok(pg_on_formula(
                 formula,
                 f,
                 DEFAULT_BOUNDARY_FOR_FACTORIZATION,
                 state.pg_state.as_mut().unwrap_or(&mut PGState::default()),
             )),
             Self::PlaistedGreenbaumWithBoundary(boundary) => {
-                LngResult::Ok(pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default())))
+                CancelableResult::Ok(pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default())))
             }
-            Self::Advanced(config) => LngResult::Ok(advanced_cnf_encoding(formula, f, config, state)),
+            Self::Advanced(config) => CancelableResult::Ok(advanced_cnf_encoding(formula, f, config, state)),
             Self::Bdd => bdd_cnf_with_handler(formula, f, handler),
         }
     }
@@ -124,7 +124,7 @@ impl CnfEncoder {
         formula: EncodedFormula,
         f: &FormulaFactory,
         handler: &mut dyn ComputationHandler,
-    ) -> LngResult<EncodedFormula> {
+    ) -> CancelableResult<EncodedFormula> {
         self.algorithm.clone().transform_with_handler(formula, f, self, handler)
     }
 }
@@ -148,7 +148,7 @@ mod tests {
 
     use crate::datastructures::Assignment;
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula, Variable};
-    use crate::handlers::{LngEvent, LngResult};
+    use crate::handlers::{CancelableResult, LngEvent};
     use crate::knowledge_compilation::bdd::NumberOfNodesBddHandler;
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
@@ -301,13 +301,13 @@ mod tests {
             f,
             &mut AdvancedFactorizationHandler::new(Some(10000), Some(10000)),
         );
-        assert!(matches!(cnf1, LngResult::Canceled(LngEvent::DistributionPerformed)));
-        assert!(matches!(cnf2, LngResult::Canceled(LngEvent::FactorizationCreatedClause(_))));
+        assert!(matches!(cnf1, CancelableResult::Canceled(LngEvent::DistributionPerformed)));
+        assert!(matches!(cnf2, CancelableResult::Canceled(LngEvent::FactorizationCreatedClause(_))));
         assert!(cnf3.is_success());
 
         let cnf1 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(10));
         let cnf2 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(1000));
-        assert!(matches!(cnf1, LngResult::Canceled(LngEvent::BddNewRefAdded)));
+        assert!(matches!(cnf1, CancelableResult::Canceled(LngEvent::BddNewRefAdded)));
         assert!(cnf2.is_success());
     }
 
