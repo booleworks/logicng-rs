@@ -3,7 +3,8 @@ mod tests {
 
     use crate::datastructures::{Assignment, Model};
     use crate::formulas::{EncodedFormula, FormulaFactory};
-    use crate::knowledge_compilation::bdd::bdd_handler::{BddError, NumberOfNodesBddHandler};
+    use crate::handlers::LngEvent;
+    use crate::knowledge_compilation::bdd::bdd_handler::NumberOfNodesBddHandler;
     use crate::knowledge_compilation::bdd::bdd_kernel::BddKernel;
     use crate::knowledge_compilation::bdd::bdd_main::Bdd;
     use crate::knowledge_compilation::bdd::tests::bdd_test_fixtures::B;
@@ -600,9 +601,9 @@ mod tests {
         let bdd_err = Bdd::from_formula_with_handler(formula, &f, &mut k, &mut handler_50);
         let bdd_ok = Bdd::from_formula_with_handler(formula, &f, &mut k, &mut handler_5000);
 
-        assert!(bdd_err.is_err());
-        assert_eq!(bdd_err.err().unwrap(), BddError::NodeLimitReached);
-        assert!(bdd_ok.is_ok());
+        assert!(bdd_err.is_canceled());
+        assert!(matches!(bdd_err.cancel_cause().unwrap(), LngEvent::BddNewRefAdded));
+        assert!(bdd_ok.is_success());
     }
 
     fn verify_models(formula: EncodedFormula, models: Vec<Model>, f: &FormulaFactory) {
