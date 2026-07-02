@@ -1,6 +1,7 @@
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent};
+use crate::operations::OperationError;
 use crate::operations::transformations::cnf::CnfAlgorithm;
 use crate::operations::transformations::cnf::CnfAlgorithm::Tseitin;
 
@@ -32,7 +33,12 @@ fn single_advanced_encoding(
     let fac = CnfAlgorithm::Factorization.transform_with_handler(formula, f, state, &mut config.handler())?;
     match fac {
         CancelableResult::Ok(res) => Ok(res),
-        CancelableResult::Canceled(_) | CancelableResult::Partial(_, _) => (*config.fallback_algorithm).transform(formula, f, state),
+        CancelableResult::Canceled(_) | CancelableResult::Partial(_, _) => {
+            if (*config.fallback_algorithm) == CnfAlgorithm::Factorization {
+                return Err(OperationError::FactorizationAsFallback.into());
+            }
+            (*config.fallback_algorithm).transform(formula, f, state)
+        }
     }
 }
 
@@ -85,7 +91,6 @@ impl AdvancedFactorizationConfig {
     /// The default value is [`CnfAlgorithm::TSEITIN`](`CnfAlgorithm`).
     #[must_use]
     pub fn fallback_algorithm(mut self, fallback_algorithm: CnfAlgorithm) -> Self {
-        assert!(fallback_algorithm != CnfAlgorithm::Factorization, "Factorization can not be used as fallback");
         self.fallback_algorithm = Box::new(fallback_algorithm);
         self
     }
