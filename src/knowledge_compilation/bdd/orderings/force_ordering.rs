@@ -16,7 +16,8 @@ pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variab
     original_variables.extend((*nnf.variables(f)).clone());
     // TODO error handling
     let cnf = f.cnf_of(nnf).unwrap();
-    let hypergraph = hypergraph_from_cnf(cnf, f);
+    // TODO error handling
+    let hypergraph = hypergraph_from_cnf(cnf, f).unwrap();
     let mut node_map = HashMap::new();
     for i in 0..hypergraph.number_of_nodes() {
         node_map.insert(hypergraph.get_node(i).unwrap().content, i);
@@ -40,7 +41,8 @@ fn force(
         let mut new_locations = BTreeMap::new();
         for idx in 0..hypergraph.number_of_nodes() {
             let node = hypergraph.get_node(idx).unwrap();
-            let new_location = node.compute_tentative_new_location(hypergraph, &last_ordering);
+            // TODO error handling
+            let new_location = node.compute_tentative_new_location(hypergraph, &last_ordering).unwrap();
             new_locations.insert(idx, new_location);
         }
         current_ordering = ordering_from_tentative_new_locations(&new_locations);

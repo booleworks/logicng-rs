@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::{errors::LngResult, graphs::GraphError};
+
 /// Index for nodes of the hypergraph.
 pub type NodeIndex = usize;
 /// Index for edges of the hypergraph.
@@ -48,16 +50,19 @@ impl<T> Hypergraph<T> {
     }
 
     /// Adds an edge to the hypergraph.
-    pub fn add_edge(&mut self, nodes: Vec<NodeIndex>) -> EdgeIndex {
+    pub fn add_edge(&mut self, nodes: Vec<NodeIndex>) -> LngResult<EdgeIndex> {
         let index = self.edges.len();
         let edge = HypergraphEdge { nodes, index };
         for node_index in &edge.nodes {
             let node = self.nodes.get_mut(node_index);
-            assert!(node.is_some(), "Cannot find node with index {node_index}.");
-            node.unwrap().edges.push(index);
+            if let Some(n) = node {
+                n.edges.push(index);
+            } else {
+                return Err(GraphError::UnknownNode { node_index: *node_index }.into());
+            }
         }
         self.edges.insert(index, edge);
-        index
+        Ok(index)
     }
 
     /// Returns the node for the given index.
@@ -89,26 +94,33 @@ impl<T> Default for Hypergraph<T> {
 
 impl<T> HypergraphNode<T> {
     #[allow(clippy::cast_precision_loss)]
-    pub(crate) fn compute_tentative_new_location(&self, graph: &Hypergraph<T>, node_ordering: &BTreeMap<NodeIndex, usize>) -> f64 {
+    pub(crate) fn compute_tentative_new_location(
+        &self,
+        graph: &Hypergraph<T>,
+        node_ordering: &BTreeMap<NodeIndex, usize>,
+    ) -> LngResult<f64> {
         let mut new_location = 0.0;
         for edge_index in &self.edges {
             let edge = &graph.edges[edge_index];
-            new_location += edge.center_of_gravity(node_ordering);
+            new_location += edge.center_of_gravity(node_ordering)?;
         }
-        new_location / self.edges.len() as f64
+        Ok(new_location / self.edges.len() as f64)
     }
 }
 
 impl HypergraphEdge {
     #[allow(clippy::cast_precision_loss)]
-    fn center_of_gravity(&self, node_ordering: &BTreeMap<NodeIndex, usize>) -> f64 {
+    fn center_of_gravity(&self, node_ordering: &BTreeMap<NodeIndex, usize>) -> LngResult<f64> {
         let mut cog = 0;
         for node in &self.nodes {
             let level = node_ordering.get(node);
-            assert!(level.is_some(), "Could not find the node index {node} in the node ordering.");
-            cog += level.unwrap();
+            if let Some(l) = level {
+                cog += l;
+            } else {
+                return Err(GraphError::UnknownNode { node_index: *node }.into());
+            }
         }
-        cog as f64 / self.nodes.len() as f64
+        Ok(cog as f64 / self.nodes.len() as f64)
     }
 }
 
@@ -125,9 +137,9 @@ mod tests {
         let id2 = graph.add_node("b");
         let id3 = graph.add_node("c");
         let id4 = graph.add_node("d");
-        let e1 = graph.add_edge(vec![id1, id2]);
-        let e2 = graph.add_edge(vec![id2, id3, id4]);
-        let e3 = graph.add_edge(vec![id3, id4]);
+        let e1 = graph.add_edge(vec![id1, id2]).unwrap();
+        let e2 = graph.add_edge(vec![id2, id3, id4]).unwrap();
+        let e3 = graph.add_edge(vec![id3, id4]).unwrap();
 
         assert!(graph.get_node(27).is_none());
         assert!(graph.get_node(id1).is_some());
@@ -149,19 +161,19 @@ mod tests {
         let id2 = graph.add_node("b");
         let id3 = graph.add_node("c");
         let id4 = graph.add_node("d");
-        let edge = graph.add_edge(vec![id1, id2, id3, id4]);
+        let edge = graph.add_edge(vec![id1, id2, id3, id4]).unwrap();
 
         let mut node_ordering = BTreeMap::new();
         node_ordering.insert(id1, 1);
         node_ordering.insert(id2, 2);
         node_ordering.insert(id3, 3);
         node_ordering.insert(id4, 4);
-        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering), 2.5);
+        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering).unwrap(), 2.5);
 
         node_ordering.insert(id1, 2);
         node_ordering.insert(id2, 4);
         node_ordering.insert(id3, 6);
         node_ordering.insert(id4, 8);
-        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering), 5.0);
+        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering).unwrap(), 5.0);
     }
 }
