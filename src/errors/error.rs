@@ -1,5 +1,5 @@
 #![allow(missing_docs)]
-use crate::{cardinality_constraints::CcError, graphs::GraphError, operations::OperationError, pseudo_booleans::PbcError};
+use crate::{cardinality_constraints::CcError, graphs::GraphError, operations::OperationError, pseudo_booleans::PbcError, util::UtilError};
 
 /// A generic LogicNG result which carries the result or an error
 pub type LngResult<T> = Result<T, LngError>;
@@ -19,6 +19,9 @@ pub enum LngError {
 
     #[error("graph: {0}")]
     Graph(#[from] GraphError),
+
+    #[error("util: {0}")]
+    Util(#[from] UtilError),
 
     #[error("variable {var:?} is not known in the given formula factory")]
     UnknownVariable { var: String },

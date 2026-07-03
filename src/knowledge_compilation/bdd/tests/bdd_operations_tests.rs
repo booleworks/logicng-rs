@@ -592,7 +592,7 @@ mod tests {
     fn test_with_handler() {
         let f = FormulaFactory::new();
         let mut k = BddKernel::new_with_num_vars(20, 200, 2000);
-        let mut rnd = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(20));
+        let mut rnd = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(20)).unwrap();
         let formula = rnd.formula(&f, 5);
 
         let mut handler_50 = NumberOfNodesBddHandler::new(40);

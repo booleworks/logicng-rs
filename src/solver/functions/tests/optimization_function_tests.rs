@@ -85,7 +85,7 @@ fn test_random_small() {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let randomizer_config = FormulaRandomizerConfig::default_with_num_vars(6).weight_pbc(2.0).seed(42);
-        let mut randomizer = FormulaRandomizer::new(randomizer_config);
+        let mut randomizer = FormulaRandomizer::new(randomizer_config).unwrap();
         let random = &mut Rng::with_seed(42);
         for _ in 0..1000 {
             let formula = randomizer.formula(f, 2);
