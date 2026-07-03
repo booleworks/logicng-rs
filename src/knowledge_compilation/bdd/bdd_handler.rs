@@ -21,6 +21,7 @@ impl ComputationHandler for NumberOfNodesBddHandler {
         match event {
             LngEvent::ComputationStarted(LngComputation::Bdd) => {
                 self.count = 0;
+                self.canceled = false;
             }
             LngEvent::BddNewRefAdded => {
                 self.count += 1;

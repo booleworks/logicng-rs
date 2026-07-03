@@ -4,25 +4,35 @@ use std::iter::repeat_n;
 
 use itertools::Itertools;
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
+use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree;
 use crate::knowledge_compilation::dnnf::dtree::dtree_factory::DTreeFactory;
 
-pub fn min_fill_dtree_generation(cnf: EncodedFormula, f: &FormulaFactory, df: &mut DTreeFactory) -> DTree {
+pub fn min_fill_dtree_generation(cnf: EncodedFormula, f: &FormulaFactory, df: &mut DTreeFactory) -> LngResult<DTree> {
     let graph = Graph::new_from_cnf(cnf, f);
     let ordering = graph.get_min_fill_ordering();
     generate_with_eliminating_order(cnf, ordering, f, df)
 }
 
-fn generate_with_eliminating_order(cnf: EncodedFormula, ordering: Vec<Variable>, f: &FormulaFactory, df: &mut DTreeFactory) -> DTree {
-    assert_eq!(cnf.variables(f).len(), ordering.len());
+fn generate_with_eliminating_order(
+    cnf: EncodedFormula,
+    ordering: Vec<Variable>,
+    f: &FormulaFactory,
+    df: &mut DTreeFactory,
+) -> LngResult<DTree> {
+    if cnf.variables(f).len() != ordering.len() {
+        return Err(DnnfError::VarsFormulaOrderingNeq.into());
+    }
 
     if !cnf.is_cnf(f) || cnf.is_atomic() {
-        panic!("Cannot generate DTree from a non-cnf formula or atomic formula")
+        return Err(DnnfError::NonCnfFormula.into());
     } else if !cnf.is_and() {
         df.leaf((*cnf.literals(f)).iter().copied().collect())
     } else {
-        let mut sigma: Vec<DTree> = cnf.operands(f).iter().map(|clause| df.leaf((*clause.literals(f)).iter().copied().collect())).collect();
+        let mut sigma: Vec<DTree> =
+            cnf.operands(f).iter().map(|clause| df.leaf((*clause.literals(f)).iter().copied().collect())).collect::<Result<Vec<_>, _>>()?;
 
         for variable in ordering {
             let mut gamma = Vec::new();
@@ -36,21 +46,23 @@ fn generate_with_eliminating_order(cnf: EncodedFormula, ordering: Vec<Variable>,
             }
             sigma = sigma2;
             if !gamma.is_empty() {
-                sigma.push(compose(&gamma, df));
+                sigma.push(compose(&gamma, df)?);
             }
         }
         compose(&sigma, df)
     }
 }
 
-fn compose(trees: &[DTree], df: &mut DTreeFactory) -> DTree {
-    assert!(!trees.is_empty());
+fn compose(trees: &[DTree], df: &mut DTreeFactory) -> LngResult<DTree> {
+    if trees.is_empty() {
+        return Err(DnnfError::EmptyTrees.into());
+    }
     if trees.len() == 1 {
-        trees[0]
+        Ok(trees[0])
     } else {
         let (left_split, right_split) = trees.split_at(trees.len() / 2);
-        let left_composition = compose(left_split, df);
-        let right_composition = compose(right_split, df);
+        let left_composition = compose(left_split, df)?;
+        let right_composition = compose(right_split, df)?;
         df.node(left_composition, right_composition)
     }
 }
@@ -191,7 +203,7 @@ mod tests {
         let formulas = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap());
         let formula = f.and(formulas);
         let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(formula, f).unwrap();
-        let tree = min_fill_dtree_generation(cnf, f, &mut df);
+        let tree = min_fill_dtree_generation(cnf, f, &mut df).unwrap();
         println!("{}", tree.to_string(&df, f));
     }
 }

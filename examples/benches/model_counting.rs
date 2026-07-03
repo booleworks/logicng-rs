@@ -41,7 +41,7 @@ pub fn parallel(thread_count: usize) {
                     AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
                 ));
                 let cnf_formula = cnf_encoder.transform(expanded, &f_l).unwrap();
-                let dnnf = compile_dnnf(cnf_formula, &f_l);
+                let dnnf = compile_dnnf(cnf_formula, &f_l).unwrap();
                 count(&dnnf, &f_l);
             }
         });

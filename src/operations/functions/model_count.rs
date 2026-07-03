@@ -58,7 +58,7 @@ pub fn count_models_with_vars(
     let mut cnf_encoder =
         CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
     let cnf = cnf_encoder.transform(pure_expansion(formula, f)?, f)?;
-    let count = count_formula(cnf, algorithm, f);
+    let count = count_formula(cnf, algorithm, f)?;
 
     let dont_care_vars = relevant_vars.difference(&cnf.variables(f)).count();
     let dc_size = u32::try_from(dont_care_vars).map_err(|_| OperationError::MCTooManyDontCares)?;
@@ -109,24 +109,24 @@ fn count_models_internal(
 
     let cnfs = encode_as_cnf(formulas, f)?;
     let (backbone_variables, simplified) = simplify(&cnfs, f);
-    let count = count(&simplified, algorithm, f);
+    let count = count(&simplified, algorithm, f)?;
     let factor = dont_care_factor(backbone_variables, &simplified, relevant_vars, f)?;
     Ok(count * factor)
 }
 
-fn count(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+fn count(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     count_formula(f.and(formulas), algorithm, f)
 }
 
-fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     match algorithm {
         ModelCountAlgorithm::Dnnf => {
-            let dnnf = compile_dnnf(formula, f);
-            crate::knowledge_compilation::dnnf::count(&dnnf, f)
+            let dnnf = compile_dnnf(formula, f)?;
+            Ok(crate::knowledge_compilation::dnnf::count(&dnnf, f))
         }
         ModelCountAlgorithm::Bdd { node_size, cache_size } => {
             let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f), node_size, cache_size);
-            Bdd::from_formula(formula, f, &mut kernel).model_count(&mut kernel)
+            Ok(Bdd::from_formula(formula, f, &mut kernel).model_count(&mut kernel))
         }
         #[cfg(feature = "sharp_sat")]
         ModelCountAlgorithm::SharpSat => {

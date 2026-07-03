@@ -137,6 +137,7 @@ impl ComputationHandler for AdvancedFactorizationHandler {
             LngEvent::ComputationStarted(LngComputation::Factorization) => {
                 self.current_distribution = 0;
                 self.current_clause = 0;
+                self.canceled = false;
             }
             LngEvent::DistributionPerformed => {
                 self.current_distribution += 1;
