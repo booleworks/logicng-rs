@@ -1,9 +1,11 @@
+mod error;
 mod pb_adder_networks;
 mod pb_binary_merge;
 mod pb_config;
 mod pb_encoder;
 mod pb_swc;
 
+pub use error::PbcError;
 pub(crate) use pb_adder_networks::*;
 pub(crate) use pb_binary_merge::*;
 pub use pb_config::*;

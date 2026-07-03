@@ -10,7 +10,7 @@ use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::pseudo_booleans::PbEncoder;
+use crate::pseudo_booleans::{PbEncoder, PbcError};
 use crate::solver::minisat::sat::Tristate;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 use crate::util::exceptions::panic_unexpected_formula_type;
@@ -404,16 +404,16 @@ impl PbConstraint {
     /// let formula = "2 * a + 3 * b = 2".to_formula(&f).as_pbc(&f).unwrap();
     /// let encoded = formula.encode(&f);
     /// ```
-    pub fn encode(&self, f: &FormulaFactory) -> Arc<[EncodedFormula]> {
-        let index = f.pbcs.lookup(self).expect("Pseudo-Boolean Constraint must be present in FF");
+    pub fn encode(&self, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
+        let index = f.pbcs.lookup(self).expect("pseudo-boolean constraint must be present in formula factory");
         if let Some(cached) = f.caches.pbc_encoding.get(&index) {
-            return cached.clone();
+            return Ok(cached.clone());
         }
-        let result: Arc<[_]> = PbEncoder::new(f.config.pb_config.clone()).encode(self, f);
+        let result: Arc<[_]> = PbEncoder::new(f.config.pb_config.clone()).encode(self, f)?;
         if f.config.caches.pbc_encoding {
             f.caches.pbc_encoding.insert(index, result.clone());
         }
-        result
+        Ok(result)
     }
 
     /// Evaluates this constraint based on `assignment`.
@@ -494,7 +494,7 @@ impl PbConstraint {
     }
 
     /// Normalizes this constraint s.t. it can be converted to CNF.
-    pub fn normalize(&self, f: &FormulaFactory) -> EncodedFormula {
+    pub fn normalize(&self, f: &FormulaFactory) -> LngResult<EncodedFormula> {
         let mut norm_ps = Vec::with_capacity(self.literals.len());
         let mut norm_cs = Vec::with_capacity(self.literals.len());
         let mut norm_rhs;
@@ -505,31 +505,39 @@ impl PbConstraint {
                     norm_cs.push(self.coefficients[i]);
                 }
                 norm_rhs = self.rhs;
-                let f1 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f);
+                let f1 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)?;
                 norm_ps.clear();
                 norm_cs.clear();
                 for i in 0..self.literals.len() {
                     norm_ps.push(self.literals[i]);
-                    norm_cs.push(-self.coefficients[i]);
+                    norm_cs.push(checked_neg(self.coefficients[i], "negating coefficient for equality lower bound")?);
                 }
-                norm_rhs = -self.rhs;
-                let f2 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f);
-                f.and([f1, f2])
+                norm_rhs = checked_neg(self.rhs, "negating rhs for equality lower bound")?;
+                let f2 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)?;
+                Ok(f.and([f1, f2]))
             }
             LT | LE => {
                 for i in 0..self.literals.len() {
                     norm_ps.push(self.literals[i]);
                     norm_cs.push(self.coefficients[i]);
                 }
-                norm_rhs = if self.comparator == LE { self.rhs } else { self.rhs - 1 };
+                norm_rhs = if self.comparator == LE {
+                    self.rhs
+                } else {
+                    checked_sub(self.rhs, 1, "converting strict less-than rhs")?
+                };
                 normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)
             }
             GT | GE => {
                 for i in 0..self.literals.len() {
                     norm_ps.push(self.literals[i]);
-                    norm_cs.push(-self.coefficients[i]);
+                    norm_cs.push(checked_neg(self.coefficients[i], "negating coefficient for greater-than bound")?);
                 }
-                norm_rhs = if self.comparator == GE { -self.rhs } else { -self.rhs - 1 };
+                norm_rhs = if self.comparator == GE {
+                    checked_neg(self.rhs, "negating rhs for greater-equal bound")?
+                } else {
+                    checked_sub(checked_neg(self.rhs, "negating rhs for greater-than bound")?, 1, "converting strict greater-than rhs")?
+                };
                 normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)
             }
         }
@@ -633,7 +641,7 @@ const fn evaluate_coeffs(min_value: i64, max_value: i64, rhs: i64, comparator: C
     }
 }
 
-fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaFactory) -> EncodedFormula {
+fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     let mut c = rhs;
     let mut new_size: usize = 0;
     for i in 0..ps.len() {
@@ -650,19 +658,19 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
         let x = ps[i].variable();
         let consts = *var2consts.get(&x).unwrap_or(&(0, 0));
         if ps[i].phase() {
-            var2consts.insert(x, (consts.0, consts.1 + cs[i]));
+            var2consts.insert(x, (consts.0, checked_add(consts.1, cs[i], "aggregating positive literal coefficients")?));
         } else {
-            var2consts.insert(x, (consts.0 + cs[i], consts.1));
+            var2consts.insert(x, (checked_add(consts.0, cs[i], "aggregating negative literal coefficients")?, consts.1));
         }
     }
     let mut csps = Vec::with_capacity(var2consts.len());
     for (variable, (first, second)) in var2consts {
         if first < second {
-            c -= first;
-            csps.push((second - first, variable.pos_lit()));
+            c = checked_sub(c, first, "normalizing positive literal rhs")?;
+            csps.push((checked_sub(second, first, "normalizing positive literal coefficient")?, variable.pos_lit()));
         } else {
-            c -= second;
-            csps.push((first - second, variable.neg_lit()));
+            c = checked_sub(c, second, "normalizing negative literal rhs")?;
+            csps.push((checked_sub(first, second, "normalizing negative literal coefficient")?, variable.neg_lit()));
         }
     }
     let mut sum = 0;
@@ -672,17 +680,17 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
         if coeff != 0 {
             cs.push(coeff);
             ps.push(lit);
-            sum += coeff;
+            sum = checked_add(sum, coeff, "summing normalized coefficients")?;
         }
     }
     let mut changed = true;
     while changed {
         changed = false;
         if c < 0 {
-            return f.falsum();
+            return Ok(f.falsum());
         }
         if sum <= c {
-            return f.verum();
+            return Ok(f.verum());
         }
         let mut div = c;
         for e in &*cs {
@@ -696,11 +704,23 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
             changed = true;
         }
     }
-    f.pbc(LE, c, ps.clone(), cs.clone())
+    Ok(f.pbc(LE, c, ps.clone(), cs.clone()))
 }
 
 fn gcd(small: i64, big: i64) -> i64 {
     if small == 0 { big } else { gcd(big % small, small) }
+}
+
+fn checked_add(left: i64, right: i64, operation: &'static str) -> LngResult<i64> {
+    left.checked_add(right).ok_or(PbcError::NormalizationOverflow { operation }.into())
+}
+
+fn checked_sub(left: i64, right: i64, operation: &'static str) -> LngResult<i64> {
+    left.checked_sub(right).ok_or(PbcError::NormalizationOverflow { operation }.into())
+}
+
+fn checked_neg(value: i64, operation: &'static str) -> LngResult<i64> {
+    value.checked_neg().ok_or(PbcError::NormalizationOverflow { operation }.into())
 }
 
 #[allow(non_snake_case)]
@@ -721,11 +741,14 @@ mod tests {
         let pb3 = f.pbc(GT, 0, lits.clone(), coeffs.clone());
         let pb4 = f.pbc(LE, 1, lits.clone(), coeffs.clone());
         let pb5 = f.pbc(LT, 2, lits, coeffs);
-        assert_eq!("(2*a + 2*b + 3*c <= 4) & (2*~a + 2*~b + 3*~c <= 3)".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f));
-        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f));
-        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb3.as_pbc(f).unwrap().normalize(f));
-        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb4.as_pbc(f).unwrap().normalize(f));
-        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb5.as_pbc(f).unwrap().normalize(f));
+        assert_eq!(
+            "(2*a + 2*b + 3*c <= 4) & (2*~a + 2*~b + 3*~c <= 3)".to_formula(f),
+            pb1.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
+        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb3.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb4.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb5.as_pbc(f).unwrap().normalize(f).unwrap());
     }
 
     #[test]
@@ -738,11 +761,11 @@ mod tests {
         let pb3 = f.pbc(LE, 7, lits.clone(), coeffs.clone());
         let pb4 = f.pbc(LE, 10, lits.clone(), coeffs.clone());
         let pb5 = f.pbc(LE, -3, lits, coeffs);
-        assert_eq!("2*a + 2*b + 3*c <= 6".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f));
-        assert_eq!(f.verum(), pb2.as_pbc(f).unwrap().normalize(f));
-        assert_eq!(f.verum(), pb3.as_pbc(f).unwrap().normalize(f));
-        assert_eq!(f.verum(), pb4.as_pbc(f).unwrap().normalize(f));
-        assert_eq!(f.falsum(), pb5.as_pbc(f).unwrap().normalize(f));
+        assert_eq!("2*a + 2*b + 3*c <= 6".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(f.verum(), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(f.verum(), pb3.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(f.verum(), pb4.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(f.falsum(), pb5.as_pbc(f).unwrap().normalize(f).unwrap());
     }
 
     #[test]
@@ -751,13 +774,13 @@ mod tests {
         let lits: Box<[_]> = vec![f.lit("a", true), f.lit("a", true), f.lit("c", true), f.lit("d", true)].into();
         let coeffs: Box<[_]> = vec![2, -2, 4, 4].into();
         let pb1 = f.pbc(LE, 4, lits, coeffs);
-        assert_eq!("c + d <= 1".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f));
-        assert!(pb1.as_pbc(f).unwrap().normalize(f).is_cc());
+        assert_eq!("c + d <= 1".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert!(pb1.as_pbc(f).unwrap().normalize(f).unwrap().is_cc());
 
         let lits2: Box<[_]> = vec![f.lit("a", true), f.lit("a", false), f.lit("c", true), f.lit("d", true)].into();
         let coeffs2: Box<[_]> = vec![2, 2, 4, 2].into();
         let pb2 = f.pbc(LE, 4, lits2, coeffs2);
-        assert_eq!("2*c + d <= 1".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f));
+        assert_eq!("2*c + d <= 1".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
     }
 
     #[test]

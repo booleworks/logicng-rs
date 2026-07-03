@@ -3,9 +3,7 @@ use std::iter::repeat_n;
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 
-pub fn encode_adder_networks(lits: &[Literal], coeffs: &[i64], rhs: u64, f: &FormulaFactory) -> Vec<EncodedFormula> {
-    let rhs =
-        rhs.try_into().unwrap_or_else(|_| panic!("Can only encode PBCs with right-hand-sides up to {} on this architecture", usize::MAX));
+pub fn encode_adder_networks(lits: &[Literal], coeffs: &[usize], rhs: usize, f: &FormulaFactory) -> Vec<EncodedFormula> {
     let mut formula: Vec<EncodedFormula> = Vec::new();
     let nb = ld_int(rhs);
     let mut result: Vec<Option<Literal>> = repeat_n(None, nb).collect();

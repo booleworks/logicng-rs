@@ -307,13 +307,13 @@ mod test {
             let formula1 = "2 * a + b = 1".to_formula(&f);
             let formula2 = "2 * a + c = 1".to_formula(&f);
 
-            formula1.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 1);
 
-            formula2.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula2.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 2);
 
-            formula1.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 2);
         }
 
@@ -325,13 +325,13 @@ mod test {
             let formula1 = "2 * a + b = 1".to_formula(&f);
             let formula2 = "2 * a + c = 1".to_formula(&f);
 
-            formula1.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 0);
 
-            formula2.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula2.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 0);
 
-            formula1.as_pbc(&f).unwrap().encode(&f);
+            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
             assert_eq!(f.caches.pbc_encoding.len(), 0);
         }
 

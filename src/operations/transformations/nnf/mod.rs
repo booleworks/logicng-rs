@@ -92,7 +92,7 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> LngRe
         }
         Formula::Pbc(p) => {
             if polarity {
-                let encoded = p.encode(f);
+                let encoded = p.encode(f)?;
                 let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true)).collect::<Result<Vec<_>, _>>()?;
                 f.and(new_ops)
             } else {

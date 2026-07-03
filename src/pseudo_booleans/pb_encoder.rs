@@ -1,7 +1,8 @@
-use std::cmp::Ordering;
 use std::sync::Arc;
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, PbConstraint};
+use crate::pseudo_booleans::PbcError;
 use crate::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
@@ -21,66 +22,74 @@ impl PbEncoder {
     }
 
     /// Encodes a pseudo-boolean constraint and returns its CNF encoding.
-    pub fn encode(&self, constraint: &PbConstraint, f: &FormulaFactory) -> Arc<[EncodedFormula]> {
-        let normalized = constraint.normalize(f);
+    pub fn encode(&self, constraint: &PbConstraint, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
+        let normalized = constraint.normalize(f)?;
         match normalized.formula_type() {
             FormulaType::Pbc => {
                 let pbc = normalized.as_pbc(f).unwrap();
-                self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, f).into()
+                let enc = self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, f)?;
+                Ok(Arc::from(enc))
             }
-            // TODO error handling
-            FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f).unwrap(),
+            FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f),
             FormulaType::And => {
                 let operands = normalized.operands(f);
                 let mut result = Vec::with_capacity(operands.len());
                 for &op in &*operands {
                     match op.formula_type() {
                         FormulaType::Pbc => {
-                            result.extend(&mut self.encode(&op.as_pbc(f).unwrap(), f).iter());
+                            result.extend(self.encode(&op.as_pbc(f).unwrap(), f)?.iter().copied());
                         }
                         FormulaType::Cc => {
-                            // TODO error handling
-                            result.extend(&mut op.as_cc(f).unwrap().encode(f).unwrap().iter());
+                            result.extend(op.as_cc(f).unwrap().encode(f)?.iter().copied());
                         }
                         _ => panic_unexpected_formula_type(op, Some(f)),
                     }
                 }
-                result.into()
+                Ok(Arc::from(result))
             }
-            FormulaType::True => Arc::new([]),
-            FormulaType::False => Arc::new([f.falsum()]),
+            FormulaType::True => Ok(Arc::new([])),
+            FormulaType::False => Ok(Arc::new([f.falsum()])),
             _ => panic_unexpected_formula_type(normalized, Some(f)),
         }
     }
 
-    fn encode_internal(&self, lits: &[Literal], coeffs: &[i64], rhs: i64, f: &FormulaFactory) -> Vec<EncodedFormula> {
-        match rhs.cmp(&0) {
-            Ordering::Less => vec![f.falsum()],
-            Ordering::Equal => lits.iter().map(|lit| EncodedFormula::from(lit.negate())).collect(),
-            Ordering::Greater => {
-                let mut simplified_lits = Vec::with_capacity(lits.len());
-                let mut simplified_coeffs = Vec::with_capacity(coeffs.len());
-                let mut result = Vec::new();
-                for i in 0..lits.len() {
-                    let lit = lits[i];
-                    let coeff = coeffs[i];
-                    if coeff <= rhs {
-                        simplified_lits.push(lit);
-                        simplified_coeffs.push(coeff);
-                    } else {
-                        result.push(lit.negate().into());
-                    }
+    fn encode_internal(&self, lits: &[Literal], coeffs: &[i64], rhs: i64, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
+        if rhs < 0 {
+            return Ok(vec![f.falsum()]);
+        }
+        let original_rhs = rhs;
+        let rhs: usize = rhs.try_into().map_err(|_| PbcError::TooLargeRhs { rhs })?;
+        if rhs == usize::MAX {
+            return Err(PbcError::TooLargeRhs { rhs: original_rhs }.into());
+        }
+        if rhs == 0 {
+            Ok(lits.iter().map(|lit| EncodedFormula::from(lit.negate())).collect())
+        } else {
+            let mut simplified_lits = Vec::with_capacity(lits.len());
+            let mut simplified_coeffs = Vec::with_capacity(coeffs.len());
+            let mut result = Vec::new();
+            for i in 0..lits.len() {
+                let lit = lits[i];
+                let coeff = coeffs[i];
+                if coeff <= 0 {
+                    return Err(PbcError::NormalizationOverflow { operation: "normalized coefficient is not positive" }.into());
                 }
-                if simplified_lits.len() > 1 {
-                    #[allow(clippy::cast_sign_loss)]
-                    result.extend(match self.config.pb_algorithm {
-                        PbAlgorithm::Best | PbAlgorithm::Swc => encode_swc(&simplified_lits, &simplified_coeffs, rhs as u64, f),
-                        PbAlgorithm::BinaryMerge => encode_binary_merge(&self.config, simplified_lits, simplified_coeffs, rhs as u64, f),
-                        PbAlgorithm::AdderNetworks => encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs as u64, f),
-                    });
+                let coeff: usize = coeff.try_into().map_err(|_| PbcError::TooLargeCoefficient { coefficient: coeff })?;
+                if coeff <= rhs {
+                    simplified_lits.push(lit);
+                    simplified_coeffs.push(coeff);
+                } else {
+                    result.push(lit.negate().into());
                 }
-                result
             }
+            if simplified_lits.len() > 1 {
+                result.extend(match self.config.pb_algorithm {
+                    PbAlgorithm::Best | PbAlgorithm::Swc => encode_swc(&simplified_lits, &simplified_coeffs, rhs, f),
+                    PbAlgorithm::BinaryMerge => encode_binary_merge(&self.config, simplified_lits, simplified_coeffs, rhs, f),
+                    PbAlgorithm::AdderNetworks => encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs, f),
+                });
+            }
+            Ok(result)
         }
     }
 }
