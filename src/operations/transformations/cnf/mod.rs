@@ -77,7 +77,7 @@ impl CnfAlgorithm {
                     .map(|r| CancelableResult::Ok(r))
             }
             Self::Advanced(config) => advanced_cnf_encoding(formula, f, config, state).map(|r| CancelableResult::Ok(r)),
-            Self::Bdd => Ok(bdd_cnf_with_handler(formula, f, handler)),
+            Self::Bdd => bdd_cnf_with_handler(formula, f, handler),
         }
     }
 }

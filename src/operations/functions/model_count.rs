@@ -125,8 +125,8 @@ fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &Fo
             Ok(crate::knowledge_compilation::dnnf::count(&dnnf, f))
         }
         ModelCountAlgorithm::Bdd { node_size, cache_size } => {
-            let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f), node_size, cache_size);
-            Ok(Bdd::from_formula(formula, f, &mut kernel).model_count(&mut kernel))
+            let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f)?, node_size, cache_size)?;
+            Ok(Bdd::from_formula(formula, f, &mut kernel)?.model_count(&mut kernel))
         }
         #[cfg(feature = "sharp_sat")]
         ModelCountAlgorithm::SharpSat => {

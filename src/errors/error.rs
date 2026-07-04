@@ -1,7 +1,11 @@
 #![allow(missing_docs)]
 use crate::{
-    cardinality_constraints::CcError, graphs::GraphError, knowledge_compilation::dnnf::DnnfError, operations::OperationError,
-    pseudo_booleans::PbcError, util::UtilError,
+    cardinality_constraints::CcError,
+    graphs::GraphError,
+    knowledge_compilation::{bdd::BddError, dnnf::DnnfError},
+    operations::OperationError,
+    pseudo_booleans::PbcError,
+    util::UtilError,
 };
 
 /// A generic LogicNG result which carries the result or an error
@@ -25,6 +29,9 @@ pub enum LngError {
 
     #[error("util: {0}")]
     Util(#[from] UtilError),
+
+    #[error("bdd: {0}")]
+    Bdd(#[from] BddError),
 
     #[error("dnnf: {0}")]
     Dnnf(#[from] DnnfError),

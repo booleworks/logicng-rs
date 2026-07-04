@@ -21,10 +21,10 @@ mod tests {
         let variables = generate_variables(100, &f);
         let constraint = f.exo(variables);
         let constraint = f.nnf_of(constraint).unwrap();
-        let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000);
-        let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
+        let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000).unwrap();
+        let bdd = Bdd::from_formula(constraint, &f, &mut kernel).unwrap();
         assert_eq!(bdd.model_count(&mut kernel), 100.to_biguint().unwrap());
-        assert_eq!(bdd.enumerate_all_models(&mut kernel).len(), 100);
+        assert_eq!(bdd.enumerate_all_models(&mut kernel).unwrap().len(), 100);
     }
 
     #[test]
@@ -34,10 +34,10 @@ mod tests {
         let variables = generate_variables(100, &f);
         let constraint = f.amo(variables);
         let constraint = f.nnf_of(constraint).unwrap();
-        let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000);
-        let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
+        let mut kernel = BddKernel::new_with_num_vars(100, 100_000, 1_000_000).unwrap();
+        let bdd = Bdd::from_formula(constraint, &f, &mut kernel).unwrap();
         assert_eq!(bdd.model_count(&mut kernel), 101.to_biguint().unwrap());
-        assert_eq!(bdd.enumerate_all_models(&mut kernel).len(), 101);
+        assert_eq!(bdd.enumerate_all_models(&mut kernel).unwrap().len(), 101);
     }
 
     #[test]
@@ -47,10 +47,10 @@ mod tests {
         let variables = generate_variables(15, &f);
         let constraint = f.cc(CType::EQ, 8, variables);
         let constraint = f.nnf_of(constraint).unwrap();
-        let mut kernel = BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000);
-        let bdd = Bdd::from_formula(constraint, &f, &mut kernel);
+        let mut kernel = BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000).unwrap();
+        let bdd = Bdd::from_formula(constraint, &f, &mut kernel).unwrap();
         assert_eq!(bdd.model_count(&mut kernel), 6435.to_biguint().unwrap());
-        assert_eq!(bdd.enumerate_all_models(&mut kernel).len(), 6435);
+        assert_eq!(bdd.enumerate_all_models(&mut kernel).unwrap().len(), 6435);
     }
 
     #[test]
@@ -64,15 +64,15 @@ mod tests {
             let bfs = bfs_ordering(n_queens, &f);
             let min2max = min_to_max_ordering(n_queens, &f);
             let max2min = max_to_min_ordering(n_queens, &f);
-            let force = force_ordering(n_queens, &f);
+            let force = force_ordering(n_queens, &f).unwrap();
 
             let orderings = vec![dfs, bfs, min2max, max2min, force];
 
             for ordering in orderings {
-                let mut kernel = BddKernel::new_with_var_ordering(&ordering, 10_000, 10_000);
+                let mut kernel = BddKernel::new_with_var_ordering(&ordering, 10_000, 10_000).unwrap();
 
                 let start = Instant::now();
-                let bdd = Bdd::from_formula(n_queens, &f, &mut kernel);
+                let bdd = Bdd::from_formula(n_queens, &f, &mut kernel).unwrap();
                 let duration = start.elapsed();
                 println!("Constructed BDD for {n} queens in {duration:?}");
 
@@ -82,7 +82,7 @@ mod tests {
                 println!("Computed model count for {n} queens in {duration:?}");
 
                 let start = Instant::now();
-                let models = bdd.enumerate_all_models(&mut kernel);
+                let models = bdd.enumerate_all_models(&mut kernel).unwrap();
                 let duration = start.elapsed();
                 println!("Computed model enumeration for {n} queens in {duration:?}");
                 assert_eq!(models.len(), expected_count[n - 3]);
@@ -90,15 +90,15 @@ mod tests {
                     assert!(f.evaluate(n_queens, &model.into()));
                 }
 
-                let cnf = bdd.cnf(&f, &mut kernel);
+                let cnf = bdd.cnf(&f, &mut kernel).unwrap();
                 assert!(cnf.is_cnf(&f));
                 check_equiv(n_queens, cnf, &f);
 
-                let dnf = bdd.dnf(&f, &mut kernel);
+                let dnf = bdd.dnf(&f, &mut kernel).unwrap();
                 assert!(dnf.is_dnf(&f));
                 check_equiv(n_queens, dnf, &f);
 
-                let formula = bdd.to_formula(&f, &mut kernel);
+                let formula = bdd.to_formula(&f, &mut kernel).unwrap();
                 check_equiv(n_queens, formula, &f);
             }
             println!("\n");

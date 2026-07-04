@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
 use crate::graphs::{Hypergraph, NodeIndex, hypergraph_from_cnf};
 
@@ -9,18 +10,15 @@ use super::dfs_ordering::dfs_ordering;
 /// Simple implementation of the FORCE BDD variable ordering due to Aloul,
 /// Markov, and Sakallah.  This ordering only works for CNF formulas.  A formula
 /// has to be converted to CNF before this ordering is called.
-pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Variable> {
+pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Variable>> {
     let mut original_variables = (*formula.variables(f)).clone();
-    // TODO error handling
-    let nnf = f.nnf_of(formula).unwrap();
+    let nnf = f.nnf_of(formula)?;
     original_variables.extend((*nnf.variables(f)).clone());
-    // TODO error handling
-    let cnf = f.cnf_of(nnf).unwrap();
-    // TODO error handling
-    let hypergraph = hypergraph_from_cnf(cnf, f).unwrap();
+    let cnf = f.cnf_of(nnf)?;
+    let hypergraph = hypergraph_from_cnf(cnf, f)?;
     let mut node_map = HashMap::new();
     for i in 0..hypergraph.number_of_nodes() {
-        node_map.insert(hypergraph.get_node(i).unwrap().content, i);
+        node_map.insert(hypergraph.get_node(i).expect("node must be there").content, i);
     }
     force(cnf, f, &hypergraph, &node_map, &original_variables)
 }
@@ -31,7 +29,7 @@ fn force(
     hypergraph: &Hypergraph<Variable>,
     node_map: &HashMap<Variable, NodeIndex>,
     original_vars: &BTreeSet<Variable>,
-) -> Vec<Variable> {
+) -> LngResult<Vec<Variable>> {
     let initial_ordering = create_initial_ordering(formula, f, node_map);
     let mut last_ordering: BTreeMap<NodeIndex, usize>;
     let mut current_ordering = initial_ordering;
@@ -41,8 +39,7 @@ fn force(
         let mut new_locations = BTreeMap::new();
         for idx in 0..hypergraph.number_of_nodes() {
             let node = hypergraph.get_node(idx).unwrap();
-            // TODO error handling
-            let new_location = node.compute_tentative_new_location(hypergraph, &last_ordering).unwrap();
+            let new_location = node.compute_tentative_new_location(hypergraph, &last_ordering)?;
             new_locations.insert(idx, new_location);
         }
         current_ordering = ordering_from_tentative_new_locations(&new_locations);
@@ -64,7 +61,7 @@ fn force(
             ordering.push(*var);
         }
     }
-    ordering
+    Ok(ordering)
 }
 
 fn create_initial_ordering(
@@ -105,18 +102,18 @@ mod tests {
         let va = f.var("A");
         let vb = f.var("B");
         let vc = f.var("C");
-        assert!(force_ordering("$true".to_formula(f), f).is_empty());
-        assert!(force_ordering("$false".to_formula(f), f).is_empty());
-        assert_eq!(force_ordering("A".to_formula(f), f), vec![va]);
-        assert_eq!(force_ordering("~A".to_formula(f), f), vec![va]);
-        assert_eq!(force_ordering("A => ~B".to_formula(f), f), vec![va, vb]);
-        assert_eq!(force_ordering("A <=> ~B".to_formula(f), f), vec![va, vb]);
-        assert_eq!(force_ordering("~(A <=> ~B)".to_formula(f), f), vec![va, vb]);
-        assert_eq!(force_ordering("A | ~C | B".to_formula(f), f), vec![va, vb, vc]);
-        assert_eq!(force_ordering("A & ~B & C".to_formula(f), f), vec![va, vb, vc]);
-        assert_eq!(force_ordering("A + C + B < 2".to_formula(f), f), vec![va, vc, vb]);
+        assert!(force_ordering("$true".to_formula(f), f).unwrap().is_empty());
+        assert!(force_ordering("$false".to_formula(f), f).unwrap().is_empty());
+        assert_eq!(force_ordering("A".to_formula(f), f).unwrap(), vec![va]);
+        assert_eq!(force_ordering("~A".to_formula(f), f).unwrap(), vec![va]);
+        assert_eq!(force_ordering("A => ~B".to_formula(f), f).unwrap(), vec![va, vb]);
+        assert_eq!(force_ordering("A <=> ~B".to_formula(f), f).unwrap(), vec![va, vb]);
+        assert_eq!(force_ordering("~(A <=> ~B)".to_formula(f), f).unwrap(), vec![va, vb]);
+        assert_eq!(force_ordering("A | ~C | B".to_formula(f), f).unwrap(), vec![va, vb, vc]);
+        assert_eq!(force_ordering("A & ~B & C".to_formula(f), f).unwrap(), vec![va, vb, vc]);
+        assert_eq!(force_ordering("A + C + B < 2".to_formula(f), f).unwrap(), vec![va, vc, vb]);
         assert_eq!(
-            force_ordering("3*C + B + 4*A < 7".to_formula(f), f),
+            force_ordering("3*C + B + 4*A < 7".to_formula(f), f).unwrap(),
             [
                 "A", "@RESERVED_FF42_PB_0", "@RESERVED_FF42_PB_1", "@RESERVED_FF42_PB_3", "@RESERVED_FF42_PB_2", "B",
                 "@RESERVED_FF42_PB_6", "@RESERVED_FF42_PB_7", "@RESERVED_FF42_PB_9", "@RESERVED_FF42_PB_10", "@RESERVED_FF42_PB_4",
@@ -134,6 +131,6 @@ mod tests {
         let f = &FormulaFactory::new();
         let formula =  "(~A | ~B) & (D | A) & (~C | A) & (D | C) & (A | Y | X) & (~W | ~Y | X) & (~A | ~Y | X) & (~F | ~Y | X) & (~X | Y) & (W | A | F | Y)".to_formula(f);
         let ordering = vec![f.var("B"), f.var("D"), f.var("C"), f.var("A"), f.var("X"), f.var("Y"), f.var("W"), f.var("F")];
-        assert_eq!(force_ordering(formula, f), ordering);
+        assert_eq!(force_ordering(formula, f).unwrap(), ordering);
     }
 }
