@@ -100,8 +100,8 @@ mod tests {
         assert!(pg.is_cnf(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
         let config = ModelEnumerationConfig::default().variables(vars);
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config);
-        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config);
+        let original_models = enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
+        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
         assert_eq!(original_models.len(), pg_models.len());
     }
 

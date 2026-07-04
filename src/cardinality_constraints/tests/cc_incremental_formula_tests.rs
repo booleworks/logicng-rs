@@ -53,31 +53,31 @@ fn test_simple_incremental_amk() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
-        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, 9, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
-        solver.add_all(&cc, f);
+        let _ = solver.add_all(&cc, f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 8).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 8).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 7).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 7).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 6).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 6).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 5).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 5).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 4).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 4).unwrap(), f);
         assert_eq!(solver.sat(), True);
 
-        let state = solver.save_state();
-        solver.add_all(&inc_data.new_upper_bound(f, 3).unwrap(), f);
+        let state = solver.save_state().unwrap();
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 3).unwrap(), f);
         assert_eq!(solver.sat(), False);
-        solver.load_state(&state);
+        let _ = solver.load_state(&state);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_upper_bound(f, 2).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, 2).unwrap(), f);
         assert_eq!(solver.sat(), False);
     }
 }
@@ -88,32 +88,32 @@ fn test_simple_incremental_alk() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
-        solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(GE, 4, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(LE, 7, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, 2, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
-        solver.add_all(&cc, f);
+        let _ = solver.add_all(&cc, f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_lower_bound(f, 3).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_lower_bound(f, 3).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_lower_bound(f, 4).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_lower_bound(f, 4).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_lower_bound(f, 5).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_lower_bound(f, 5).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_lower_bound(f, 6).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_lower_bound(f, 6).unwrap(), f);
         assert_eq!(solver.sat(), True);
-        solver.add_all(&inc_data.new_lower_bound(f, 7).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_lower_bound(f, 7).unwrap(), f);
         assert_eq!(solver.sat(), True);
 
         if solver.underlying_solver.config.incremental {
-            let state = solver.save_state();
-            solver.add_all(&inc_data.new_lower_bound(f, 8).unwrap(), f);
+            let state = solver.save_state().unwrap();
+            let _ = solver.add_all(&inc_data.new_lower_bound(f, 8).unwrap(), f);
             assert_eq!(solver.sat(), False);
-            solver.load_state(&state);
+            let _ = solver.load_state(&state);
             assert_eq!(solver.sat(), True);
-            solver.add_all(&inc_data.new_lower_bound(f, 9).unwrap(), f);
+            let _ = solver.add_all(&inc_data.new_lower_bound(f, 9).unwrap(), f);
             assert_eq!(solver.sat(), False);
         }
     }
@@ -128,15 +128,15 @@ fn test_large_upper_bound_amk() {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = num_lits - 1;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 42, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(GE, 42, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
-        solver.add_all(&cc, f);
+        let _ = solver.add_all(&cc, f);
         while solver.sat() == True {
             current_bound -= 1;
-            solver.add_all(&inc_data.new_upper_bound(f, current_bound).unwrap(), f);
+            let _ = solver.add_all(&inc_data.new_upper_bound(f, current_bound).unwrap(), f);
         }
         assert_eq!(current_bound, 41);
     }
@@ -151,15 +151,15 @@ fn test_large_lower_bound_alk() {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = 2;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(LE, 87, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
+        let _ = solver.add_all(&f.cc(LE, 87, vars.clone()).as_cc(f).unwrap().encode(f).unwrap(), f);
 
         let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
-        solver.add_all(&cc, f);
+        let _ = solver.add_all(&cc, f);
         while solver.sat() == True {
             current_bound += 1;
-            solver.add_all(&inc_data.new_lower_bound(f, current_bound).unwrap(), f);
+            let _ = solver.add_all(&inc_data.new_lower_bound(f, current_bound).unwrap(), f);
         }
         assert_eq!(current_bound, 88);
     }
@@ -174,15 +174,15 @@ fn test_very_large_modular_totalizer_amk() {
     let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
     let mut solver = MiniSat::new();
-    solver.add(f.cc(GE, 234, vars.clone()), f);
+    let _ = solver.add(f.cc(GE, 234, vars.clone()), f);
 
     let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap();
     let mut inc_data = inc_data_option.unwrap();
 
-    solver.add_all(&cc, f);
+    let _ = solver.add_all(&cc, f);
     while solver.sat() == True {
         current_bound -= 1;
-        solver.add_all(&inc_data.new_upper_bound(f, current_bound).unwrap(), f);
+        let _ = solver.add_all(&inc_data.new_upper_bound(f, current_bound).unwrap(), f);
     }
     assert_eq!(current_bound, 233);
 }

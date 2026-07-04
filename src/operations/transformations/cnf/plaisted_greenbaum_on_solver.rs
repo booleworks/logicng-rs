@@ -342,7 +342,7 @@ mod tests {
 
     fn pg_on_solver(formula: EncodedFormula, f: &FormulaFactory, method: SolverCnfMethod) -> EncodedFormula {
         let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(method));
-        solver.add(formula, f);
+        let _ = solver.add(formula, f);
         let clauses = solver.formula_on_solver(f);
         f.and(clauses.iter())
     }
@@ -357,9 +357,9 @@ mod tests {
         println!("full_pg: {}", full_pg.to_string(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
         let config = ModelEnumerationConfig::default().variables(vars.clone());
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config);
-        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config);
-        let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config);
+        let original_models = enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
+        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
+        let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config).unwrap();
         let pg_vars = pg.variables(f);
         let full_pg_vars = full_pg.variables(f);
         let pg_missed_vars = missed_vars(&vars, &pg_vars);

@@ -425,15 +425,15 @@ mod test {
             let formula2 = "~(b => (a | b))".to_formula(&f);
             let formula3 = "b => ~a".to_formula(&f);
 
-            let sat1 = predicates::is_sat(formula1, &f);
+            let sat1 = predicates::is_sat(formula1, &f).unwrap();
             assert!(sat1);
             assert_eq!(f.caches.sat.len(), 1);
 
-            let sat2 = predicates::is_tautology(formula2, &f);
+            let sat2 = predicates::is_tautology(formula2, &f).unwrap();
             assert!(!sat2);
             assert_eq!(f.caches.sat.len(), 2);
 
-            let sat3 = predicates::is_tautology(formula3, &f);
+            let sat3 = predicates::is_tautology(formula3, &f).unwrap();
             assert!(!sat3);
             assert_eq!(f.caches.sat.len(), 2);
         }
@@ -447,15 +447,15 @@ mod test {
             let formula2 = "~(b => (a | b))".to_formula(&f);
             let formula3 = "b => ~a".to_formula(&f);
 
-            let sat1 = predicates::is_sat(formula1, &f);
+            let sat1 = predicates::is_sat(formula1, &f).unwrap();
             assert!(sat1);
             assert_eq!(f.caches.sat.len(), 0);
 
-            let sat2 = predicates::is_tautology(formula2, &f);
+            let sat2 = predicates::is_tautology(formula2, &f).unwrap();
             assert!(!sat2);
             assert_eq!(f.caches.sat.len(), 0);
 
-            let sat3 = predicates::is_tautology(formula3, &f);
+            let sat3 = predicates::is_tautology(formula3, &f).unwrap();
             assert!(!sat3);
             assert_eq!(f.caches.sat.len(), 0);
         }

@@ -2,10 +2,12 @@
 use crate::{
     cardinality_constraints::CcError,
     graphs::GraphError,
+    io::IoError,
     knowledge_compilation::{bdd::BddError, dnnf::DnnfError},
     operations::OperationError,
     parser::ParserError,
     pseudo_booleans::PbcError,
+    solver::SolverError,
     util::UtilError,
 };
 
@@ -28,6 +30,9 @@ pub enum LngError {
     #[error("operation: {0}")]
     Operation(#[from] OperationError),
 
+    #[error("solver: {0}")]
+    Solver(#[from] SolverError),
+
     #[error("graph: {0}")]
     Graph(#[from] GraphError),
 
@@ -39,6 +44,9 @@ pub enum LngError {
 
     #[error("dnnf: {0}")]
     Dnnf(#[from] DnnfError),
+
+    #[error("io: {0}")]
+    Io(#[from] IoError),
 
     #[error("variable {var:?} is not known in the given formula factory")]
     UnknownVariable { var: String },

@@ -31,7 +31,7 @@ pub struct DnnfFormula {
 pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<DnnfFormula> {
     let original_variables = formula.variables(f);
     let cnf = f.cnf_of(formula)?;
-    let simplified = backbone_simplification(cnf, f);
+    let simplified = backbone_simplification(cnf, f)?;
     let subsumption = cnf_subsumption(simplified, f)?;
     let dnnf = DnnfCompiler::new(subsumption, f).compile()?;
     Ok(DnnfFormula { formula: dnnf, original_variables })
@@ -69,7 +69,7 @@ impl<'a> DnnfCompiler<'a> {
     fn compile(&mut self) -> LngResult<EncodedFormula> {
         if self.non_unit_clauses.is_atomic() {
             Ok(self.cnf)
-        } else if !is_sat(self.cnf, self.f) || !self.solver.start() {
+        } else if !is_sat(self.cnf, self.f)? || !self.solver.start() {
             Ok(self.f.falsum())
         } else {
             let tree = min_fill_dtree_generation(self.cnf, self.f, &mut self.df)?;
@@ -285,7 +285,7 @@ mod tests {
         assert_eq!(bdd_count, dnnf_count);
         if with_equivalence {
             let equivalence = f.equivalence(formula, dnnf.formula);
-            assert!(is_tautology(equivalence, f));
+            assert!(is_tautology(equivalence, f).unwrap());
         }
     }
 

@@ -110,18 +110,18 @@ fn test_incrementality_minimize_and_maximize() {
         let formula = f.parse("(a|b|c|d|e) & (p|q) & (x|y|z)").unwrap();
         let mut literals: Vec<Literal> = formula.variables(f).iter().map(Variable::pos_lit).collect();
 
-        solver.add(formula, f);
+        let _ = solver.add(formula, f);
 
-        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
-        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
+        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
+        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert_eq!(maximum_model.pos().len(), 10);
 
         let formula = f.parse("~p").unwrap();
         literals.push(f.lit("p", true));
-        solver.add(formula, f);
-        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
-        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
+        let _ = solver.add(formula, f);
+        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
+        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert!(minimum_model.pos().contains(&f.var("q")));
         assert_eq!(maximum_model.pos().len(), 9);
@@ -129,9 +129,9 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("(x => n) & (y => m) & (a => ~b & ~c)").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        solver.add(formula, f);
-        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
-        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
+        let _ = solver.add(formula, f);
+        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
+        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert!(minimum_model.pos().contains(&f.var("q")));
         assert!(minimum_model.pos().contains(&f.var("z")));
@@ -142,9 +142,9 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("(z => v & w) & (m => v) & (b => ~c & ~d & ~e)").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        solver.add(formula, f);
-        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
-        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
+        let _ = solver.add(formula, f);
+        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
+        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 4);
         assert!(minimum_model.pos().contains(&f.var("q")));
         assert!(minimum_model.pos().contains(&f.var("x")));
@@ -159,9 +159,9 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("~q").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        solver.add(formula, f);
-        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone()));
-        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone()));
+        let _ = solver.add(formula, f);
+        let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
+        let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
         assert!(minimum_model.is_none());
         assert!(maximum_model.is_none());
     }
@@ -269,11 +269,11 @@ fn optimize(
     f: &FormulaFactory,
 ) -> Option<Model> {
     solver.reset();
-    solver.add_all(formulas, f);
+    let _ = solver.add_all(formulas, f);
     if maximize {
-        solver.optimize(f, &OptimizationFunction::maximize(literals.into()).additional_variables(additional_variables.iter()))
+        solver.optimize(f, &OptimizationFunction::maximize(literals.into()).additional_variables(additional_variables.iter())).unwrap()
     } else {
-        solver.optimize(f, &OptimizationFunction::minimize(literals.into()).additional_variables(additional_variables.iter()))
+        solver.optimize(f, &OptimizationFunction::minimize(literals.into()).additional_variables(additional_variables.iter())).unwrap()
     }
 }
 
@@ -287,24 +287,24 @@ fn test_maximum_model(formula: EncodedFormula, optimum_model: Option<Model>, lit
 
 fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], maximize: bool, f: &FormulaFactory) {
     let mut solver = MiniSat::new();
-    solver.add(formula, f);
+    let _ = solver.add(formula, f);
     if solver.sat() == True {
-        let with_formula = solver.save_state();
-        solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f);
+        let with_formula = solver.save_state().unwrap();
+        let _ = solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f);
         assert_eq!(solver.sat(), True);
-        solver.load_state(&with_formula);
+        let _ = solver.load_state(&with_formula);
         let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals).len().try_into().unwrap();
         let sel_vars = literals
             .iter()
             .enumerate()
             .map(|(i, &lit)| {
                 let sel_var = f.variable(format!("SEL_VAR_{i}"));
-                solver.add(f.equivalence(sel_var, lit.into()), f);
+                let _ = solver.add(f.equivalence(sel_var, lit.into()), f);
                 sel_var.as_variable().unwrap()
             })
             .collect::<Box<[_]>>();
         if maximize || num_satisfied_literals > 0 {
-            solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars), f);
+            let _ = solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars), f);
         }
     } else {
         assert!(optimum_model.is_none());

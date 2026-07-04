@@ -1,3 +1,4 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
 use crate::solver::minisat::SolverCnfMethod::FactoryCnf;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
@@ -21,22 +22,25 @@ use crate::solver::minisat::{MiniSat, MiniSatConfig};
 ///
 /// let formula = "a & b | c".to_formula(&f);
 ///
-/// assert!(is_sat(formula, &f));
+/// assert!(is_sat(formula, &f).unwrap());
 /// ```
-pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
-    f.caches.sat.get(formula).unwrap_or_else(|| {
-        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-        solver.add(formula, f);
-        let sat = solver.sat();
-        if f.config.caches.sat {
-            match sat {
-                True => f.caches.sat.insert(formula, true),
-                False => f.caches.sat.insert(formula, false),
-                Undef => {}
+pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
+    match f.caches.sat.get(formula) {
+        Some(c) => Ok(c),
+        None => {
+            let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
+            solver.add(formula, f)?;
+            let sat = solver.sat();
+            if f.config.caches.sat {
+                match sat {
+                    True => f.caches.sat.insert(formula, true),
+                    False => f.caches.sat.insert(formula, false),
+                    Undef => {}
+                }
             }
+            Ok(sat == True)
         }
-        sat == True
-    })
+    }
 }
 
 /// A predicate indicating whether a given formula is a tautology, that is,
@@ -50,7 +54,7 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
 ///
 /// let formula = "(a & b) | (~a & b) | (a & ~b) | (~a & ~b)".to_formula(&f);
 ///
-/// assert!(is_tautology(formula, &f));
+/// assert!(is_tautology(formula, &f).unwrap());
 /// ```
 ///
 /// A very useful usage of the tautology predicate is to check whether two
@@ -67,18 +71,19 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> bool {
 /// let formula2 = "d & a & b | ~d & c & a | c & b".to_formula(&f);
 /// let equivalence = f.equivalence(formula1, formula2);
 ///
-/// assert!(is_tautology(equivalence, &f));
+/// assert!(is_tautology(equivalence, &f).unwrap());
 /// ```
 ///
 /// Also, testing if one formula is a logical implication of another formula can
 /// be tested the same way by creating an implication `f.implication(f1, f2)`
 /// instead.
-pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> bool {
+pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
     let negated_formula = f.negate(formula);
-    f.caches.sat.get(negated_formula).map_or_else(
-        || {
+    match f.caches.sat.get(negated_formula) {
+        Some(c) => Ok(!c),
+        None => {
             let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-            solver.add(negated_formula, f);
+            solver.add(negated_formula, f)?;
             let sat = solver.sat();
             if f.config.caches.sat {
                 match sat {
@@ -87,8 +92,7 @@ pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> bool {
                     Undef => {}
                 }
             }
-            sat == False
-        },
-        |cached| !cached,
-    )
+            Ok(sat == False)
+        }
+    }
 }

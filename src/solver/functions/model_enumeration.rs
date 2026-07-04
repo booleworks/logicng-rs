@@ -3,6 +3,7 @@
 use std::collections::BTreeSet;
 
 use crate::datastructures::Model;
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
 use crate::solver::minisat::MiniSat;
 use crate::solver::minisat::sat::Tristate::True;
@@ -125,7 +126,7 @@ impl Default for ModelEnumerationConfig {
 ///
 /// let models = enumerate_models_for_formula(formula, &f);
 /// ```
-pub fn enumerate_models_for_formula(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Model> {
+pub fn enumerate_models_for_formula(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Model>> {
     enumerate_models_for_formula_with_config(formula, f, &ModelEnumerationConfig::default())
 }
 
@@ -153,9 +154,9 @@ pub fn enumerate_models_for_formula_with_config(
     formula: EncodedFormula,
     f: &FormulaFactory,
     config: &ModelEnumerationConfig,
-) -> Vec<Model> {
+) -> LngResult<Vec<Model>> {
     let mut solver = MiniSat::new();
-    solver.add(formula, f);
+    solver.add(formula, f)?;
     enumerate_models_with_config(&mut solver, config)
 }
 
@@ -180,7 +181,7 @@ pub fn enumerate_models_for_formula_with_config(
 ///
 /// let models = enumerate_models(&mut solver);
 /// ```
-pub fn enumerate_models(solver: &mut MiniSat) -> Vec<Model> {
+pub fn enumerate_models(solver: &mut MiniSat) -> LngResult<Vec<Model>> {
     enumerate_models_with_config(solver, &ModelEnumerationConfig::default())
 }
 
@@ -206,8 +207,8 @@ pub fn enumerate_models(solver: &mut MiniSat) -> Vec<Model> {
 /// let config = ModelEnumerationConfig::default();
 /// let models = enumerate_models_with_config(&mut solver, &config);
 /// ```
-pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerationConfig) -> Vec<Model> {
-    let original_state = solver.save_state();
+pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerationConfig) -> LngResult<Vec<Model>> {
+    let original_state = solver.save_state()?;
     let mut models: Vec<Model> = Vec::new();
     let relevant_indices: Option<Vec<MsVar>>;
     if let Some(relevant_vars) = &config.variables {
@@ -260,8 +261,8 @@ pub fn enumerate_models_with_config(solver: &mut MiniSat, config: &ModelEnumerat
             break;
         }
     }
-    solver.load_state(&original_state);
-    models
+    solver.load_state(&original_state)?;
+    Ok(models)
 }
 
 #[allow(clippy::option_if_let_else, clippy::ref_option)] // proposed change does not improve readability
@@ -330,8 +331,8 @@ mod tests {
     fn test_model_enumeration_simple() {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
-        solver.add("A & (B | C)".to_formula(f), f);
-        let models = enumerate_models(&mut solver);
+        let _ = solver.add("A & (B | C)".to_formula(f), f);
+        let models = enumerate_models(&mut solver).unwrap();
         let ass: HashSet<Assignment> = models.iter().map(Assignment::from).collect();
         assert_eq!(
             vec![
@@ -349,12 +350,12 @@ mod tests {
     fn test_model_enumeration_does_not_alter_solver() {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
-        solver.add("A & (B | C)".to_formula(f), f);
+        let _ = solver.add("A & (B | C)".to_formula(f), f);
         assert_eq!(True, solver.sat());
-        let models1 = enumerate_models(&mut solver);
+        let models1 = enumerate_models(&mut solver).unwrap();
         let ass1: HashSet<Assignment> = models1.iter().map(Assignment::from).collect();
         assert_eq!(True, solver.sat());
-        let models2 = enumerate_models(&mut solver);
+        let models2 = enumerate_models(&mut solver).unwrap();
         let ass2: HashSet<Assignment> = models2.iter().map(Assignment::from).collect();
         assert_eq!(True, solver.sat());
         assert_eq!(ass1, ass2);
@@ -365,11 +366,12 @@ mod tests {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
         let formula = "A & B => A".to_formula(f);
-        solver.add(formula, f);
+        let _ = solver.add(formula, f);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(formula.variables(f).iter().copied().collect::<Box<[_]>>()),
-        );
+        )
+        .unwrap();
         assert_eq!(4, models.len());
         for model in models {
             assert_eq!(model.literals().iter().map(Literal::variable).sorted().collect::<Vec<Variable>>(), [f.var("A"), f.var("B")]);
@@ -381,9 +383,9 @@ mod tests {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
         let a = "A".to_formula(f);
-        solver.add(a, f);
+        let _ = solver.add(a, f);
         let vars: Box<[Variable]> = Box::new([f.var("A"), f.var("X")]);
-        let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars));
+        let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars)).unwrap();
         assert_eq!(1, models.len());
         assert_eq!(models[0].literals(), vec![f.lit("A", true)]);
     }

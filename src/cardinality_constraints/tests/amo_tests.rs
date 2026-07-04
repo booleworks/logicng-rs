@@ -62,9 +62,10 @@ fn test_amo(num_lits: usize, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(LE, 1, problem_vars.clone());
-    solver.add(cc, f);
+    let _ = solver.add(cc, f);
     assert_eq!(solver.sat(), True);
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000));
+    let models =
+        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000)).unwrap();
     assert_eq!(models.len(), num_lits + 1);
     for model in models {
         assert!(model.pos().len() <= 1);

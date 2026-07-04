@@ -39,7 +39,7 @@ fn maximize(thread_count: usize) {
                 let formula = read_formula(&paths_l[c], &f_l).unwrap();
                 let literals = formula.variables(&f_l).iter().map(|v| v.pos_lit()).collect_vec();
                 let mut solver = MiniSat::new();
-                solver.add(formula, &f_l);
+                let _ = solver.add(formula, &f_l);
                 let _model = solver.optimize(&f_l, &OptimizationFunction::maximize(literals));
             }
         });

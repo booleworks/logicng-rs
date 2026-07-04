@@ -1,13 +1,13 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use regex::Regex;
+use crate::io::IoError;
 use std::fs::File;
-use std::io;
 use std::io::{BufRead, BufReader};
 
 /// Reads a DIMACS CNF file with the variable prefix `v`.
 ///
 /// See also [`read_cnf_with_prefix`]
-pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> io::Result<Vec<EncodedFormula>> {
+pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
     read_cnf_with_prefix(file_path, f, "v")
 }
 
@@ -23,7 +23,7 @@ pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> io::Result<Vec<EncodedFo
 /// If you don't care about the prefix, you can just use [`read_cnf`] which uses `v` as default prefix.
 ///
 /// The result of the method is the list of clauses read from the DIMACS file. If there was a problem reading the file,
-/// a respective [`io::Error`] is returned.
+/// a respective [`IoError`] is returned.
 ///
 /// # Example
 ///
@@ -49,23 +49,45 @@ pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> io::Result<Vec<EncodedFo
 /// ];
 /// assert_eq!(clauses, expected);
 /// ```
-pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -> io::Result<Vec<EncodedFormula>> {
+pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -> LngResult<Vec<EncodedFormula>> {
     let mut result = Vec::new();
 
-    let file = File::open(file_path)?;
+    let file = File::open(file_path).map_err(|err| IoError::OpenFile { path: file_path.to_string(), reason: err.to_string() })?;
     let reader = BufReader::new(file);
-    let split_regex = Regex::new(r"[ \t]+").unwrap();
-    for l in reader.lines() {
-        let line = l?;
+    for (line_number, l) in reader.lines().enumerate() {
+        let line = l.map_err(|err| IoError::ReadFile { path: file_path.to_string(), reason: err.to_string() })?;
         if !line.starts_with('c') && !line.starts_with('p') && !line.trim().is_empty() {
-            let split: Vec<&str> = split_regex.split(&line).collect();
-            assert_eq!(*split.last().unwrap(), "0", "Line {line} did not end with 0.");
-            let vars = split.iter().take(split.len() - 1).map(|&lit| lit.trim()).filter(|&lit| !lit.is_empty()).map(|lit| {
-                lit.strip_prefix('-')
-                    .map_or_else(|| f.variable(format!("{prefix}{lit}")), |stripped| f.literal(&format!("{prefix}{stripped}"), false))
+            let split: Vec<&str> = line.split_whitespace().collect();
+            if split.last().copied() != Some("0") {
+                return Err(IoError::DimacsLineWithoutTerminator { path: file_path.to_string(), line: line_number + 1 }.into());
+            }
+            let vars = split.iter().take(split.len() - 1).map(|&lit| parse_dimacs_literal(file_path, line_number + 1, lit)).map(|lit| {
+                lit.map(|lit| {
+                    if lit < 0 {
+                        f.literal(&format!("{prefix}{}", lit.unsigned_abs()), false)
+                    } else {
+                        f.variable(format!("{prefix}{lit}"))
+                    }
+                })
             });
+            let vars = vars.collect::<LngResult<Vec<_>>>()?;
             result.push(f.or(vars));
         }
     }
     Ok(result)
+}
+
+fn parse_dimacs_literal(file_path: &str, line: usize, literal: &str) -> LngResult<i64> {
+    let value = literal.parse::<i64>().map_err(|_| IoError::InvalidDimacsLiteral {
+        path: file_path.to_string(),
+        line,
+        literal: literal.to_string(),
+    })?;
+    if value == 0 {
+        return Err(IoError::InvalidDimacsLiteral { path: file_path.to_string(), line, literal: literal.to_string() }.into());
+    }
+    if value == i64::MIN {
+        return Err(IoError::DimacsLiteralOverflow { path: file_path.to_string(), line, literal: literal.to_string() }.into());
+    }
+    Ok(value)
 }

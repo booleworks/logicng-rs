@@ -1,6 +1,7 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
+use crate::io::IoError;
 use std::fs::File;
-use std::io;
 use std::io::{BufRead, BufReader};
 
 /// Reads a `Formula` from a file using the given `FormulaFactory`.
@@ -8,7 +9,7 @@ use std::io::{BufRead, BufReader};
 /// If the file has multiple lines, the result will be the conjunction ([`FormulaFactory::and`])
 /// of the formulas in each line.
 ///
-/// If the file cannot be read or contains an invalid formula, a respective [`io::Error`] is returned.
+/// If the file cannot be read or contains an invalid formula, a respective [`IoError`] is returned.
 ///
 /// # Examples
 ///
@@ -27,11 +28,17 @@ use std::io::{BufRead, BufReader};
 /// let expected = "(A | B) & ~(C => A) & E".to_formula(&f);
 /// assert_eq!(my_formula, expected)
 /// ```
-pub fn read_formula(file_path: &str, f: &FormulaFactory) -> io::Result<EncodedFormula> {
-    let reader = BufReader::new(File::open(file_path)?);
+pub fn read_formula(file_path: &str, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+    let reader =
+        BufReader::new(File::open(file_path).map_err(|err| IoError::OpenFile { path: file_path.to_string(), reason: err.to_string() })?);
     let mut operands = Vec::new();
-    for line in reader.lines() {
-        let operand = f.parse(&line?).unwrap();
+    for (line_number, line) in reader.lines().enumerate() {
+        let line = line.map_err(|err| IoError::ReadFile { path: file_path.to_string(), reason: err.to_string() })?;
+        let operand = f.parse(&line).map_err(|err| IoError::InvalidFormula {
+            path: file_path.to_string(),
+            line: line_number + 1,
+            reason: err.to_string(),
+        })?;
         operands.push(operand);
     }
     Ok(f.and(&operands))

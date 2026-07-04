@@ -313,8 +313,10 @@ mod tests {
 
     fn equivalent_models(f1: EncodedFormula, f2: EncodedFormula, vars: Box<[Variable]>, f: &FormulaFactory) -> bool {
         let config = ModelEnumerationConfig::default().variables(vars);
-        let models1: HashSet<Assignment> = enumerate_models_for_formula_with_config(f1, f, &config).iter().map(Assignment::from).collect();
-        let models2: HashSet<Assignment> = enumerate_models_for_formula_with_config(f2, f, &config).iter().map(Assignment::from).collect();
+        let models1: HashSet<Assignment> =
+            enumerate_models_for_formula_with_config(f1, f, &config).unwrap().iter().map(Assignment::from).collect();
+        let models2: HashSet<Assignment> =
+            enumerate_models_for_formula_with_config(f2, f, &config).unwrap().iter().map(Assignment::from).collect();
         models1 == models2
     }
 }

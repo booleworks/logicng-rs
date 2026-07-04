@@ -1,19 +1,29 @@
 use itertools::Itertools;
 
+use crate::errors::LngResult;
 use crate::explanations::{UnsatCore, drup_compute};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::propositions::Proposition;
+use crate::solver::SolverError;
 use crate::solver::minisat::MiniSat;
 use crate::solver::minisat::sat::MsVar;
 use crate::solver::minisat::sat::Tristate::{True, Undef};
 use std::collections::HashMap;
 
 /// Computes the [`UnsatCore`] if the formula is unsatisfiable.
-pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) -> UnsatCore<B> {
-    assert!(solver.config.proof_generation, "Cannot generate an unsat core if proof generation is not turned on");
-    assert_ne!(solver.result, True, "An unsat core can only be generated if the formula is solved and is UNSAT");
-    assert_ne!(solver.result, Undef, "Cannot generate an unsat core before the formula was solved.");
-    assert!(!solver.last_computation_with_assumptions, "Cannot compute an unsat core for a computation with assumptions.");
+pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) -> LngResult<UnsatCore<B>> {
+    if !solver.config.proof_generation {
+        return Err(SolverError::ProofGenerationRequired.into());
+    }
+    if solver.result == Undef {
+        return Err(SolverError::NotSolved.into());
+    }
+    if solver.result == True {
+        return Err(SolverError::UnsatCoreOnSatFormula.into());
+    }
+    if solver.last_computation_with_assumptions {
+        return Err(SolverError::UnsatCoreWithAssumptions.into());
+    }
 
     let mut clause2propositions = HashMap::new();
     let mut clauses = Vec::with_capacity(solver.underlying_solver.pg_original_clauses.len());
@@ -26,15 +36,15 @@ pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory)
 
     if clauses.iter().any(Vec::is_empty) {
         let empty_clause = clause2propositions.remove(&f.falsum()).unwrap();
-        return UnsatCore::new(vec![empty_clause], true);
+        return Ok(UnsatCore::new(vec![empty_clause], true));
     }
 
     let result = drup_compute(clauses, solver.underlying_solver.pg_proof.clone());
 
     if result.trivial_unsat {
-        handle_trivial_case(solver, f)
+        Ok(handle_trivial_case(solver, f))
     } else {
-        UnsatCore::new(
+        Ok(UnsatCore::new(
             result
                 .unsat_core
                 .iter()
@@ -42,7 +52,7 @@ pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory)
                 .dedup()
                 .collect(),
             false,
-        )
+        ))
     }
 }
 

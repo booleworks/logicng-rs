@@ -30,9 +30,9 @@ mod drup_tests {
         let solvers = solvers();
         for mut solver in solvers {
             for cnf in &cnfs {
-                solver.add_all(cnf, &f);
+                let _ = solver.add_all(cnf, &f);
                 assert_eq!(solver.sat(), False);
-                let unsat_core = solver.unsat_core(&f);
+                let unsat_core = solver.unsat_core(&f).unwrap();
                 verify_core(&unsat_core, cnf, &f);
                 solver.reset();
             }
@@ -51,9 +51,9 @@ mod drup_tests {
                 let extension = path.extension().map_or("", |s| s.to_str().unwrap());
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
-                    solver.add_all(&cnf, f);
+                    let _ = solver.add_all(&cnf, f);
                     if solver.sat() == False {
-                        let unsat_core = solver.unsat_core(f);
+                        let unsat_core = solver.unsat_core(f).unwrap();
                         verify_core(&unsat_core, &cnf, f);
                         count += 1;
                     }
@@ -75,9 +75,9 @@ mod drup_tests {
                 let extension = path.extension().map_or("", |s| s.to_str().unwrap());
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
-                    solver.add_all(&cnf, f);
+                    let _ = solver.add_all(&cnf, f);
                     assert_eq!(solver.sat(), False);
-                    let unsat_core = solver.unsat_core(f);
+                    let unsat_core = solver.unsat_core(f).unwrap();
                     verify_core(&unsat_core, &cnf, f);
                 }
                 solver.reset();
@@ -101,9 +101,9 @@ mod drup_tests {
         ];
 
         for mut solver in solvers() {
-            solver.add_propositions(propositions.clone(), f);
+            let _ = solver.add_propositions(propositions.clone(), f);
             assert_eq!(solver.sat(), False);
-            let unsat_core = solver.unsat_core(f);
+            let unsat_core = solver.unsat_core(f).unwrap();
             let expected_result = [
                 propositions[0].clone(),
                 propositions[1].clone(),
@@ -133,29 +133,29 @@ mod drup_tests {
         let p11 = Proposition::standard_proposition("a & ~q".to_formula(f), "P11");
 
         let solver = &mut solvers()[0];
-        solver.add_propositions([p1.clone(), p2.clone(), p3.clone(), p4.clone()], f);
-        let state1 = solver.save_state();
-        solver.add_propositions([p5.clone(), p6.clone()], f);
-        let state2 = solver.save_state();
-        solver.add_propositions([p7, p8], f);
+        let _ = solver.add_propositions([p1.clone(), p2.clone(), p3.clone(), p4.clone()], f);
+        let state1 = solver.save_state().unwrap();
+        let _ = solver.add_propositions([p5.clone(), p6.clone()], f);
+        let state2 = solver.save_state().unwrap();
+        let _ = solver.add_propositions([p7, p8], f);
 
         assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p5.clone(), p6.clone()], f);
 
-        solver.load_state(&state2);
+        let _ = solver.load_state(&state2);
         assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p5.clone(), p6.clone()], f);
 
-        solver.load_state(&state1);
-        solver.add_proposition(p9.clone(), f);
+        let _ = solver.load_state(&state1);
+        let _ = solver.add_proposition(p9.clone(), f);
         assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p9], f);
 
-        solver.load_state(&state1);
-        solver.add_proposition(p5.clone(), f);
-        solver.add_proposition(p6.clone(), f);
+        let _ = solver.load_state(&state1);
+        let _ = solver.add_proposition(p5.clone(), f);
+        let _ = solver.add_proposition(p6.clone(), f);
         assert_unsat_core(solver, &[p1, p2, p3, p4.clone(), p5, p6], f);
 
-        solver.load_state(&state1);
-        solver.add_proposition(p10, f);
-        solver.add_proposition(p11.clone(), f);
+        let _ = solver.load_state(&state1);
+        let _ = solver.add_proposition(p10, f);
+        let _ = solver.add_proposition(p11.clone(), f);
         assert_unsat_core(solver, &[p4, p11], f);
     }
 
@@ -165,16 +165,16 @@ mod drup_tests {
         for mut solver in solvers() {
             assert_eq!(solver.sat(), True);
             let p1 = Proposition::standard_proposition(f.falsum(), "P1");
-            solver.add_proposition(p1.clone(), f);
+            let _ = solver.add_proposition(p1.clone(), f);
             assert_unsat_core(&mut solver, &[p1], f);
 
             solver.reset();
             assert_eq!(solver.sat(), True);
             let p2 = Proposition::standard_proposition(f.variable("a"), "P2");
-            solver.add_proposition(p2.clone(), f);
+            let _ = solver.add_proposition(p2.clone(), f);
             assert_eq!(solver.sat(), True);
             let p3 = Proposition::standard_proposition(f.literal("a", false), "P3");
-            solver.add_proposition(p3.clone(), f);
+            let _ = solver.add_proposition(p3.clone(), f);
             assert_unsat_core(&mut solver, &[p2, p3], f);
         }
     }
@@ -194,15 +194,15 @@ mod drup_tests {
             let p4 = Proposition::new("~X | ~G".to_formula(f));
             let p5 = Proposition::new("~G".to_formula(f));
             let p6 = Proposition::new("A".to_formula(f));
-            solver.add_proposition(p1.clone(), f);
-            solver.add_proposition(p2.clone(), f);
-            solver.add_proposition(p3, f);
-            solver.add_proposition(p4, f);
+            let _ = solver.add_proposition(p1.clone(), f);
+            let _ = solver.add_proposition(p2.clone(), f);
+            let _ = solver.add_proposition(p3, f);
+            let _ = solver.add_proposition(p4, f);
 
-            solver.sat_with(&SatBuilder::new().assumption(f.lit("X", true)));
+            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("X", true)]));
 
-            solver.add_proposition(p5.clone(), f);
-            solver.add_proposition(p6.clone(), f);
+            let _ = solver.add_proposition(p5.clone(), f);
+            let _ = solver.add_proposition(p6.clone(), f);
             solver.sat();
             assert_unsat_core(&mut solver, &[p1, p2, p5, p6], f);
         }
@@ -217,17 +217,17 @@ mod drup_tests {
         ];
 
         for mut solver in solvers {
-            solver.add_proposition(Proposition::new("~C => D".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("C => D".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("D => B | A".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("B => X".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("B => ~X".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("~C => D".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("C => D".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("D => B | A".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("B => X".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("B => ~X".to_formula(f)), f);
 
-            solver.sat_with(&SatBuilder::new().assumption(f.lit("A", true)));
+            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("A", true)]));
 
-            solver.add_proposition(Proposition::new("~A".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("~A".to_formula(f)), f);
             solver.sat();
-            assert!(!solver.unsat_core(f).propositions.is_empty());
+            assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
     }
 
@@ -241,24 +241,24 @@ mod drup_tests {
         ];
 
         for mut solver in solvers {
-            solver.add_proposition(Proposition::new("X => Y".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("X => Z".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("C => E".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("D => ~F".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("B => M".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("D => N".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("G => O".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("A => B".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("T1 <=> A & K & ~B & ~C".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("T2 <=> A & B & C & K".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("T1 + T2 = 1".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("X => Y".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("X => Z".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("C => E".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("D => ~F".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("B => M".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("D => N".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("G => O".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("A => B".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("T1 <=> A & K & ~B & ~C".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("T2 <=> A & B & C & K".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("T1 + T2 = 1".to_formula(f)), f);
             solver.sat(); // required for DRUP issue
 
-            solver.add_proposition(Proposition::new("Y => ~X & D".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("X".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("Y => ~X & D".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("X".to_formula(f)), f);
 
             solver.sat();
-            assert!(!solver.unsat_core(f).propositions.is_empty());
+            assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
     }
 
@@ -271,18 +271,18 @@ mod drup_tests {
         ];
 
         for mut solver in solvers {
-            solver.add_proposition(Proposition::new("~X1".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("X1".to_formula(f)), f); // caused the bug
-            solver.add_proposition(Proposition::new("A1".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("A1 => A2".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("R & A2 => A3".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("L & A2 => A3".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("R & A3 => A4".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("L & A3 => A4".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("~A4".to_formula(f)), f);
-            solver.add_proposition(Proposition::new("L | R".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("~X1".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("X1".to_formula(f)), f); // caused the bug
+            let _ = solver.add_proposition(Proposition::new("A1".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("A1 => A2".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("R & A2 => A3".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("L & A2 => A3".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("R & A3 => A4".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("L & A3 => A4".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("~A4".to_formula(f)), f);
+            let _ = solver.add_proposition(Proposition::new("L | R".to_formula(f)), f);
             solver.sat();
-            assert!(!solver.unsat_core(f).propositions.is_empty());
+            assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
     }
 
@@ -295,10 +295,10 @@ mod drup_tests {
         let p2 = StandardProposition::new("A".to_formula(f));
         let p3 = StandardProposition::new("B".to_formula(f));
         let p4 = StandardProposition::new("X & Y".to_formula(f));
-        solver.add_proposition(p1.clone(), f);
-        solver.add_proposition(p2.clone(), f);
-        solver.add_proposition(p3.clone(), f);
-        solver.add_proposition(p4, f);
+        let _ = solver.add_proposition(p1.clone(), f);
+        let _ = solver.add_proposition(p2.clone(), f);
+        let _ = solver.add_proposition(p3.clone(), f);
+        let _ = solver.add_proposition(p4, f);
         assert_unsat_core(&mut solver, &[p1, p2, p3], f);
     }
 
@@ -322,7 +322,7 @@ mod drup_tests {
             let p9 = Proposition::new("j => (f + g + h = 1)".to_formula(f));
             let p10 = Proposition::new("d => (l + m + e + f = 1)".to_formula(f));
             let p11 = Proposition::new("~k".to_formula(f));
-            solver.add_propositions(
+            let _ = solver.add_propositions(
                 [
                     p1.clone(),
                     p2.clone(),
@@ -339,7 +339,7 @@ mod drup_tests {
                 f,
             );
             assert_eq!(True, solver.sat());
-            solver.add("a".to_formula(f), f);
+            let _ = solver.add("a".to_formula(f), f);
             assert_unsat_core(&mut solver, &[p1, p2, p4, p5, p6, p7, p8, p9, p10, p11, Proposition::new("a".to_formula(f))], f);
         }
     }
@@ -349,7 +349,7 @@ mod drup_tests {
         let cnf_set: HashSet<EncodedFormula> = cnf.iter().map(EncodedFormula::clone).collect();
         assert!(core.iter().all(|c| cnf_set.contains(c)), "Core must contain only original clauses");
         let mut solver = MiniSat::new();
-        solver.add_all(&core, f);
+        let _ = solver.add_all(&core, f);
         assert_eq!(solver.sat(), False, "Core must be unsatisfiable");
     }
 
@@ -360,7 +360,7 @@ mod drup_tests {
     ) {
         assert_eq!(solver.sat(), False);
         assert_eq!(
-            solver.unsat_core(f).propositions.iter().cloned().collect::<HashSet<Proposition<B>>>(),
+            solver.unsat_core(f).unwrap().propositions.iter().cloned().collect::<HashSet<Proposition<B>>>(),
             expected.iter().cloned().collect::<HashSet<Proposition<B>>>()
         );
     }

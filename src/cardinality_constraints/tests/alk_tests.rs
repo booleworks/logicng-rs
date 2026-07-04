@@ -39,12 +39,13 @@ fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let cc = f.cc(CType::GE, rhs, problem_vars.clone());
     let mut solver = MiniSat::new();
-    solver.add(cc, f);
+    let _ = solver.add(cc, f);
     if expected == 0 {
         assert_eq!(solver.sat(), False);
     } else {
         assert_eq!(solver.sat(), True);
     }
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000));
+    let models =
+        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000)).unwrap();
     assert_eq!(models.len() as u64, expected);
 }

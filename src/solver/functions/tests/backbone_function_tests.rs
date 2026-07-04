@@ -79,12 +79,12 @@ fn solvers() -> [(MiniSat, &'static str); 10] {
 fn test_constant() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
-        let state = solver.save_state();
-        solver.add(f.falsum(), f);
+        let state = solver.save_state().unwrap();
+        let _ = solver.add(f.falsum(), f);
         let backbone = BackboneConfig::new(v("a b c", f)).compute_backbone(&mut solver);
         assert!(!backbone.sat);
-        solver.load_state(&state);
-        solver.add(f.verum(), f);
+        let _ = solver.load_state(&state);
+        let _ = solver.add(f.verum(), f);
         let backbone = BackboneConfig::new(v("a b c", f)).compute_backbone(&mut solver);
         assert!(backbone.sat);
         assert!(backbone.complete_backbone().is_empty());
@@ -95,13 +95,13 @@ fn test_constant() {
 fn test_simple_backbones() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
-        let state = solver.save_state();
-        solver.add("a & b & ~c".to_formula(f), f);
+        let state = solver.save_state().unwrap();
+        let _ = solver.add("a & b & ~c".to_formula(f), f);
         let backbone = BackboneConfig::new(v("a b c", f)).compute_backbone(&mut solver);
         assert!(backbone.sat);
         assert_eq!(l("a b ~c", f), backbone.complete_backbone());
-        solver.load_state(&state);
-        solver.add("~a & ~b & c".to_formula(f), f);
+        let _ = solver.load_state(&state);
+        let _ = solver.add("~a & ~b & c".to_formula(f), f);
         let backbone = BackboneConfig::new(v("a c", f)).compute_backbone(&mut solver);
         assert!(backbone.sat);
         assert_eq!(l("~a c", f), backbone.complete_backbone());
@@ -112,14 +112,14 @@ fn test_simple_backbones() {
 fn test_simple_formulas() {
     let f = &FormulaFactory::new();
     for (mut solver, _) in solvers() {
-        solver.add("(a => c | d) & (b => d | ~e) & (a | b)".to_formula(f), f);
+        let _ = solver.add("(a => c | d) & (b => d | ~e) & (a | b)".to_formula(f), f);
         let backbone = BackboneConfig::new(v("a b c d e f", f)).compute_backbone(&mut solver);
         assert!(backbone.sat);
         assert!(backbone.complete_backbone().is_empty());
         assert_eq!(Some(v("a b c d e f", f).iter().copied().collect()), backbone.optional_variables);
-        solver.add("a => b".to_formula(f), f);
-        solver.add("b => a".to_formula(f), f);
-        solver.add("~d".to_formula(f), f);
+        let _ = solver.add("a => b".to_formula(f), f);
+        let _ = solver.add("b => a".to_formula(f), f);
+        let _ = solver.add("~d".to_formula(f), f);
         let backbone = BackboneConfig::new(v("a b c d e f g h", f)).compute_backbone(&mut solver);
         assert!(backbone.sat);
         assert_eq!(l("a b c ~d ~e", f), backbone.complete_backbone());
@@ -143,7 +143,7 @@ fn test_real_formula_incremental1() {
     for (mut solver, _) in solvers() {
         let formula = read_formula("resources/formulas/large_formula.txt", f).unwrap();
         let vars: Vec<Variable> = (*formula.variables(f)).iter().copied().collect();
-        solver.add(formula, f);
+        let _ = solver.add(formula, f);
 
         let expected_backbones: Vec<BTreeSet<Literal>> =
             BufReader::new(File::open("resources/backbones/backbone_large_formula.txt").unwrap())
@@ -152,17 +152,17 @@ fn test_real_formula_incremental1() {
                 .collect();
 
         assert_eq!(expected_backbones[0], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v411"), f);
+        let _ = solver.add(f.variable("v411"), f);
         assert_eq!(expected_backbones[1], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v385"), f);
+        let _ = solver.add(f.variable("v385"), f);
         assert_eq!(expected_backbones[2], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v275"), f);
+        let _ = solver.add(f.variable("v275"), f);
         assert_eq!(expected_backbones[3], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v188"), f);
+        let _ = solver.add(f.variable("v188"), f);
         assert_eq!(expected_backbones[4], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v103"), f);
+        let _ = solver.add(f.variable("v103"), f);
         assert_eq!(expected_backbones[5], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v404"), f);
+        let _ = solver.add(f.variable("v404"), f);
         assert_eq!(Backbone::new_unsat(), BackboneConfig::new(vars.clone()).compute_backbone(&mut solver));
     }
 }
@@ -174,7 +174,7 @@ fn test_real_formula_incremental2() {
     for (mut solver, _) in solvers() {
         let formula = read_formula("resources/formulas/small_formulas.txt", f).unwrap();
         let vars: Vec<Variable> = (*formula.variables(f)).iter().copied().collect();
-        solver.add(formula, f);
+        let _ = solver.add(formula, f);
 
         let expected_backbones: Vec<BTreeSet<Literal>> =
             BufReader::new(File::open("resources/backbones/backbone_small_formulas.txt").unwrap())
@@ -183,17 +183,17 @@ fn test_real_formula_incremental2() {
                 .collect();
 
         assert_eq!(expected_backbones[0], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v2609"), f);
+        let _ = solver.add(f.variable("v2609"), f);
         assert_eq!(expected_backbones[1], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v2416"), f);
+        let _ = solver.add(f.variable("v2416"), f);
         assert_eq!(expected_backbones[2], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v2048"), f);
+        let _ = solver.add(f.variable("v2048"), f);
         assert_eq!(expected_backbones[3], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v39"), f);
+        let _ = solver.add(f.variable("v39"), f);
         assert_eq!(expected_backbones[4], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v1663"), f);
+        let _ = solver.add(f.variable("v1663"), f);
         assert_eq!(expected_backbones[5], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-        solver.add(f.variable("v2238"), f);
+        let _ = solver.add(f.variable("v2238"), f);
         assert_eq!(Backbone::new_unsat(), BackboneConfig::new(vars.clone()).compute_backbone(&mut solver));
     }
 }
@@ -206,8 +206,8 @@ fn test_real_formula_incremental_decremental1() {
         if solver.config.incremental {
             let formula = read_formula("resources/formulas/large_formula.txt", f).unwrap();
             let vars: Vec<Variable> = (*formula.variables(f)).iter().copied().collect();
-            solver.add(formula, f);
-            let state = &solver.save_state();
+            let _ = solver.add(formula, f);
+            let state = &solver.save_state().unwrap();
             let expected_backbones: Vec<BTreeSet<Literal>> =
                 BufReader::new(File::open("resources/backbones/backbone_large_formula.txt").unwrap())
                     .lines()
@@ -215,23 +215,23 @@ fn test_real_formula_incremental_decremental1() {
                     .collect();
 
             assert_eq!(expected_backbones[0], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411".to_formula(f), f);
             assert_eq!(expected_backbones[1], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411 & v385".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411 & v385".to_formula(f), f);
             assert_eq!(expected_backbones[2], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411 & v385 & v275".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411 & v385 & v275".to_formula(f), f);
             assert_eq!(expected_backbones[3], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411 & v385 & v275 & v188".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411 & v385 & v275 & v188".to_formula(f), f);
             assert_eq!(expected_backbones[4], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411 & v385 & v275 & v188 & v103".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411 & v385 & v275 & v188 & v103".to_formula(f), f);
             assert_eq!(expected_backbones[5], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v411 & v385 & v275 & v188 & v103 & v404".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v411 & v385 & v275 & v188 & v103 & v404".to_formula(f), f);
             assert_eq!(Backbone::new_unsat(), BackboneConfig::new(vars.clone()).compute_backbone(&mut solver));
         }
     }
@@ -245,8 +245,8 @@ fn test_real_formula_incremental_decremental2() {
         if solver.config.incremental {
             let formula = read_formula("resources/formulas/small_formulas.txt", f).unwrap();
             let vars: Vec<Variable> = (*formula.variables(f)).iter().copied().collect();
-            solver.add(formula, f);
-            let state = &solver.save_state();
+            let _ = solver.add(formula, f);
+            let state = &solver.save_state().unwrap();
             let expected_backbones: Vec<BTreeSet<Literal>> =
                 BufReader::new(File::open("resources/backbones/backbone_small_formulas.txt").unwrap())
                     .lines()
@@ -254,23 +254,23 @@ fn test_real_formula_incremental_decremental2() {
                     .collect();
 
             assert_eq!(expected_backbones[0], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add(f.variable("v2609"), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add(f.variable("v2609"), f);
             assert_eq!(expected_backbones[1], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v2609 & v2416".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v2609 & v2416".to_formula(f), f);
             assert_eq!(expected_backbones[2], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v2609 & v2416 & v2048".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v2609 & v2416 & v2048".to_formula(f), f);
             assert_eq!(expected_backbones[3], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v2609 & v2416 & v2048 & v39".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v2609 & v2416 & v2048 & v39".to_formula(f), f);
             assert_eq!(expected_backbones[4], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v2609 & v2416 & v2048 & v39 & v1663".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v2609 & v2416 & v2048 & v39 & v1663".to_formula(f), f);
             assert_eq!(expected_backbones[5], BackboneConfig::new(vars.clone()).compute_backbone(&mut solver).complete_backbone());
-            solver.load_state(state);
-            solver.add("v2609 & v2416 & v2048 & v39 & v1663 & v2238".to_formula(f), f);
+            let _ = solver.load_state(state);
+            let _ = solver.add("v2609 & v2416 & v2048 & v39 & v1663 & v2238".to_formula(f), f);
             assert_eq!(Backbone::new_unsat(), BackboneConfig::new(vars.clone()).compute_backbone(&mut solver));
         }
     }

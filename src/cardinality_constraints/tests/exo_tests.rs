@@ -62,9 +62,10 @@ fn test_exo(num_lits: usize, f: &FormulaFactory) {
     let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(EQ, 1, problem_lits.clone());
-    solver.add(cc, f);
+    let _ = solver.add(cc, f);
     assert_eq!(solver.sat(), True);
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_lits).max_models(12000));
+    let models =
+        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_lits).max_models(12000)).unwrap();
     assert_eq!(models.len(), num_lits);
     for model in models {
         assert_eq!(model.pos().len(), 1);

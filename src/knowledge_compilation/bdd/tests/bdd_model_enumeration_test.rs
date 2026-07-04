@@ -108,7 +108,7 @@ mod tests {
     fn check_equiv(original: EncodedFormula, cnf: EncodedFormula, f: &FormulaFactory) {
         let mut solver = MiniSat::new();
         let formula = f.equivalence(original, cnf);
-        solver.add(f.negate(formula), f);
+        let _ = solver.add(f.negate(formula), f);
         assert_eq!(solver.sat(), Tristate::False);
     }
 

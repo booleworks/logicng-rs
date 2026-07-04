@@ -37,7 +37,7 @@ fn sat() {
 
     for formula in formulas {
         let mut solver = MiniSat::new();
-        solver.add(formula, &f);
+        let _ = solver.add(formula, &f);
         let _ = solver.sat();
     }
     println!("Rust SAT: {}s", start.elapsed().as_secs_f32());
