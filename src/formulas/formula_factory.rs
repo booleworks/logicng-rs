@@ -10,7 +10,6 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use pest::error::Error;
 use regex::Regex;
 
 use CType::{EQ, LE, LT};
@@ -23,7 +22,7 @@ use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::{AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
-use crate::parser::pseudo_boolean_parser::{Rule, parse};
+use crate::parser::pseudo_boolean_parser::parse;
 
 use super::formula_cache::equivalence_cache::EquivalenceCache;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFormulaEncoding};
@@ -343,7 +342,7 @@ impl FormulaFactory {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn parse(&self, input: &str) -> Result<EncodedFormula, Box<Error<Rule>>> {
+    pub fn parse(&self, input: &str) -> LngResult<EncodedFormula> {
         parse(self, input)
     }
 

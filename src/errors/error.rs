@@ -4,6 +4,7 @@ use crate::{
     graphs::GraphError,
     knowledge_compilation::{bdd::BddError, dnnf::DnnfError},
     operations::OperationError,
+    parser::ParserError,
     pseudo_booleans::PbcError,
     util::UtilError,
 };
@@ -15,6 +16,9 @@ pub type LngResult<T> = Result<T, LngError>;
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum LngError {
+    #[error("parser: {0}")]
+    Parser(#[from] ParserError),
+
     #[error("cardinality constraint: {0}")]
     Cc(#[from] CcError),
 
