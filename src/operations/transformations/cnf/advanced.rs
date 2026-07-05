@@ -108,6 +108,16 @@ impl AdvancedFactorizationConfig {
 
 /// Handler used by advanced CNF factorization to stop factorization after
 /// configurable distribution or clause creation limits.
+///
+/// ```
+/// use logicng::handlers::{ComputationHandler, LngEvent};
+/// use logicng::operations::transformations::AdvancedFactorizationHandler;
+///
+/// let mut handler = AdvancedFactorizationHandler::new(Some(1), None);
+///
+/// assert!(handler.should_resume(LngEvent::DistributionPerformed));
+/// assert!(!handler.should_resume(LngEvent::DistributionPerformed));
+/// ```
 #[derive(Debug, Clone)]
 pub struct AdvancedFactorizationHandler {
     distribution_boundary: Option<u64>,
@@ -120,21 +130,27 @@ pub struct AdvancedFactorizationHandler {
 impl AdvancedFactorizationHandler {
     /// Creates a handler with optional distribution and created-clause
     /// boundaries.
+    ///
+    /// If a boundary is `None`, the corresponding event count is unbounded. If
+    /// it is `Some(bound)`, the handler cancels after more than `bound` events.
     pub fn new(distribution_boundary: Option<u64>, created_clause_boundary: Option<u64>) -> Self {
         Self { distribution_boundary, created_clause_boundary, canceled: false, current_distribution: 0, current_clause: 0 }
     }
 
     #[cfg(test)]
+    /// Returns whether the handler has canceled the current computation.
     pub fn canceled(&self) -> bool {
         self.canceled
     }
 
     #[cfg(test)]
+    /// Returns the number of observed distribution events in the current computation.
     pub fn current_distribution(&self) -> usize {
         self.current_distribution
     }
 
     #[cfg(test)]
+    /// Returns the number of observed clause creation events in the current computation.
     pub fn current_clause(&self) -> usize {
         self.current_clause
     }

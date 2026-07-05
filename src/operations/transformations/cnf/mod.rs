@@ -10,12 +10,12 @@ use std::collections::HashMap;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::handlers::{CancelableResult, ComputationHandler, NopHandler};
-use bdd::*;
 use factorization::factorization_cnf_with_handler;
 use plaisted_greenbaum_on_formula::pg_on_formula;
 use tseitin::tseitin_cnf_with_boundary;
 
 pub use advanced::*;
+pub use bdd::*;
 
 const DEFAULT_BOUNDARY_FOR_FACTORIZATION: u64 = 12;
 
