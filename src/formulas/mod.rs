@@ -1,4 +1,5 @@
 mod cache_config;
+mod error;
 mod formula;
 pub(crate) mod formula_cache;
 mod formula_factory;
@@ -14,6 +15,7 @@ mod variable;
 mod tests;
 
 pub use cache_config::*;
+pub use error::FormulaError;
 pub use formula::*;
 pub use formula_factory::*;
 pub use formula_factory_config::*;

@@ -82,9 +82,9 @@ mod restriction_tests {
         let a2 = Assignment::from_variables(&[f.var("a")], &[f.var("b")]);
         let a3 = Assignment::from_variables(&[f.var("a"), f.var("c")], &[f.var("b")]);
         let a4 = Assignment::from_variables(&[f.var("b")], &[f.var("a"), f.var("c")]);
-        let pb1 = f.pbc(CType::EQ, 2, lits, coeffs);
-        assert_eq!(f.restrict(pb1, &a1), f.pbc(CType::EQ, 0, lits_a1, coeffs_a1));
-        assert_eq!(f.restrict(pb1, &a2), f.pbc(CType::EQ, 2, lits_a2, coeffs_a2));
+        let pb1 = f.pbc(CType::EQ, 2, lits, coeffs).unwrap();
+        assert_eq!(f.restrict(pb1, &a1), f.pbc(CType::EQ, 0, lits_a1, coeffs_a1).unwrap());
+        assert_eq!(f.restrict(pb1, &a2), f.pbc(CType::EQ, 2, lits_a2, coeffs_a2).unwrap());
         assert_eq!(f.restrict(pb1, &a3), f.falsum());
         assert_eq!(f.restrict(pb1, &a4), f.falsum());
     }
@@ -95,8 +95,8 @@ mod restriction_tests {
         let lits: Box<[Literal]> =
             Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true), f.lit("d", true), f.lit("e", true), f.lit("f", false)]);
         let coeffs: Box<[i64]> = Box::new([75, 50, 201, -3, -24, 1]);
-        let pb1 = f.pbc(CType::GE, -24, lits.clone(), coeffs.clone());
-        let pb2 = f.pbc(CType::LE, 150, lits, coeffs);
+        let pb1 = f.pbc(CType::GE, -24, lits.clone(), coeffs.clone()).unwrap();
+        let pb2 = f.pbc(CType::LE, 150, lits, coeffs).unwrap();
         let a1 = Assignment::from_variables(&[f.var("c")], &[f.var("b")]);
         let a2 = Assignment::from_variables(&[f.var("b"), f.var("d"), f.var("e")], &[f.var("a"), f.var("c")]);
         let a3 = Assignment::from_variables(&[], &[f.var("c")]);

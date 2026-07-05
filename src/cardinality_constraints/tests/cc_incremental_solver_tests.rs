@@ -23,11 +23,11 @@ fn test_simple_incremental_amk() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
             let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
-            let _ = solver.add(f.cc(GE, 4, vars.clone()), f);
-            let _ = solver.add(f.cc(LE, 7, vars.clone()), f);
+            let _ = solver.add(f.cc(GE, 4, vars.clone()).unwrap(), f);
+            let _ = solver.add(f.cc(LE, 7, vars.clone()).unwrap(), f);
             f.config.cc_config = config.clone();
 
-            let mut inc_data = solver.add_incremental_cc(&f.cc(LE, 9, vars).as_cc(f).unwrap(), f).unwrap().unwrap();
+            let mut inc_data = solver.add_incremental_cc(&f.cc(LE, 9, vars).unwrap().as_cc(f).unwrap(), f).unwrap().unwrap();
             assert_eq!(solver.sat(), True);
             let _ = inc_data.new_upper_bound_for_solver(solver, f, 8);
             assert_eq!(solver.sat(), True);
@@ -60,11 +60,11 @@ fn test_simple_incremental_alk() {
             let f = &mut FormulaFactory::new();
             f.config.cc_config = configs()[2].clone();
             let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
-            let _ = solver.add(f.cc(GE, 4, vars.clone()), f);
-            let _ = solver.add(f.cc(LE, 7, vars.clone()), f);
+            let _ = solver.add(f.cc(GE, 4, vars.clone()).unwrap(), f);
+            let _ = solver.add(f.cc(LE, 7, vars.clone()).unwrap(), f);
             f.config.cc_config = config.clone();
 
-            let mut inc_data = solver.add_incremental_cc(&f.cc(GE, 2, vars).as_cc(f).unwrap(), f).unwrap().unwrap();
+            let mut inc_data = solver.add_incremental_cc(&f.cc(GE, 2, vars).unwrap().as_cc(f).unwrap(), f).unwrap().unwrap();
             assert_eq!(solver.sat(), True);
             let _ = inc_data.new_lower_bound_for_solver(solver, f, 3);
             assert_eq!(solver.sat(), True);
@@ -100,9 +100,9 @@ fn test_large_upper_bound_amk() {
             let num_lits = 100;
             let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
             let mut current_bound = num_lits - 1;
-            let _ = solver.add(f.cc(GE, 42, vars.clone()), f);
+            let _ = solver.add(f.cc(GE, 42, vars.clone()).unwrap(), f);
             f.config.cc_config = config.clone();
-            let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap().unwrap();
+            let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap().unwrap();
             while solver.sat() == True {
                 current_bound -= 1;
                 let _ = inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);
@@ -122,9 +122,9 @@ fn test_large_lower_bound_alk() {
             let num_lits = 100;
             let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
             let mut current_bound = 2;
-            let _ = solver.add(f.cc(LE, 87, vars.clone()), f);
+            let _ = solver.add(f.cc(LE, 87, vars.clone()).unwrap(), f);
             f.config.cc_config = config.clone();
-            let mut inc_data = solver.add_incremental_cc(&f.cc(GE, current_bound, vars).as_cc(f).unwrap(), f).unwrap().unwrap();
+            let mut inc_data = solver.add_incremental_cc(&f.cc(GE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap().unwrap();
             while solver.sat() == True {
                 current_bound += 1;
                 let _ = inc_data.new_lower_bound_for_solver(&mut solver, f, current_bound);
@@ -143,8 +143,8 @@ fn test_very_large_modular_totalizer_amk() {
     let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
     let mut solver = MiniSat::new();
-    let _ = solver.add(f.cc(GE, 234, vars.clone()), f);
-    let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).as_cc(f).unwrap(), f).unwrap().unwrap();
+    let _ = solver.add(f.cc(GE, 234, vars.clone()).unwrap(), f);
+    let mut inc_data = solver.add_incremental_cc(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap().unwrap();
     while solver.sat() == True {
         current_bound -= 1;
         let _ = inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound);

@@ -304,7 +304,7 @@ fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, lit
             })
             .collect::<Box<[_]>>();
         if maximize || num_satisfied_literals > 0 {
-            let _ = solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars), f);
+            let _ = solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars).unwrap(), f);
         }
     } else {
         assert!(optimum_model.is_none());

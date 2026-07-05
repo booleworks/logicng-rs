@@ -77,7 +77,7 @@ impl OptimizationFunction {
         let mut current_model = solver.model(Some(&selectors))?.expect("solver was true, there is a model");
         let mut current_bound = current_model.pos().len();
         if current_bound == 0 {
-            solver.add(f.cc(GE, 1, selectors.clone()), f)?;
+            solver.add(f.cc(GE, 1, selectors.clone())?, f)?;
             if solver.sat() == False {
                 return Ok(Some(self.mk_result_model(&internal_model, solver)));
             }
@@ -88,7 +88,7 @@ impl OptimizationFunction {
             return Ok(Some(self.mk_result_model(&internal_model, solver)));
         }
         let bound = u32::try_from(current_bound).map_err(|_| SolverError::OptimizationBoundTooLarge { bound: current_bound })? + 1;
-        let cc = f.cc(GE, bound, selectors.clone()).as_cc(f).unwrap();
+        let cc = f.cc(GE, bound, selectors.clone())?.as_cc(f).unwrap();
         let mut incremental_data = solver.add_incremental_cc(&cc, f)?;
         while solver.sat() == True {
             internal_model.clone_from(&solver.underlying_solver.model);

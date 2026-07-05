@@ -68,15 +68,15 @@ fn test_parse_multiplication() {
     let a = f.variable("a").as_literal().unwrap();
     let not_a = f.literal("a", false).as_literal().unwrap();
     let not_abc = f.literal("abc", false).as_literal().unwrap();
-    assert_eq!(parse(&f, "13 * abc = 4").unwrap(), f.pbc(CType::EQ, 4, (&[abc]) as &[Literal], &[13_i64] as &[i64]));
-    assert_eq!(parse(&f, "-13 * a = 4").unwrap(), f.pbc(CType::EQ, 4, (&[a]) as &[Literal], (&[-13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * ~abc = -442").unwrap(), f.pbc(CType::EQ, -442, (&[not_abc]) as &[Literal], (&[13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "-13 * ~a = -442").unwrap(), f.pbc(CType::EQ, -442, (&[not_a]) as &[Literal], (&[-13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * abc = 4").unwrap(), f.pbc(CType::EQ, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * abc > 4").unwrap(), f.pbc(CType::GT, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * abc >= 4").unwrap(), f.pbc(CType::GE, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * abc < 4").unwrap(), f.pbc(CType::LT, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]));
-    assert_eq!(parse(&f, "13 * abc <= 4").unwrap(), f.pbc(CType::LE, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]));
+    assert_eq!(parse(&f, "13 * abc = 4").unwrap(), f.pbc(CType::EQ, 4, (&[abc]) as &[Literal], &[13_i64] as &[i64]).unwrap());
+    assert_eq!(parse(&f, "-13 * a = 4").unwrap(), f.pbc(CType::EQ, 4, (&[a]) as &[Literal], (&[-13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * ~abc = -442").unwrap(), f.pbc(CType::EQ, -442, (&[not_abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "-13 * ~a = -442").unwrap(), f.pbc(CType::EQ, -442, (&[not_a]) as &[Literal], (&[-13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * abc = 4").unwrap(), f.pbc(CType::EQ, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * abc > 4").unwrap(), f.pbc(CType::GT, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * abc >= 4").unwrap(), f.pbc(CType::GE, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * abc < 4").unwrap(), f.pbc(CType::LT, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "13 * abc <= 4").unwrap(), f.pbc(CType::LE, 4, (&[abc]) as &[Literal], (&[13_i64]) as &[i64]).unwrap());
 }
 
 #[test]
@@ -88,18 +88,30 @@ fn test_parse_addition() {
     let not_b = f.literal("b", false).as_literal().unwrap();
     let not_d = f.literal("d", false).as_literal().unwrap();
     let not_c = f.literal("c", false).as_literal().unwrap();
-    assert_eq!(parse(&f, "4 * c + -4 * ~d < -4").unwrap(), f.pbc(CType::LT, -4, (&[c, not_d]) as &[Literal], (&[4_i64, -4]) as &[i64]));
-    assert_eq!(parse(&f, "5 * c + -5 * ~c >= -5").unwrap(), f.pbc(CType::GE, -5, (&[c, not_c]) as &[Literal], (&[5_i64, -5]) as &[i64]));
+    assert_eq!(
+        parse(&f, "4 * c + -4 * ~d < -4").unwrap(),
+        f.pbc(CType::LT, -4, (&[c, not_d]) as &[Literal], (&[4_i64, -4]) as &[i64]).unwrap()
+    );
+    assert_eq!(
+        parse(&f, "5 * c + -5 * ~c >= -5").unwrap(),
+        f.pbc(CType::GE, -5, (&[c, not_c]) as &[Literal], (&[5_i64, -5]) as &[i64]).unwrap()
+    );
     assert_eq!(
         parse(&f, "6 * a + -6 * ~b + 12 * ~c > -6").unwrap(),
-        f.pbc(CType::GT, -6, (&[a, not_b, not_c]) as &[Literal], (&[6_i64, -6, 12]) as &[i64])
+        f.pbc(CType::GT, -6, (&[a, not_b, not_c]) as &[Literal], (&[6_i64, -6, 12]) as &[i64]).unwrap()
     );
-    assert_eq!(parse(&f, "c + -4 * ~d < -4").unwrap(), f.pbc(CType::LT, -4, (&[c, not_d]) as &[Literal], (&[1_i64, -4]) as &[i64]));
-    assert_eq!(parse(&f, "5 * c + ~c >= -5").unwrap(), f.pbc(CType::GE, -5, (&[c, not_c]) as &[Literal], (&[5_i64, 1]) as &[i64]));
-    assert_eq!(parse(&f, "c + d >= -5").unwrap(), f.pbc(CType::GE, -5, (&[c, d]) as &[Literal], (&[1_i64, 1]) as &[i64]));
-    assert_eq!(parse(&f, "~c + ~d >= -5").unwrap(), f.pbc(CType::GE, -5, (&[not_c, not_d]) as &[Literal], (&[1_i64, 1]) as &[i64]));
-    assert_eq!(parse(&f, "~c = -5").unwrap(), f.pbc(CType::EQ, -5, (&[not_c]) as &[Literal], (&[1_i64]) as &[i64]));
-    let pbc = f.pbc(CType::EQ, -5, (&[c]) as &[Literal], (&[1_i64]) as &[i64]);
+    assert_eq!(
+        parse(&f, "c + -4 * ~d < -4").unwrap(),
+        f.pbc(CType::LT, -4, (&[c, not_d]) as &[Literal], (&[1_i64, -4]) as &[i64]).unwrap()
+    );
+    assert_eq!(parse(&f, "5 * c + ~c >= -5").unwrap(), f.pbc(CType::GE, -5, (&[c, not_c]) as &[Literal], (&[5_i64, 1]) as &[i64]).unwrap());
+    assert_eq!(parse(&f, "c + d >= -5").unwrap(), f.pbc(CType::GE, -5, (&[c, d]) as &[Literal], (&[1_i64, 1]) as &[i64]).unwrap());
+    assert_eq!(
+        parse(&f, "~c + ~d >= -5").unwrap(),
+        f.pbc(CType::GE, -5, (&[not_c, not_d]) as &[Literal], (&[1_i64, 1]) as &[i64]).unwrap()
+    );
+    assert_eq!(parse(&f, "~c = -5").unwrap(), f.pbc(CType::EQ, -5, (&[not_c]) as &[Literal], (&[1_i64]) as &[i64]).unwrap());
+    let pbc = f.pbc(CType::EQ, -5, (&[c]) as &[Literal], (&[1_i64]) as &[i64]).unwrap();
     assert_eq!(parse(&f, "~(c = -5)").unwrap(), f.not(pbc));
 }
 
@@ -110,7 +122,7 @@ fn test_combination() {
     let a = f.variable("a").as_literal().unwrap();
     let not_b = f.literal("b", false).as_literal().unwrap();
     let not_c = f.literal("c", false).as_literal().unwrap();
-    let pbc = f.pbc(CType::GT, -6, (&[a, not_b, not_c]) as &[Literal], (&[6_i64, -6, 12]) as &[i64]);
+    let pbc = f.pbc(CType::GT, -6, (&[a, not_b, not_c]) as &[Literal], (&[6_i64, -6, 12]) as &[i64]).unwrap();
     let x = f.variable("x");
     let y = f.variable("y");
     let z = f.variable("z");
@@ -164,12 +176,14 @@ fn test_parse_precedences() {
     let not_lit12 = f.literal("12", false);
     let not_b = f.literal("B", false);
     let not_x = f.literal("x", false);
-    let pbc = f.pbc(
-        CType::LE,
-        -25,
-        (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
-        (&[1_i64, 13, 1]) as &[i64],
-    );
+    let pbc = f
+        .pbc(
+            CType::LE,
+            -25,
+            (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
+            (&[1_i64, 13, 1]) as &[i64],
+        )
+        .unwrap();
     assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 & x").unwrap(), f.and([pbc, x]));
     assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 | ~x").unwrap(), f.or([pbc, not_x]));
     assert_eq!(parse(&f, "~12 - -13 * A + ~B <= -25 => ~x").unwrap(), f.implication(pbc, not_x));
@@ -188,7 +202,7 @@ fn test_number_literals() {
     let not_b = f.literal("B", false);
     assert_eq!(
         parse(&f, "12 + A <= 25").unwrap(),
-        f.cc(CType::LE, 25, (&[lit12.as_variable().unwrap(), a.as_variable().unwrap()]) as &[Variable])
+        f.cc(CType::LE, 25, (&[lit12.as_variable().unwrap(), a.as_variable().unwrap()]) as &[Variable]).unwrap()
     );
     assert_eq!(parse(&f, "12 & A").unwrap(), f.and([lit12, a]));
     assert_eq!(parse(&f, "~12 & A").unwrap(), f.and([not_lit12, a]));
@@ -200,6 +214,7 @@ fn test_number_literals() {
             (&[lit12.as_literal().unwrap(), a.as_literal().unwrap(), b.as_literal().unwrap()]) as &[Literal],
             (&[12_i64, 13, 10]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "-12 * ~12 + 13 * A + 10 * B <= 25").unwrap(),
@@ -209,6 +224,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), b.as_literal().unwrap()]) as &[Literal],
             (&[-12_i64, 13, 10]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "-12 * ~12 - 13 * A + 10 * B <= 25").unwrap(),
@@ -218,6 +234,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), b.as_literal().unwrap()]) as &[Literal],
             (&[-12_i64, -13, 10]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "-12 * ~12 - 13 * A + ~B <= 25").unwrap(),
@@ -227,6 +244,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
             (&[-12_i64, -13, 1]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "~12 - 13 * A + ~B <= 25").unwrap(),
@@ -236,6 +254,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
             (&[1_i64, -13, 1]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "~12 - -13 * A + ~B <= 25").unwrap(),
@@ -245,6 +264,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
             (&[1_i64, 13, 1]) as &[i64]
         )
+        .unwrap()
     );
     assert_eq!(
         parse(&f, "~12 - -13 * A + ~B <= -25").unwrap(),
@@ -254,6 +274,7 @@ fn test_number_literals() {
             (&[not_lit12.as_literal().unwrap(), a.as_literal().unwrap(), not_b.as_literal().unwrap()]) as &[Literal],
             (&[1_i64, 13, 1]) as &[i64]
         )
+        .unwrap()
     );
 }
 

@@ -30,7 +30,7 @@ fn test_amo_0() {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config.clone();
-        let cc = f.cc(LE, 0, (&[]) as &[Variable]);
+        let cc = f.cc(LE, 0, (&[]) as &[Variable]).unwrap();
         assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
@@ -41,7 +41,7 @@ fn test_amo_1() {
     for config in configs() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
-        let cc = f.cc(LE, 1, (&[var]) as &[Variable]);
+        let cc = f.cc(LE, 1, (&[var]) as &[Variable]).unwrap();
         assert!(f.nnf_of(cc).unwrap().is_verum());
         assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap().is_empty());
     }
@@ -61,7 +61,7 @@ fn test_amo_k() {
 fn test_amo(num_lits: usize, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
-    let cc = f.cc(LE, 1, problem_vars.clone());
+    let cc = f.cc(LE, 1, problem_vars.clone()).unwrap();
     let _ = solver.add(cc, f);
     assert_eq!(solver.sat(), True);
     let models =

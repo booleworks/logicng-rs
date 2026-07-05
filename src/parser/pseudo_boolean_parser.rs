@@ -142,7 +142,7 @@ fn parse_comparison(f: &FormulaFactory, comparison: Pair<Rule>) -> LngResult<Enc
         rule => return Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
     };
     let rhs = parse_i64(next_pair(&mut tokens)?.as_str(), false)?;
-    Ok(f.pbc(comparator, rhs, literals, coefficients))
+    f.pbc(comparator, rhs, literals, coefficients)
 }
 
 fn parse_mul(f: &FormulaFactory, mul: Pair<Rule>) -> LngResult<(Literal, i64)> {

@@ -30,7 +30,7 @@ fn test_exo_0() {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config.clone();
-        let cc = f.cc(EQ, 0, (&[]) as &[Variable]);
+        let cc = f.cc(EQ, 0, (&[]) as &[Variable]).unwrap();
         assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
@@ -41,7 +41,7 @@ fn test_exo_1() {
     for config in configs() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
-        let cc = f.cc(EQ, 1, &([var]) as &[Variable]);
+        let cc = f.cc(EQ, 1, &([var]) as &[Variable]).unwrap();
         assert_eq!(f.nnf_of(cc).unwrap(), f.variable("v0"));
         assert_eq!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap(), vec![f.variable("v0")]);
     }
@@ -61,7 +61,7 @@ fn test_exo_k() {
 fn test_exo(num_lits: usize, f: &FormulaFactory) {
     let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
-    let cc = f.cc(EQ, 1, problem_lits.clone());
+    let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
     let _ = solver.add(cc, f);
     assert_eq!(solver.sat(), True);
     let models =

@@ -182,7 +182,7 @@ fn test_pbc() {
             lits.push(f.lit(&format!("x{i}"), i % 2 == 0));
             coeffs.push(i + 1);
         }
-        let _ = solver.add(f.pbc(GE, 10, lits, coeffs), f);
+        let _ = solver.add(f.pbc(GE, 10, lits, coeffs).unwrap(), f);
         assert_eq!(solver.sat(), True);
     }
 }
@@ -310,7 +310,7 @@ fn test_model_enumeration() {
     let first_five = &vars[..5];
     for mut solver in solvers() {
         if solver.config.incremental {
-            let _ = solver.add(f.cc(GE, 1, vars.clone()), f);
+            let _ = solver.add(f.cc(GE, 1, vars.clone()).unwrap(), f);
             let models = enumerate_models_with_config(
                 &mut solver,
                 &ModelEnumerationConfig::default().variables(first_five).additional_variables(vars.clone()),
@@ -513,7 +513,7 @@ fn test_selection_order_simple02() {
     for mut solver in solvers() {
         let vars: Box<[Variable]> = (0..5).map(|i| f.var(format!("x{i}"))).collect();
         let selection_order: Vec<Literal> = vars.iter().map(Variable::pos_lit).collect();
-        let cc = f.cc(EQ, 2, vars);
+        let cc = f.cc(EQ, 2, vars).unwrap();
         let _ = solver.add(cc, f);
 
         for _ in 0..10 {

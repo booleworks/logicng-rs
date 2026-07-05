@@ -1057,7 +1057,7 @@ impl FormulaRandomizer {
             .expect("too many variables for a cardinality constraint");
         let rhs_offset = u32::from(c_type == LT);
         let rhs = rhs_offset + self.random.u32(0..rhs_bound);
-        let cc = f.cc(c_type, rhs, variables);
+        let cc = f.cc(c_type, rhs, variables).expect("valid cc");
         if cc.is_constant() { self.cc(f) } else { cc }
     }
 
@@ -1129,7 +1129,7 @@ impl FormulaRandomizer {
         }
         let c_type = self.c_type();
         let rhs = self.random.i64(0..=(max_sum + min_sum)) - min_sum;
-        let pbc = f.pbc(c_type, rhs, literals, coefficients);
+        let pbc = f.pbc(c_type, rhs, literals, coefficients).expect("valid pbc");
         if pbc.is_constant() { self.pbc(f) } else { pbc }
     }
 

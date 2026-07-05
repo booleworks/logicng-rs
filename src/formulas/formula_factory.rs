@@ -20,7 +20,9 @@ use crate::formulas::CType::{GE, GT};
 use crate::formulas::Literal::Pos;
 use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
-use crate::formulas::{AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
+use crate::formulas::{
+    AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig, Literal, PbConstraint, Variable,
+};
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
 use crate::parser::pseudo_boolean_parser::parse;
 
@@ -334,7 +336,7 @@ impl FormulaFactory {
     /// let b = f.var("b");
     /// let a = f.var("a");
     /// let expected2 = f.and(&[EncodedFormula::from(a), EncodedFormula::from(b)]);
-    /// let expected3 = f.cc(CType::EQ, 1, vec![a, b]);
+    /// let expected3 = f.cc(CType::EQ, 1, vec![a, b]).unwrap();
     ///
     /// assert_eq!(parsed1, expected1);
     /// assert_eq!(parsed2, expected2);
@@ -873,15 +875,17 @@ impl FormulaFactory {
     /// let b = f.var("b");
     /// let c = f.var("c");
     ///
-    /// let cc1 = f.cc(EQ, 2, vec![a, b, c]);
-    /// let cc2 = f.cc(LT, 1, vec![a, c]);
+    /// let cc1 = f.cc(EQ, 2, vec![a, b, c]).unwrap();
+    /// let cc2 = f.cc(LT, 1, vec![a, c]).unwrap();
     ///
     /// assert_eq!(cc1.to_string(&f), "a + b + c = 2");
     /// assert_eq!(cc2.to_string(&f), "a + c < 1");
     /// ```
-    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> EncodedFormula {
-        assert!(is_cc(comparator, rhs.into()), "Given values do not represent a cardinality constraint.");
-        self.construct_cc_unsafe(comparator, rhs.into(), variables.into())
+    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> LngResult<EncodedFormula> {
+        if !is_cc(comparator, rhs.into()) {
+            return Err(FormulaError::NoCc { comp: comparator, rhs }.into());
+        }
+        Ok(self.construct_cc_unsafe(comparator, rhs.into(), variables.into()))
     }
 
     /// Creates a new _exactly-one_ cardinality constraint.
@@ -909,10 +913,10 @@ impl FormulaFactory {
     /// let exo = f.exo(vec![a, b]);
     ///
     /// assert_eq!(exo.to_string(&f), "a + b = 1");
-    /// assert_eq!(exo, f.cc(EQ, 1, vec![a, b]));
+    /// assert_eq!(exo, f.cc(EQ, 1, vec![a, b]).unwrap());
     /// ```
     pub fn exo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(EQ, 1, variables)
+        self.cc(EQ, 1, variables).expect("exo is a valid cardinality constraint")
     }
 
     /// Creates a new _at-most-one_ cardinality constraint.
@@ -940,10 +944,10 @@ impl FormulaFactory {
     /// let amo = f.amo(vec![a, b]);
     ///
     /// assert_eq!(amo.to_string(&f), "a + b <= 1");
-    /// assert_eq!(amo, f.cc(LE, 1, vec![a, b]));
+    /// assert_eq!(amo, f.cc(LE, 1, vec![a, b]).unwrap());
     /// ```
     pub fn amo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(LE, 1, variables)
+        self.cc(LE, 1, variables).expect("amo is a valid cardinality constraint")
     }
 
     /// Creates a new pseudo-boolean constraint.
@@ -961,26 +965,28 @@ impl FormulaFactory {
     /// let b = f.lit("b", true);
     /// let c = f.lit("c", false);
     ///
-    /// let pbc1 = f.pbc(EQ, 2, vec![a, b, c], vec![2, -1, 1]);
-    /// let pbc2 = f.pbc(LT, 1, vec![a, c], vec![3, -4]);
+    /// let pbc1 = f.pbc(EQ, 2, vec![a, b, c], vec![2, -1, 1]).unwrap();
+    /// let pbc2 = f.pbc(LT, 1, vec![a, c], vec![3, -4]).unwrap();
     ///
     /// assert_eq!(pbc1.to_string(&f), "2*a + -1*b + ~c = 2");
     /// assert_eq!(pbc2.to_string(&f), "3*a + -4*~c < 1");
     /// ```
-    pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> EncodedFormula
+    pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> LngResult<EncodedFormula>
     where
         L: Into<Box<[Literal]>>,
         C: Into<Box<[i64]>>,
     {
         let l = literals.into();
         let c = coefficients.into();
-        assert_eq!(l.len(), c.len(), "The number of literals and coefficients in a pseudo-boolean constraint must be the same.");
+        if l.len() != c.len() {
+            return Err(FormulaError::NoPbc { lits: l.len(), coeffs: c.len() }.into());
+        }
         if l.is_empty() {
-            self.constant(evaluate_trivial_pb_constraint(comparator, rhs))
+            Ok(self.constant(evaluate_trivial_pb_constraint(comparator, rhs)))
         } else if is_lit_cc(comparator, rhs, &l, &c) {
-            self.construct_cc_unsafe(comparator, rhs, l.iter().map(|&lit| lit.variable()).collect())
+            Ok(self.construct_cc_unsafe(comparator, rhs, l.iter().map(|&lit| lit.variable()).collect()))
         } else {
-            EncodedFormula::from(self.pbcs.get_or_insert(PbConstraint::new(l, c, comparator, rhs), FormulaType::Pbc))
+            Ok(EncodedFormula::from(self.pbcs.get_or_insert(PbConstraint::new(l, c, comparator, rhs), FormulaType::Pbc)))
         }
     }
 

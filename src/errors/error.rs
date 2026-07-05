@@ -1,6 +1,7 @@
 #![allow(missing_docs)]
 use crate::{
     cardinality_constraints::CcError,
+    formulas::FormulaError,
     graphs::GraphError,
     io::IoError,
     knowledge_compilation::{bdd::BddError, dnnf::DnnfError},
@@ -20,6 +21,9 @@ pub type LngResult<T> = Result<T, LngError>;
 pub enum LngError {
     #[error("parser: {0}")]
     Parser(#[from] ParserError),
+
+    #[error("formula: {0}")]
+    Formula(#[from] FormulaError),
 
     #[error("cardinality constraint: {0}")]
     Cc(#[from] CcError),

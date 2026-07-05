@@ -45,7 +45,7 @@ mod tests {
         let mut f = FormulaFactory::new();
         f.config.cc_config = CcConfig::new().amo_encoder(AmoEncoder::Pure);
         let variables = generate_variables(15, &f);
-        let constraint = f.cc(CType::EQ, 8, variables);
+        let constraint = f.cc(CType::EQ, 8, variables).unwrap();
         let constraint = f.nnf_of(constraint).unwrap();
         let mut kernel = BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000).unwrap();
         let bdd = Bdd::from_formula(constraint, &f, &mut kernel).unwrap();

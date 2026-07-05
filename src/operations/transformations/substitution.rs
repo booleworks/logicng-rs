@@ -89,7 +89,7 @@ fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &Formul
         Ok(f.constant(evaluate_comparator(lhs_fixed, cc.comparator, cc.rhs.into())))
     } else {
         let coeffs = vec![1; new_lits.len()];
-        Ok(f.pbc(cc.comparator, i64::from(cc.rhs) - lhs_fixed, new_lits, coeffs))
+        f.pbc(cc.comparator, i64::from(cc.rhs) - lhs_fixed, new_lits, coeffs)
     }
 }
 
@@ -120,7 +120,7 @@ fn handle_pbc(pbc: &PbConstraint, substitution: &Substitution, f: &FormulaFactor
     if new_lits.is_empty() {
         Ok(f.constant(evaluate_comparator(lhs_fixed, pbc.comparator, pbc.rhs)))
     } else {
-        Ok(f.pbc(pbc.comparator, pbc.rhs - lhs_fixed, new_lits, new_coeffs))
+        f.pbc(pbc.comparator, pbc.rhs - lhs_fixed, new_lits, new_coeffs)
     }
 }
 
@@ -207,16 +207,16 @@ mod tests {
             (f.var("d"), f.variable("d2")),
         ]);
         let s6 = HashMap::from([(f.var("a"), f.variable("a2")), (f.var("b"), f.falsum())]);
-        let cc1 = f.cc(EQ, 2, vars.clone());
-        let cc2 = f.cc(LE, 8, vars);
-        assert_eq!(f.cc(EQ, 1, vars_s1), f.substitute(cc1, &s1).unwrap());
-        assert_eq!(f.cc(EQ, 1, vars_s2), f.substitute(cc1, &s2).unwrap());
+        let cc1 = f.cc(EQ, 2, vars.clone()).unwrap();
+        let cc2 = f.cc(LE, 8, vars).unwrap();
+        assert_eq!(f.cc(EQ, 1, vars_s1).unwrap(), f.substitute(cc1, &s1).unwrap());
+        assert_eq!(f.cc(EQ, 1, vars_s2).unwrap(), f.substitute(cc1, &s2).unwrap());
         assert_eq!(f.verum(), f.substitute(cc1, &s3).unwrap());
         assert_eq!(f.falsum(), f.substitute(cc1, &s4).unwrap());
         assert_eq!(f.verum(), f.substitute(cc2, &s3).unwrap());
         assert_eq!(f.verum(), f.substitute(cc2, &s4).unwrap());
-        assert_eq!(f.cc(EQ, 2, vars_s5), f.substitute(cc1, &s5).unwrap());
-        assert_eq!(f.cc(EQ, 2, vars_s6), f.substitute(cc1, &s6).unwrap());
+        assert_eq!(f.cc(EQ, 2, vars_s5).unwrap(), f.substitute(cc1, &s5).unwrap());
+        assert_eq!(f.cc(EQ, 2, vars_s6).unwrap(), f.substitute(cc1, &s6).unwrap());
     }
 
     #[test]
@@ -243,16 +243,16 @@ mod tests {
             (f.var("d"), f.variable("d2")),
         ]);
         let s6 = HashMap::from([(f.var("a"), f.variable("a2")), (f.var("b"), f.falsum())]);
-        let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone());
-        let pb2 = f.pbc(LE, 8, lits, coeffs2);
-        assert_eq!(f.pbc(EQ, 0, lits_s1, coeff_s1), f.substitute(pb1, &s1).unwrap());
-        assert_eq!(f.pbc(EQ, 2, lits_s2, coeff_s2), f.substitute(pb1, &s2).unwrap());
+        let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone()).unwrap();
+        let pb2 = f.pbc(LE, 8, lits, coeffs2).unwrap();
+        assert_eq!(f.pbc(EQ, 0, lits_s1, coeff_s1).unwrap(), f.substitute(pb1, &s1).unwrap());
+        assert_eq!(f.pbc(EQ, 2, lits_s2, coeff_s2).unwrap(), f.substitute(pb1, &s2).unwrap());
         assert_eq!(f.falsum(), f.substitute(pb1, &s3).unwrap());
         assert_eq!(f.verum(), f.substitute(pb2, &s3).unwrap());
         assert_eq!(f.falsum(), f.substitute(pb1, &s4).unwrap());
         assert_eq!(f.verum(), f.substitute(pb2, &s4).unwrap());
-        assert_eq!(f.pbc(EQ, 2, lits_s5, coeffs), f.substitute(pb1, &s5).unwrap());
-        assert_eq!(f.pbc(EQ, 4, lits_s6, coeff_s6), f.substitute(pb1, &s6).unwrap());
+        assert_eq!(f.pbc(EQ, 2, lits_s5, coeffs).unwrap(), f.substitute(pb1, &s5).unwrap());
+        assert_eq!(f.pbc(EQ, 4, lits_s6, coeff_s6).unwrap(), f.substitute(pb1, &s6).unwrap());
     }
 
     #[test]

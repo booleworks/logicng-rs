@@ -37,7 +37,7 @@ fn test_alk() {
 
 fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
-    let cc = f.cc(CType::GE, rhs, problem_vars.clone());
+    let cc = f.cc(CType::GE, rhs, problem_vars.clone()).unwrap();
     let mut solver = MiniSat::new();
     let _ = solver.add(cc, f);
     if expected == 0 {
