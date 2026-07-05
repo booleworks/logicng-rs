@@ -22,6 +22,12 @@ impl PbEncoder {
     }
 
     /// Encodes a pseudo-boolean constraint and returns its CNF encoding.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if normalization overflows, if the normalized
+    /// right-hand side or a coefficient cannot be represented on this
+    /// architecture, or if a delegated cardinality encoding fails.
     pub fn encode(&self, constraint: &PbConstraint, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
         let normalized = constraint.normalize(f)?;
         match normalized.formula_type() {

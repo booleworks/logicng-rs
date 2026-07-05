@@ -115,10 +115,25 @@ impl CnfEncoder {
     }
 
     /// Transform a formula with the algorithm of this encoder.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the selected CNF algorithm cannot encode the
+    /// formula or if the advanced encoder is configured with factorization as
+    /// its fallback algorithm.
     pub fn transform(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
         self.algorithm.clone().transform(formula, f, self)
     }
 
+    /// Transform a formula with the algorithm of this encoder and a custom
+    /// computation handler.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the selected CNF algorithm cannot encode the
+    /// formula or if the advanced encoder is configured with factorization as
+    /// its fallback algorithm. Handler cancellation is reported as
+    /// [`CancelableResult::Canceled`].
     pub fn transform_with_handler(
         &mut self,
         formula: EncodedFormula,

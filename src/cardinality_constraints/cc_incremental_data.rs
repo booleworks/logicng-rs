@@ -53,7 +53,13 @@ impl CcIncrementalData {
         Self { amk_encoder: None, alk_encoder: Some(alk_encoder), vector1, vector2: None, md: 0, n_vars, current_rhs: rhs }
     }
 
-    /// Tightens the upper bound of an at-most-k constraint and returns the resulting formula.
+    /// Tightens the upper bound of an at-most-k constraint and returns the additional encoding.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if this incremental data does not belong to an at-most-k encoding,
+    /// if the new bound does not tighten the current bound, or if the right-hand side cannot
+    /// be represented on this architecture.
     pub fn new_upper_bound(&mut self, f: &FormulaFactory, rhs: u32) -> LngResult<Vec<EncodedFormula>> {
         let mut result = EncodingResultFF::new(f);
         self.compute_ub_constraint(&mut result, rhs)?;
@@ -62,9 +68,11 @@ impl CcIncrementalData {
 
     /// Tightens the upper bound of an at-most-k constraint and encodes it on the solver.
     ///
-    /// Usage constraints:
-    /// - New right-hand side must be smaller than current right-hand side.
-    /// - Cannot be used for at-least-k constraints.
+    /// # Errors
+    ///
+    /// Returns an error if this incremental data does not belong to an at-most-k encoding,
+    /// if the new bound does not tighten the current bound, or if the right-hand side cannot
+    /// be represented on this architecture.
     pub fn new_upper_bound_for_solver(&mut self, solver: &mut MiniSat, f: &FormulaFactory, rhs: u32) -> LngResult<()> {
         let mut encoding_result = EncodingResultSatSolver::new(solver, None, f);
         self.compute_ub_constraint(&mut encoding_result, rhs)
@@ -99,7 +107,13 @@ impl CcIncrementalData {
         Ok(())
     }
 
-    /// Tightens the lower bound of an at-least-k constraint and returns the resulting formula.
+    /// Tightens the lower bound of an at-least-k constraint and returns the additional encoding.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if this incremental data does not belong to an at-least-k encoding,
+    /// if the new bound does not tighten the current bound, or if the right-hand side cannot
+    /// be represented on this architecture.
     pub fn new_lower_bound(&mut self, f: &FormulaFactory, rhs: u32) -> LngResult<Vec<EncodedFormula>> {
         let mut result = EncodingResultFF::new(f);
         self.compute_lb_constraint(&mut result, rhs)?;
@@ -108,9 +122,11 @@ impl CcIncrementalData {
 
     /// Tightens the lower bound of an at-least-k constraint and encodes it on the solver.
     ///
-    /// Usage constraints:
-    /// - New right-hand side must be greater than current right-hand side.
-    /// - Cannot be used for at-most-k constraints.
+    /// # Errors
+    ///
+    /// Returns an error if this incremental data does not belong to an at-least-k encoding,
+    /// if the new bound does not tighten the current bound, or if the right-hand side cannot
+    /// be represented on this architecture.
     pub fn new_lower_bound_for_solver<B: Clone>(&mut self, solver: &mut MiniSat<B>, f: &FormulaFactory, rhs: u32) -> LngResult<()> {
         let mut encoding_result = EncodingResultSatSolver::new(solver, None, f);
         self.compute_lb_constraint(&mut encoding_result, rhs)

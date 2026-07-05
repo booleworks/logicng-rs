@@ -9,6 +9,11 @@ use super::CnfEncoder;
 
 /// Constructs the _CNF_ of a formula with factorization and the given
 /// [`AdvancedFactorizationConfig`].
+///
+/// # Errors
+///
+/// Returns an error if factorization is configured as fallback algorithm or if
+/// the selected fallback algorithm cannot encode the formula.
 pub fn advanced_cnf_encoding(
     formula: EncodedFormula,
     f: &FormulaFactory,
@@ -101,6 +106,8 @@ impl AdvancedFactorizationConfig {
     }
 }
 
+/// Handler used by advanced CNF factorization to stop factorization after
+/// configurable distribution or clause creation limits.
 #[derive(Debug, Clone)]
 pub struct AdvancedFactorizationHandler {
     distribution_boundary: Option<u64>,
@@ -111,6 +118,8 @@ pub struct AdvancedFactorizationHandler {
 }
 
 impl AdvancedFactorizationHandler {
+    /// Creates a handler with optional distribution and created-clause
+    /// boundaries.
     pub fn new(distribution_boundary: Option<u64>, created_clause_boundary: Option<u64>) -> Self {
         Self { distribution_boundary, created_clause_boundary, canceled: false, current_distribution: 0, current_clause: 0 }
     }

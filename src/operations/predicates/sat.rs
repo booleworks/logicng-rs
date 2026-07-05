@@ -24,6 +24,11 @@ use crate::solver::minisat::{MiniSat, MiniSatConfig};
 ///
 /// assert!(is_sat(formula, &f).unwrap());
 /// ```
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be added to the SAT solver, for
+/// example because CNF conversion fails.
 pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
     match f.caches.sat.get(formula) {
         Some(c) => Ok(c),
@@ -77,6 +82,11 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
 /// Also, testing if one formula is a logical implication of another formula can
 /// be tested the same way by creating an implication `f.implication(f1, f2)`
 /// instead.
+///
+/// # Errors
+///
+/// Returns an error if the negated formula cannot be added to the SAT solver,
+/// for example because CNF conversion fails.
 pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
     let negated_formula = f.negate(formula);
     match f.caches.sat.get(negated_formula) {

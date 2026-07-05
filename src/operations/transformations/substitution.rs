@@ -11,6 +11,12 @@ pub type Substitution = HashMap<Variable, EncodedFormula>;
 
 /// Substitutes variables of the given formulas with specified formulas.
 ///
+/// # Errors
+///
+/// Returns an error if a substitution would replace a variable inside a
+/// cardinality or pseudo-Boolean constraint with a non-literal formula, or if
+/// constructing the resulting constraint fails.
+///
 /// # Examples
 ///
 /// Basic usage:

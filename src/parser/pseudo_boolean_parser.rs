@@ -9,6 +9,16 @@ use std::str::FromStr;
 #[grammar = "parser/lng_pseudo_boolean_parser.pest"]
 struct PseudoBooleanParser;
 
+/// Parses a formula with pseudo-Boolean constraint support.
+///
+/// Blank input is parsed as `$true`.
+///
+/// # Errors
+///
+/// Returns an error if the input has invalid syntax, if a numeric literal or
+/// coefficient cannot be represented as `i64`, if the parser reaches an
+/// unexpected grammar state, or if the parsed pseudo-Boolean constraint cannot
+/// be constructed.
 pub fn parse<I: AsRef<str>>(f: &FormulaFactory, input: I) -> LngResult<EncodedFormula> {
     let parsed = PseudoBooleanParser::parse(Rule::pseudo_boolean, input.as_ref())
         .map_err(|err| ParserError::Syntax(Box::new(err)))?

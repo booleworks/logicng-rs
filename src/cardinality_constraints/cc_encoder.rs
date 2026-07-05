@@ -25,6 +25,11 @@ impl CcEncoder {
     }
 
     /// Encodes a cardinality constraint and returns its CNF encoding.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
+    /// or if the selected encoder configuration is invalid for the requested encoding.
     pub fn encode(&self, cc: &CardinalityConstraint, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
         let mut result = EncodingResultFF::new(f);
         self.encode_on(&mut result, cc)?;
@@ -32,11 +37,21 @@ impl CcEncoder {
     }
 
     /// Encodes a cardinality constraint in a given result.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
+    /// or if the selected encoder configuration is invalid for the requested encoding.
     pub fn encode_on<R: EncodingResult>(&self, result: &mut R, cc: &CardinalityConstraint) -> LngResult<()> {
         self.encode_constraint(cc, result)
     }
 
-    /// Encodes an incremental cardinality constraint and returns its encoding.
+    /// Encodes an incremental cardinality constraint and returns its encoding and incremental data.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
+    /// or if incremental encoding is requested for a constraint type that does not support it.
     pub fn encode_incremental(
         &self,
         cc: &CardinalityConstraint,
@@ -48,6 +63,11 @@ impl CcEncoder {
     }
 
     /// Encodes an incremental cardinality constraint in a given result.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
+    /// or if incremental encoding is requested for a constraint type that does not support it.
     pub fn encode_incremental_on(
         &self,
         result: &mut dyn EncodingResult,

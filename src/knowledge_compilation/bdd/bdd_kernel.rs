@@ -109,7 +109,12 @@ pub struct BddKernel {
 }
 
 impl BddKernel {
-    /// Constructs a new BDD kernel with a given number of variables
+    /// Constructs a new BDD kernel with a given number of variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the requested number of variables exceeds the BDD
+    /// kernel limit.
     pub fn new_with_num_vars(num_vars: usize, node_size: usize, cache_size: usize) -> LngResult<Self> {
         if num_vars > MAXVAR {
             return Err(BddError::InvalidNumberOfVars { num_vars }.into());
@@ -175,7 +180,12 @@ impl BddKernel {
         Ok(kernel)
     }
 
-    /// Constructs a new BDD kernel with the given variable ordering
+    /// Constructs a new BDD kernel with the given variable ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the ordering contains more variables than the BDD
+    /// kernel supports.
     pub fn new_with_var_ordering(ordering: &[Variable], node_size: usize, cache_size: usize) -> LngResult<Self> {
         let mut kernel = Self::new_with_num_vars(ordering.len(), node_size, cache_size)?;
         for &var in ordering {

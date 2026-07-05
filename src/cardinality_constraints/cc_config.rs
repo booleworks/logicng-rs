@@ -24,7 +24,7 @@ pub enum AmoEncoder {
     Binary,
     /// Bimander encoding.
     Bimander {
-        /// Group size for encoding. Must be > 1.
+        /// Group size for encoding. Fixed group sizes must be greater than 1.
         group_size: BimanderGroupSize,
     },
     /// Best encoding algorithm.
@@ -75,7 +75,7 @@ pub enum BimanderGroupSize {
     Half,
     /// Square root.
     Sqrt,
-    /// Fixed size.
+    /// Fixed size. Must be greater than 1 when used.
     Fixed(usize),
 }
 

@@ -5,6 +5,11 @@ use crate::{
 
 /// Constructs the _NNF_ form of `formula`.
 ///
+/// # Errors
+///
+/// Returns an error if a cardinality or pseudo-Boolean constraint in the
+/// formula cannot be encoded.
+///
 /// # Examples
 ///
 /// Basic usage:

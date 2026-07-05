@@ -188,7 +188,7 @@ struct FilterResult {
 /// # use logicng::formulas::{FormulaFactory, CType};
 /// # let f = FormulaFactory::new();
 /// let vars = vec![f.var("A"), f.var("B"), f.var("C")];
-/// f.cc(CType::LE, 1, vars);
+/// f.cc(CType::LE, 1, vars).unwrap();
 /// ```
 ///
 /// which means from variables `A`, `B`, `C` can be at most one variable
@@ -200,7 +200,7 @@ struct FilterResult {
 /// # let f = FormulaFactory::new();
 /// let lits = vec![f.lit("A", true), f.lit("B", false), f.lit("C", true)];
 /// let coeffs = vec![1, 2, -3];
-/// f.pbc(CType::EQ, 2, lits, coeffs);
+/// f.pbc(CType::EQ, 2, lits, coeffs).unwrap();
 /// ```
 ///
 /// Beside the mentioned factory methods there are many convenience methods to
@@ -312,6 +312,10 @@ impl FormulaFactory {
     }
 
     /// Parses a given string to a formula using a Pseudo-Boolean parser.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input cannot be parsed as a formula.
     ///
     /// # Examples
     ///
@@ -862,6 +866,11 @@ impl FormulaFactory {
 
     /// Creates a new cardinality constraints.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the comparator and right-hand side do not describe
+    /// a valid cardinality constraint.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -952,6 +961,10 @@ impl FormulaFactory {
 
     /// Creates a new pseudo-boolean constraint.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the number of literals and coefficients differs.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -1008,6 +1021,11 @@ impl FormulaFactory {
     /// treatment here.  For other conversions, use the according formula
     /// functions.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the configured CNF transformation fails, for example
+    /// because a handler cancels the computation.
+    ///
     /// [`CnfAlgorithm::Bdd`]: crate::operations::transformations::CnfAlgorithm::Bdd
     /// [`CnfAlgorithm::Factorization`]: crate::operations::transformations::CnfAlgorithm::Factorization
     ///
@@ -1031,6 +1049,10 @@ impl FormulaFactory {
     }
 
     /// Returns the _NNF_ form of `formula`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the NNF transformation cannot be completed.
     ///
     /// # Examples
     ///
@@ -1134,6 +1156,10 @@ impl FormulaFactory {
 
     /// Substitutes variables of the given formulas with specified formulas.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the substitution transformation cannot be completed.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -1158,6 +1184,10 @@ impl FormulaFactory {
     }
 
     /// Substitutes single variable of the given formulas with specified formulas.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the substitution transformation cannot be completed.
     ///
     /// # Examples
     ///

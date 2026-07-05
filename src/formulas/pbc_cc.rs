@@ -247,6 +247,12 @@ impl CardinalityConstraint {
     ///
     /// [`CcConfig`]: crate::cardinality_constraints::CcConfig
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the configured cardinality encoder cannot encode the
+    /// constraint, for example because the configuration is invalid for this
+    /// constraint or an internal bound cannot be represented.
+    ///
     /// # Example
     ///
     /// Basic usage:
@@ -386,6 +392,12 @@ impl PbConstraint {
     ///
     /// [`PbConfig`]: crate::pseudo_booleans::PbConfig
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the configured pseudo-Boolean encoder cannot encode
+    /// the constraint, for example because normalization overflows or an
+    /// encoder-specific bound cannot be represented.
+    ///
     /// # Example
     ///
     /// Basic usage:
@@ -486,6 +498,11 @@ impl PbConstraint {
     }
 
     /// Normalizes this constraint s.t. it can be converted to CNF.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an arithmetic operation overflows while normalizing
+    /// coefficients or bounds.
     pub fn normalize(&self, f: &FormulaFactory) -> LngResult<EncodedFormula> {
         let mut norm_ps = Vec::with_capacity(self.literals.len());
         let mut norm_cs = Vec::with_capacity(self.literals.len());

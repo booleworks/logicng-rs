@@ -10,6 +10,11 @@ use super::dfs_ordering::dfs_ordering;
 /// Simple implementation of the FORCE BDD variable ordering due to Aloul,
 /// Markov, and Sakallah.  This ordering only works for CNF formulas.  A formula
 /// has to be converted to CNF before this ordering is called.
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be transformed to CNF or if the
+/// hypergraph construction for the CNF fails.
 pub fn force_ordering(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Variable>> {
     let mut original_variables = (*formula.variables(f)).clone();
     let nnf = f.nnf_of(formula)?;

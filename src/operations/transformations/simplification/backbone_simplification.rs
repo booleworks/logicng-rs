@@ -8,6 +8,11 @@ use crate::solver::minisat::MiniSat;
 /// This function simplifies a formula by computing its backbone and
 /// propagating it through the formula.
 ///
+/// # Errors
+///
+/// Returns an error if the formula cannot be added to the SAT solver, for
+/// example because CNF conversion fails.
+///
 /// # Example
 ///
 /// Basic usage:

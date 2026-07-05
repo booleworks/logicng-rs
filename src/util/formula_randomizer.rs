@@ -792,6 +792,12 @@ pub struct FormulaRandomizer {
 impl FormulaRandomizer {
     /// Builds a new `FormulaRandomizer` from a [`FormulaRandomizerConfig`].
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration has no variables, contains
+    /// negative or non-finite weights, has zero total weight for a required
+    /// choice group, or uses operand/coefficient limits that are too small.
+    ///
     /// # Example
     ///
     /// Basic usage:

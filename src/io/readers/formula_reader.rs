@@ -9,7 +9,10 @@ use std::io::{BufRead, BufReader};
 /// If the file has multiple lines, the result will be the conjunction ([`FormulaFactory::and`])
 /// of the formulas in each line.
 ///
-/// If the file cannot be read or contains an invalid formula, a respective [`IoError`] is returned.
+/// # Errors
+///
+/// Returns an error if the file cannot be opened or read, or if one of its
+/// lines cannot be parsed as a formula.
 ///
 /// # Examples
 ///

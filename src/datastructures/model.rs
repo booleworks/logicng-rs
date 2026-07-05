@@ -159,6 +159,11 @@ impl Model {
     /// model. If a name has no existing variable in the formula factory, the
     /// function will return an error.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if any given name is not known as a variable in the
+    /// formula factory.
+    ///
     /// # Examples
     ///
     /// Basic usage:

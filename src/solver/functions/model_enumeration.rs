@@ -115,6 +115,11 @@ impl Default for ModelEnumerationConfig {
 /// configuration does not limit the number of models and the algorithm will
 /// continue until there are no more models left.
 ///
+/// # Errors
+///
+/// Returns an error if the formula cannot be added to the solver or if model
+/// enumeration cannot save or restore the solver state.
+///
 /// # Example
 ///
 /// Basic usage:
@@ -137,6 +142,11 @@ pub fn enumerate_models_for_formula(formula: EncodedFormula, f: &FormulaFactory)
 /// all models of the formulas fit into your memory. If the algorithm is not
 /// limited to a number of models, it will continue until there are no more
 /// models left.
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be added to the solver or if model
+/// enumeration cannot save or restore the solver state.
 ///
 /// # Example
 ///
@@ -168,6 +178,11 @@ pub fn enumerate_models_for_formula_with_config(
 /// configuration does not limit the number of models and the algorithm will
 /// continue until there are no more models left.
 ///
+/// # Errors
+///
+/// Returns an error if model enumeration cannot save or restore the solver
+/// state.
+///
 /// # Example
 ///
 /// Basic usage:
@@ -192,6 +207,11 @@ pub fn enumerate_models(solver: &mut MiniSat) -> LngResult<Vec<Model>> {
 /// all models of the formulas fit into your memory. If the algorithm is not
 /// limited to a number of models, it will continue until there are no more
 /// models left.
+///
+/// # Errors
+///
+/// Returns an error if model enumeration cannot save or restore the solver
+/// state.
 ///
 /// # Example
 ///

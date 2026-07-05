@@ -4,12 +4,23 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 
 /// Constructs the _DNF_ of the given formula by using factorization.
+///
+/// # Errors
+///
+/// Returns an error if NNF conversion fails while preparing the formula for
+/// factorization.
 pub fn factorization_dnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     factorization_dnf_with_handler(formula, f, &mut NopHandler {}).map(|r| r.result().expect("without handler a result is always present"))
 }
 
 /// Constructs the _DNF_ of the given formula by using factorization with a
 /// custom handler.
+///
+/// # Errors
+///
+/// Returns an error if NNF conversion fails while preparing the formula for
+/// factorization. Handler cancellation is reported as
+/// [`CancelableResult::Canceled`].
 pub fn factorization_dnf_with_handler(
     formula: EncodedFormula,
     f: &FormulaFactory,

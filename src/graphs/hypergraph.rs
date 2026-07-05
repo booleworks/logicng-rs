@@ -50,6 +50,11 @@ impl<T> Hypergraph<T> {
     }
 
     /// Adds an edge to the hypergraph.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the given node indices does not exist in the
+    /// hypergraph.
     pub fn add_edge(&mut self, nodes: Vec<NodeIndex>) -> LngResult<EdgeIndex> {
         let index = self.edges.len();
         let edge = HypergraphEdge { nodes, index };

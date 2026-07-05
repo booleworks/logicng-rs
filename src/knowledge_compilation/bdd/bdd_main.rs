@@ -29,6 +29,11 @@ pub struct Bdd {
 
 impl Bdd {
     /// Generates a new BDD for the given formula with the given kernel.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be transformed as needed, or if
+    /// the kernel has no free variables left for variables in the formula.
     pub fn from_formula(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
         let rec = build_rec(formula, f, kernel, &mut NopHandler::new())?;
         let node = rec.result().expect("nop handler can never abort");
@@ -36,6 +41,12 @@ impl Bdd {
     }
 
     /// Generates a new BDD for the given formula with the given kernel.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be transformed as needed, or if
+    /// the kernel has no free variables left for variables in the formula.
+    /// Handler cancellation is reported as [`CancelableResult::Canceled`].
     pub fn from_formula_with_handler(
         formula: EncodedFormula,
         f: &FormulaFactory,
@@ -64,6 +75,11 @@ impl Bdd {
 
     /// Returns an arbitrary model for this BDD.  This model does not have to contain
     /// all variables of the BDD.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the model BDD does not have a unique path or
+    /// references an unknown variable index.
     pub fn model(&self, kernel: &mut BddKernel) -> LngResult<Option<Model>> {
         let model_bdd = sat_one(self.index, kernel);
         create_model(model_bdd, kernel)
@@ -72,6 +88,12 @@ impl Bdd {
     /// Returns an arbitrary model of this BDD which contains at least the given
     /// variables or None if there is none.  If a variable is a don't care variable,
     /// it will be assigned with the given default value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the requested variables is not known to the
+    /// kernel, if the kernel has no free variables left, or if the resulting
+    /// model BDD does not have a unique path.
     pub fn model_for_variables(
         &self,
         default: bool,
@@ -86,17 +108,32 @@ impl Bdd {
     }
 
     /// Returns a full model of this BDD or None if there is none.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the model BDD does not have a unique path or
+    /// references an unknown variable index.
     pub fn full_model(&self, kernel: &mut BddKernel) -> LngResult<Option<Model>> {
         let model_bdd = full_sat_one(self.index, kernel);
         create_model(model_bdd, kernel)
     }
 
-    /// Enumerate all models of this BDD
+    /// Enumerate all models of this BDD.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an enumerated model references an unknown variable
+    /// index.
     pub fn enumerate_all_models(&self, kernel: &mut BddKernel) -> LngResult<Vec<Model>> {
         enumerate_all_models(self.index, None, kernel)
     }
 
-    /// Enumerate all models of this BDD projected to the given variables
+    /// Enumerate all models of this BDD projected to the given variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the projected variables is not known to the
+    /// kernel or an enumerated model references an unknown variable index.
     pub fn enumerate_all_models_projected(&self, variables: &[Variable], kernel: &mut BddKernel) -> LngResult<Vec<Model>> {
         enumerate_all_models(self.index, Some(variables), kernel)
     }
@@ -122,16 +159,29 @@ impl Bdd {
     }
 
     /// Returns a CNF formula for this BDD.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a BDD path references an unknown variable index.
     pub fn cnf(&self, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<EncodedFormula> {
         normal_form(self.index, true, f, kernel)
     }
 
     /// Returns a DNF formula for this BDD.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a BDD path references an unknown variable index.
     pub fn dnf(&self, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<EncodedFormula> {
         normal_form(self.index, false, f, kernel)
     }
 
     /// Returns how often each variable occurs in this BDD.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the profile contains a variable index unknown to the
+    /// kernel.
     pub fn variable_profile(&self, kernel: &mut BddKernel) -> LngResult<BTreeMap<Variable, usize>> {
         let var_profile = var_profile(self.index, kernel);
         let mut profile = BTreeMap::new();
@@ -144,11 +194,22 @@ impl Bdd {
 
     /// Returns a formula representation of this BDD.  This is done by using the Shannon
     /// expansion.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the BDD references an unknown variable or node
+    /// index.
     pub fn to_formula(&self, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<EncodedFormula> {
         to_formula_rec(self.index, f, kernel)
     }
 
     /// Restricts the BDD with the given literals.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the restriction variables is not known to the
+    /// kernel, if the kernel has no free variables left, or if an intermediate
+    /// BDD node index is invalid.
     #[must_use]
     pub fn restrict(&self, restriction: &[Literal], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
         let var_bdd = bdd_from_literals(restriction, f, kernel)?;
@@ -156,6 +217,12 @@ impl Bdd {
     }
 
     /// Existential quantifier elimination for a given set of variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the variables is not known to the kernel, if
+    /// the kernel has no free variables left, or if an intermediate BDD node
+    /// index is invalid.
     #[must_use]
     pub fn exists(&self, variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
         let var_bdd = bdd_from_variables(variables, f, kernel)?;
@@ -163,6 +230,12 @@ impl Bdd {
     }
 
     /// Universal quantifier elimination for a given set of variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the variables is not known to the kernel, if
+    /// the kernel has no free variables left, or if an intermediate BDD node
+    /// index is invalid.
     #[must_use]
     pub fn for_all(&self, variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
         let var_bdd = bdd_from_variables(variables, f, kernel)?;
@@ -170,6 +243,11 @@ impl Bdd {
     }
 
     /// Returns all the variables this BDD depends on.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the support BDD cannot be converted to a model or
+    /// if that model contains a negative variable.
     pub fn support(&self, kernel: &mut BddKernel) -> LngResult<BTreeSet<Variable>> {
         let support_bdd = support(self.index, kernel);
         let model = create_model(support_bdd, kernel)?;

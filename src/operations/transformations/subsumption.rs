@@ -13,6 +13,10 @@ use crate::operations::OperationError;
 ///
 /// A subsumption in a CNF means, that e.g. a clause `A | B | C` is subsumed by
 /// another clause `A | B` and can therefore be deleted for an equivalent CNF.
+///
+/// # Errors
+///
+/// Returns an error if the given formula is not in CNF.
 pub fn cnf_subsumption(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     if !formula.is_cnf(f) {
         return Err(OperationError::SubsumptionNoCnf.into());
@@ -36,6 +40,10 @@ pub fn cnf_subsumption(formula: EncodedFormula, f: &FormulaFactory) -> LngResult
 /// A subsumption in a DNF means, that e.g. a minterm {@code A & B & C} is
 /// subsumed by another minterm {@code A & B} and can therefore be deleted for
 /// an equivalent DNF.
+///
+/// # Errors
+///
+/// Returns an error if the given formula is not in DNF.
 pub fn dnf_subsumption(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     if !formula.is_dnf(f) {
         return Err(OperationError::SubsumptionNoDnf.into());

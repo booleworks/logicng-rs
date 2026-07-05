@@ -8,6 +8,10 @@ use crate::graphs::hypergraph::Hypergraph;
 use super::hypergraph::NodeIndex;
 
 /// Builds a hypergraph from a formula in _CNF_.
+///
+/// # Errors
+///
+/// Returns an error if the given formula is not a CNF formula.
 pub fn hypergraph_from_cnf(cnf: EncodedFormula, f: &FormulaFactory) -> LngResult<Hypergraph<Variable>> {
     let mut hypergraph = Hypergraph::new();
     let mut node_map = HashMap::new();

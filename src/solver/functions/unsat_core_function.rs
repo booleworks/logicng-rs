@@ -11,6 +11,12 @@ use crate::solver::minisat::sat::Tristate::{True, Undef};
 use std::collections::HashMap;
 
 /// Computes the [`UnsatCore`] if the formula is unsatisfiable.
+///
+/// # Errors
+///
+/// Returns an error if proof generation is disabled, the solver has not been
+/// solved yet, the formula is satisfiable, or the last computation used
+/// assumptions.
 pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) -> LngResult<UnsatCore<B>> {
     if !solver.config.proof_generation {
         return Err(SolverError::ProofGenerationRequired.into());

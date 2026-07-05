@@ -36,12 +36,11 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 /// Assuming this formula is a clause or term, it returns all literals in
 /// this formula.
 ///
-/// # Panic
+/// # Errors
 ///
-/// This function panics, if the passed formula is not a clause or a term. A
+/// Returns an error if the passed formula is not a clause or a term. A
 /// formula is a clause/term if all operands of the `n-ary` operators are
-/// literals or the formula is a literal or a constant. Otherwise, it will
-/// panic!
+/// literals or the formula is a literal or a constant.
 ///
 /// # Example
 ///
@@ -67,20 +66,21 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 /// assert_eq!(literals_for_clause_or_term(formula4, &f).unwrap(), vec![a, b, c]);
 /// ```
 ///
-/// Panic behavior:
+/// Error behavior:
 ///
-/// The `literals_for_clause_or_term` panics if the passed formula isn't a
-/// clause/term.
+/// The `literals_for_clause_or_term` function returns an error if the passed
+/// formula isn't a clause/term.
 /// ```
 /// # use logicng::formulas::FormulaFactory;
 /// # use logicng::formulas::ToFormula;
+/// # use logicng::operations::functions::literals_for_clause_or_term;
 /// let f = FormulaFactory::new();
 ///
 /// let formula1 = "a => b".to_formula(&f);
 /// let formula2 = "a & b & (c => d)".to_formula(&f);
 ///
-/// //literals_for_clause_or_term(formula1, &f); //PANIC!
-/// //literals_for_clause_or_term(formula2, &f); //PANIC!
+/// assert!(literals_for_clause_or_term(formula1, &f).is_err());
+/// assert!(literals_for_clause_or_term(formula2, &f).is_err());
 /// ```
 pub fn literals_for_clause_or_term(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Literal>> {
     use Formula::{And, False, Lit, Or, True};

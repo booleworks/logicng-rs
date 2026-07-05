@@ -33,6 +33,11 @@ pub enum ModelCountAlgorithm {
 }
 
 /// Computes the model count for a given formula.
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be encoded for the chosen model
+/// counting algorithm or if the algorithm itself fails.
 pub fn count_models(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     count_models_with_vars(formula, algorithm, &formula.variables(f), f)
 }
@@ -40,6 +45,12 @@ pub fn count_models(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: 
 /// Computes the model count for a given formula and a set of relevant
 /// variables. This set can only be a superset of the original formula's
 /// variables.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` does not contain all variables of the
+/// formula, if the formula cannot be encoded for the chosen model counting
+/// algorithm, or if the algorithm itself fails.
 pub fn count_models_with_vars(
     formula: EncodedFormula,
     algorithm: ModelCountAlgorithm,
@@ -67,6 +78,11 @@ pub fn count_models_with_vars(
 }
 
 /// Computes the model count for a given set of formulas (interpreted as conjunction).
+///
+/// # Errors
+///
+/// Returns an error if the formulas cannot be encoded for the chosen model
+/// counting algorithm or if the algorithm itself fails.
 pub fn count_models_conjunction(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     let vars = formulas.iter().fold(BTreeSet::default(), |mut akk, formula| {
         akk.extend((*formula.variables(f)).clone());
@@ -78,6 +94,12 @@ pub fn count_models_conjunction(formulas: &[EncodedFormula], algorithm: ModelCou
 /// Computes the model count for a given set of formulas (interpreted as conjunction)
 /// and a set of relevant variables.  This set can only be a superset of the original
 /// formulas' variables.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` does not contain all variables of the
+/// formulas, if the formulas cannot be encoded for the chosen model counting
+/// algorithm, or if the algorithm itself fails.
 pub fn count_models_conjunction_with_vars<I>(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,

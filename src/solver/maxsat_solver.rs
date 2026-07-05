@@ -126,6 +126,11 @@ pub struct MaxSatSolver {
 impl MaxSatSolver {
     /// Creating a new [`MaxSatSolver`] instance with the given algorithm and the default configuration.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the OpenWBO solver cannot be initialized for the
+    /// chosen algorithm and default configuration.
+    ///
     /// # Example
     ///
     /// Basic usage:
@@ -142,6 +147,11 @@ impl MaxSatSolver {
     }
 
     /// Creating a new [`MaxSatSolver`] instance with given algorithm and configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration is invalid or the OpenWBO solver
+    /// cannot be initialized.
     ///
     /// # Example
     ///
@@ -224,6 +234,11 @@ impl MaxSatSolver {
     ///
     /// Every result of a MaxSAT problem must fulfill all hard formulas on the solver.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be encoded as CNF or if OpenWBO
+    /// rejects one of the resulting hard clauses.
+    ///
     /// # Example
     ///
     /// Basic usage:
@@ -282,6 +297,12 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the weight is invalid for the selected algorithm, if
+    /// the formula cannot be encoded as CNF, or if OpenWBO rejects one of the
+    /// resulting clauses.
     pub fn add_soft_formula(&mut self, weight: u64, formula: EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
         if (formula.is_or() || formula.is_literal()) && formula.is_cnf(f) {
             self.add_clause(Some(weight), formula, f)
@@ -324,6 +345,11 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if OpenWBO reports an error or returns an unexpected
+    /// status.
     pub fn solve(&mut self) -> Result<MaxSatResult, MaxSatError> {
         let status = self.solver.status();
         if status == Ok(MaxSatResult::Undef) { self.solver.search() } else { status }
@@ -354,6 +380,11 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if OpenWBO reports an error or returns an unexpected
+    /// status.
     pub fn status(&self) -> Result<MaxSatResult, MaxSatError> {
         self.solver.status()
     }
@@ -387,6 +418,11 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no optimum model is available or if OpenWBO reports
+    /// an error while extracting the model.
     pub fn model(&mut self) -> Result<Model, MaxSatError> {
         self.solver.model(&self.selector_variables)
     }
@@ -421,6 +457,11 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no optimum model is available or if OpenWBO reports
+    /// an error while extracting the assignment.
     pub fn assignment(&mut self) -> Result<Assignment, MaxSatError> {
         self.solver.assignment(&self.selector_variables)
     }

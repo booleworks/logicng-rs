@@ -1,9 +1,4 @@
-#![allow(
-    clippy::too_many_arguments,
-    clippy::many_single_char_names,
-    clippy::if_not_else,
-    clippy::cast_possible_truncation
-)]
+#![allow(clippy::too_many_arguments, clippy::many_single_char_names, clippy::if_not_else, clippy::cast_possible_truncation)]
 
 use crate::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
@@ -44,16 +39,7 @@ pub fn encode_binary_merge(
                             formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
                     } else {
-                        formula.extend(binary_merge(
-                            &lits,
-                            &coeffs,
-                            rhs - tmp_coeff,
-                            mw,
-                            lits.len(),
-                            Some(tmp_lit.negate()),
-                            config,
-                            f,
-                        ));
+                        formula.extend(binary_merge(&lits, &coeffs, rhs - tmp_coeff, mw, lits.len(), Some(tmp_lit.negate()), config, f));
                     }
                 } else {
                     if rhs <= tmp_coeff {

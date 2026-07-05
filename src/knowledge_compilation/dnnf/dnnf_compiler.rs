@@ -28,6 +28,11 @@ pub struct DnnfFormula {
 }
 
 /// Compiles the given formula to a DNNF instance.
+///
+/// # Errors
+///
+/// Returns an error if CNF conversion, simplification, subsumption, or dtree
+/// generation fails.
 pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<DnnfFormula> {
     let original_variables = formula.variables(f);
     let cnf = f.cnf_of(formula)?;

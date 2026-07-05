@@ -7,6 +7,11 @@ use std::io::{BufRead, BufReader};
 /// Reads a DIMACS CNF file with the variable prefix `v`.
 ///
 /// See also [`read_cnf_with_prefix`]
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be opened or read, or if it contains an
+/// invalid DIMACS clause.
 pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
     read_cnf_with_prefix(file_path, f, "v")
 }
@@ -22,8 +27,13 @@ pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> LngResult<Vec<EncodedFor
 /// with the standard parser.
 /// If you don't care about the prefix, you can just use [`read_cnf`] which uses `v` as default prefix.
 ///
-/// The result of the method is the list of clauses read from the DIMACS file. If there was a problem reading the file,
-/// a respective [`IoError`] is returned.
+/// The result of the method is the list of clauses read from the DIMACS file.
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be opened or read, if a clause line does
+/// not end with `0`, or if a DIMACS literal is invalid or cannot be
+/// represented.
 ///
 /// # Example
 ///

@@ -9,7 +9,9 @@ use crate::io::IoError;
 ///
 /// If the formula is a conjunction, each of its operands will be written in a separate line.
 ///
-/// If any error occurs when creating or writing the file, a respective [`IoError`] is returned.
+/// # Errors
+///
+/// Returns an error if the file cannot be created or written.
 ///
 /// # Examples
 ///

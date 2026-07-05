@@ -10,6 +10,12 @@ const ENCODER: CcEncoder = CcEncoder::new(CcConfig::new().amo_encoder(AmoEncoder
 /// a pseudo-Boolean constraint of type AMO or EXO gets replaced by a pure
 /// encoding such that the resulting formula is equivalent and free of
 /// pseudo-Boolean constraints.
+///
+/// # Errors
+///
+/// Returns an error if the formula contains a pseudo-Boolean constraint, a
+/// cardinality constraint that is neither AMO nor EXO, or if the pure
+/// cardinality encoding fails.
 pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     match formula.unpack(f) {
         Formula::Pbc(_) => {

@@ -84,6 +84,11 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Adds the given formulas to the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formulas cannot be encoded or added to
+    /// the solver.
     pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()> {
         for &formula in formulas {
             self.add(formula, f)?;
@@ -92,6 +97,11 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Adds the given formula to the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be converted to the configured
+    /// CNF representation or if encoding a cardinality constraint fails.
     pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
         self.result = Undef;
         if formula.formula_type() == FormulaType::Cc {
@@ -130,6 +140,11 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Adds the given propositions to the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the proposition formulas cannot be encoded or
+    /// added to the solver.
     pub fn add_propositions<Props: IntoIterator<Item = Proposition<B>>>(
         &mut self,
         propositions: Props,
@@ -140,6 +155,11 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Adds the given proposition to the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the proposition formula cannot be encoded or added
+    /// to the solver.
     pub fn add_proposition(&mut self, proposition: Proposition<B>, f: &FormulaFactory) -> LngResult<()> {
         self.result = Undef;
         match self.config.cnf_method {
@@ -213,6 +233,10 @@ impl<B: Clone> MiniSat<B> {
 
     /// Returns the model the solver found, if the search was successful. If the
     /// result is `false`, it returns `None`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver has not been solved yet.
     pub fn model(&self, variables: Option<&[Variable]>) -> LngResult<Option<Model>> {
         match self.result {
             Undef => Err(SolverError::NotSolved.into()),
@@ -233,6 +257,10 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Saves the state of the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver is not configured for incremental use.
     pub fn save_state(&mut self) -> LngResult<SolverState> {
         if !self.config.incremental {
             return Err(SolverError::StateRequiresIncrementalMode.into());
@@ -244,6 +272,11 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Loads the state of the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver is not configured for incremental use or
+    /// if the state is not valid for this solver anymore.
     pub fn load_state(&mut self, state: &SolverState) -> LngResult<()> {
         if !self.config.incremental {
             return Err(SolverError::StateRequiresIncrementalMode.into());
@@ -281,6 +314,11 @@ impl<B: Clone> MiniSat<B> {
     /// - "&gt;=": Returns null for right-hand side 1 or number of variables,
     ///   but constraint is added to solver. Adds false to solver for right-hand
     ///   side &gt; number of variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cardinality constraint cannot be encoded
+    /// incrementally for the current encoder configuration.
     pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> LngResult<Option<CcIncrementalData>> {
         let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
         CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc)
@@ -289,6 +327,10 @@ impl<B: Clone> MiniSat<B> {
     /// A solver function which returns all unit propagated literals on level 0
     /// of the current formula on the solver. If the formula is UNSAT, `None`
     /// will be returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver has not been solved yet.
     pub fn up_zero_literals(&self) -> LngResult<Option<BTreeSet<Literal>>> {
         match self.result {
             Undef => Err(SolverError::NotSolved.into()),
@@ -306,6 +348,12 @@ impl<B: Clone> MiniSat<B> {
     /// Computes a model for the formula on the solver which has a global
     /// minimum or maximum of satisfied literals. If the formula is UNSAT or the
     /// optimization handler aborted the computation, `None` will be returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if optimization constraints cannot be encoded or added,
+    /// if an incremental solver state cannot be saved/restored, or if an
+    /// optimization bound cannot be represented.
     pub fn optimize(&mut self, f: &FormulaFactory, optimization_function: &OptimizationFunction) -> LngResult<Option<Model>> {
         optimization_function.optimize(self, f)
     }
@@ -435,6 +483,12 @@ impl<B: Clone> MiniSat<B> {
 
 impl<B: PartialEq> MiniSat<B> {
     /// Computes the unsatisfiable core on this solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if proof generation is disabled, the solver has not
+    /// been solved yet, the formula is satisfiable, or the last computation
+    /// used assumptions.
     pub fn unsat_core(&mut self, f: &FormulaFactory) -> LngResult<UnsatCore<B>> {
         compute_unsat_core(self, f)
     }
