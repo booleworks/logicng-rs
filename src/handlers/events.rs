@@ -1,8 +1,14 @@
+#![allow(missing_docs)]
 use std::fmt::Display;
 
 use crate::datastructures::Model;
 use crate::formulas::EncodedFormula;
 
+/// Event reported to a computation handler.
+///
+/// A handler can use these events to decide whether a computation should continue. If it returns
+/// `false`, the event is stored as the cancellation cause in the corresponding
+/// [`CancelableResult`](crate::handlers::CancelableResult).
 #[derive(Clone, Debug)]
 pub enum LngEvent {
     NoEvent,
@@ -53,6 +59,8 @@ impl Display for LngEvent {
     }
 }
 
+/// Type of computation reported by [`LngEvent::ComputationStarted`] and
+/// [`LngEvent::ComputationFinished`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LngComputation {
     Sat,
