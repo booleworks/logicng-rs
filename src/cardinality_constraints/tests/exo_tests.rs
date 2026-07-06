@@ -1,6 +1,7 @@
 use crate::cardinality_constraints::cc_config::BimanderGroupSize::{Fixed, Half, Sqrt};
 use crate::cardinality_constraints::cc_config::{AmoEncoder, CcConfig};
 use crate::cardinality_constraints::cc_encoder::CcEncoder;
+use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{FormulaFactory, Variable};
 use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
@@ -48,21 +49,23 @@ fn test_exo_1() {
 }
 
 #[test]
-fn test_exo_k() {
+fn test_exo_k() -> LngResult<()> {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config;
-        test_exo(2, &f);
-        test_exo(10, &f);
-        test_exo(100, &f);
+        test_exo(2, &f)?;
+        test_exo(10, &f)?;
+        test_exo(100, &f)?;
     }
+
+    Ok(())
 }
 
-fn test_exo(num_lits: usize, f: &FormulaFactory) {
+fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
     let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
-    let _ = solver.add(cc, f);
+    solver.add(cc, f)?;
     assert_eq!(solver.sat(), True);
     let models =
         enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_lits).max_models(12000)).unwrap();
@@ -70,4 +73,6 @@ fn test_exo(num_lits: usize, f: &FormulaFactory) {
     for model in models {
         assert_eq!(model.pos().len(), 1);
     }
+
+    Ok(())
 }

@@ -1,4 +1,5 @@
 use crate::datastructures::Model;
+use crate::errors::LngResult;
 use crate::formulas::CType::{GT, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::solver::functions::OptimizationFunction;
@@ -25,63 +26,71 @@ fn solvers() -> [MiniSat; 5] {
 }
 
 #[test]
-fn test_unsat_formula() {
+fn test_unsat_formula() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let formula = f.parse("a & b & (a => ~b)").unwrap();
         let lits = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f);
+        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f)?;
         assert!(minimum_model.is_none());
-        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f);
+        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f)?;
         assert!(maximum_model.is_none());
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_single_model() {
+fn test_single_model() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let formula = f.parse("~a & ~b & ~c").unwrap();
         let lits = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f);
-        test_minimum_model(formula, minimum_model, &lits, f);
-        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f);
-        test_maximum_model(formula, maximum_model, &lits, f);
+        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f)?;
+        test_minimum_model(formula, minimum_model, &lits, f)?;
+        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f)?;
+        test_maximum_model(formula, maximum_model, &lits, f)?;
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_exo_model() {
+fn test_exo_model() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = Box::new([f.var("a"), f.var("b"), f.var("c")]);
         let formula = f.exo(vars);
         let lits = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f);
-        test_minimum_model(formula, minimum_model, &lits, f);
-        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f);
-        test_maximum_model(formula, maximum_model, &lits, f);
+        let minimum_model = optimize(&[formula], &lits, &[], false, solver, f)?;
+        test_minimum_model(formula, minimum_model, &lits, f)?;
+        let maximum_model = optimize(&[formula], &lits, &[], true, solver, f)?;
+        test_maximum_model(formula, maximum_model, &lits, f)?;
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_corner_cases() {
+fn test_corner_cases() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let (corner_cases, vars) = formula_corner_cases(f);
         let lits = vars.iter().map(|&v| v.pos_lit()).collect::<Vec<Literal>>();
         for formula in corner_cases {
-            let minimum_model = optimize(&[formula], &lits, &[], false, solver, f);
-            test_minimum_model(formula, minimum_model, &lits, f);
-            let maximum_model = optimize(&[formula], &lits, &[], true, solver, f);
-            test_maximum_model(formula, maximum_model, &lits, f);
+            let minimum_model = optimize(&[formula], &lits, &[], false, solver, f)?;
+            test_minimum_model(formula, minimum_model, &lits, f)?;
+            let maximum_model = optimize(&[formula], &lits, &[], true, solver, f)?;
+            test_maximum_model(formula, maximum_model, &lits, f)?;
         }
     }
+
+    Ok(())
 }
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-fn test_random_small() {
+fn test_random_small() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let randomizer_config = FormulaRandomizerConfig::default_with_num_vars(6).weight_pbc(2.0).seed(42);
@@ -94,23 +103,25 @@ fn test_random_small() {
             let target_literals = random_target_literals(random, &var_subset);
             let additional_variables = random_subset(random, &variables, min(variables.len(), 3)).into_iter().collect::<Vec<Variable>>();
 
-            let minimum_model = optimize(&[formula], &target_literals, &additional_variables, false, solver, f);
-            test_minimum_model(formula, minimum_model, &target_literals, f);
-            let maximum_model = optimize(&[formula], &target_literals, &additional_variables, true, solver, f);
-            test_maximum_model(formula, maximum_model, &target_literals, f);
+            let minimum_model = optimize(&[formula], &target_literals, &additional_variables, false, solver, f)?;
+            test_minimum_model(formula, minimum_model, &target_literals, f)?;
+            let maximum_model = optimize(&[formula], &target_literals, &additional_variables, true, solver, f)?;
+            test_maximum_model(formula, maximum_model, &target_literals, f)?;
         }
     }
+
+    Ok(())
 }
 
 #[test]
 #[allow(clippy::cognitive_complexity)]
-fn test_incrementality_minimize_and_maximize() {
+fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
     for solver in &mut solvers().iter_mut().filter(|s| s.config.incremental) {
         let f = &FormulaFactory::new();
         let formula = f.parse("(a|b|c|d|e) & (p|q) & (x|y|z)").unwrap();
         let mut literals: Vec<Literal> = formula.variables(f).iter().map(Variable::pos_lit).collect();
 
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
 
         let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
         let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
@@ -119,7 +130,7 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("~p").unwrap();
         literals.push(f.lit("p", true));
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
         let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
         let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
@@ -129,7 +140,7 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("(x => n) & (y => m) & (a => ~b & ~c)").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
         let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
         let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
@@ -142,7 +153,7 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("(z => v & w) & (m => v) & (b => ~c & ~d & ~e)").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
         let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap().unwrap();
         let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap().unwrap();
         assert_eq!(minimum_model.pos().len(), 4);
@@ -159,17 +170,19 @@ fn test_incrementality_minimize_and_maximize() {
 
         let formula = f.parse("~q").unwrap();
         formula.variables(f).iter().map(Variable::pos_lit).for_each(|l| literals.push(l));
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
         let minimum_model = solver.optimize(f, &OptimizationFunction::minimize(literals.clone())).unwrap();
         let maximum_model = solver.optimize(f, &OptimizationFunction::maximize(literals.clone())).unwrap();
         assert!(minimum_model.is_none());
         assert!(maximum_model.is_none());
     }
+
+    Ok(())
 }
 
 #[test]
 #[allow(clippy::many_single_char_names)]
-fn test_additional_variables() {
+fn test_additional_variables() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let a = f.var("a").pos_lit();
@@ -184,55 +197,61 @@ fn test_additional_variables() {
         let formula = f.parse("(a|b) & (~a => c) & (x|y)").unwrap();
 
         let literals_a_nb_x = vec![a, nb, x];
-        let minimum_model = optimize(&[formula], &literals_a_nb_x, &[], false, solver, f).unwrap();
+        let minimum_model = optimize(&[formula], &literals_a_nb_x, &[], false, solver, f)?.unwrap();
         assert_same_elements(&minimum_model, &[na, b, nx]);
-        let minimum_model_with_y = optimize(&[formula], &literals_a_nb_x, &[y.variable()], false, solver, f).unwrap();
+        let minimum_model_with_y = optimize(&[formula], &literals_a_nb_x, &[y.variable()], false, solver, f)?.unwrap();
         assert_same_elements(&minimum_model_with_y, &[na, b, nx, y]);
-        let minimum_model_with_cy = optimize(&[formula], &literals_a_nb_x, &[c.variable(), y.variable()], false, solver, f).unwrap();
+        let minimum_model_with_cy = optimize(&[formula], &literals_a_nb_x, &[c.variable(), y.variable()], false, solver, f)?.unwrap();
         assert_same_elements(&minimum_model_with_cy, &[na, b, c, nx, y]);
 
         let literals_na_nx = vec![na, nx];
-        let maximum_model = optimize(&[formula], &literals_na_nx, &[], true, solver, f).unwrap();
+        let maximum_model = optimize(&[formula], &literals_na_nx, &[], true, solver, f)?.unwrap();
         assert_same_elements(&maximum_model, &[na, nx]);
-        let maximum_model_with_c = optimize(&[formula], &literals_na_nx, &[c.variable()], true, solver, f).unwrap();
+        let maximum_model_with_c = optimize(&[formula], &literals_na_nx, &[c.variable()], true, solver, f)?.unwrap();
         assert_same_elements(&maximum_model_with_c, &[na, c, nx]);
         let maximum_model_with_acy =
-            optimize(&[formula], &literals_na_nx, &[a.variable(), c.variable(), y.variable()], true, solver, f).unwrap();
+            optimize(&[formula], &literals_na_nx, &[a.variable(), c.variable(), y.variable()], true, solver, f)?.unwrap();
         assert_same_elements(&maximum_model_with_acy, &[na, c, nx, y]);
     }
+
+    Ok(())
 }
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-fn test_large_formula_minimize() {
+fn test_large_formula_minimize() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/large_formula.txt").unwrap();
         let reader = BufReader::new(file);
         let formula = f.parse(&reader.lines().map(Result::unwrap).collect::<Vec<String>>()[0]).unwrap();
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let minimum_model = optimize(&[formula], &literals, &[], false, solver, f);
-        test_minimum_model(formula, minimum_model, &literals, f);
+        let minimum_model = optimize(&[formula], &literals, &[], false, solver, f)?;
+        test_minimum_model(formula, minimum_model, &literals, f)?;
     }
+
+    Ok(())
 }
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-fn test_large_formula_maximize() {
+fn test_large_formula_maximize() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/large_formula.txt").unwrap();
         let reader = BufReader::new(file);
         let formula = f.parse(&reader.lines().map(Result::unwrap).collect::<Vec<String>>()[0]).unwrap();
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let maximum_model = optimize(&[formula], &literals, &[], true, solver, f);
-        test_maximum_model(formula, maximum_model, &literals, f);
+        let maximum_model = optimize(&[formula], &literals, &[], true, solver, f)?;
+        test_maximum_model(formula, maximum_model, &literals, f)?;
     }
+
+    Ok(())
 }
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-fn test_larger_formula_minimize() {
+fn test_larger_formula_minimize() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/small_formulas.txt").unwrap();
@@ -240,14 +259,16 @@ fn test_larger_formula_minimize() {
         let ops = reader.lines().filter(|s| !s.as_ref().unwrap().trim().is_empty()).map(|s| f.parse(&s.unwrap()).unwrap());
         let formula = f.and(ops);
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let minimum_model = optimize(&[formula], &literals, &[], false, solver, f);
-        test_minimum_model(formula, minimum_model, &literals, f);
+        let minimum_model = optimize(&[formula], &literals, &[], false, solver, f)?;
+        test_minimum_model(formula, minimum_model, &literals, f)?;
     }
+
+    Ok(())
 }
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-fn test_larger_formula_maximize() {
+fn test_larger_formula_maximize() -> LngResult<()> {
     for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let file = File::open("resources/formulas/small_formulas.txt").unwrap();
@@ -255,9 +276,11 @@ fn test_larger_formula_maximize() {
         let ops = reader.lines().filter(|s| !s.as_ref().unwrap().trim().is_empty()).map(|s| f.parse(&s.unwrap()).unwrap());
         let formula = f.and(ops);
         let literals = formula.variables(f).iter().map(Variable::pos_lit).collect::<Vec<Literal>>();
-        let maximum_model = optimize(&[formula], &literals, &[], true, solver, f);
-        test_maximum_model(formula, maximum_model, &literals, f);
+        let maximum_model = optimize(&[formula], &literals, &[], true, solver, f)?;
+        test_maximum_model(formula, maximum_model, &literals, f)?;
     }
+
+    Ok(())
 }
 
 fn optimize(
@@ -267,48 +290,56 @@ fn optimize(
     maximize: bool,
     solver: &mut MiniSat,
     f: &FormulaFactory,
-) -> Option<Model> {
+) -> LngResult<Option<Model>> {
     solver.reset();
-    let _ = solver.add_all(formulas, f);
-    if maximize {
+    solver.add_all(formulas, f)?;
+    Ok(if maximize {
         solver.optimize(f, &OptimizationFunction::maximize(literals.into()).additional_variables(additional_variables.iter())).unwrap()
     } else {
         solver.optimize(f, &OptimizationFunction::minimize(literals.into()).additional_variables(additional_variables.iter())).unwrap()
-    }
+    })
 }
 
-fn test_minimum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], f: &FormulaFactory) {
-    test_optimum_model(formula, optimum_model, literals, false, f);
+fn test_minimum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], f: &FormulaFactory) -> LngResult<()> {
+    test_optimum_model(formula, optimum_model, literals, false, f)
 }
 
-fn test_maximum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], f: &FormulaFactory) {
-    test_optimum_model(formula, optimum_model, literals, true, f);
+fn test_maximum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], f: &FormulaFactory) -> LngResult<()> {
+    test_optimum_model(formula, optimum_model, literals, true, f)
 }
 
-fn test_optimum_model(formula: EncodedFormula, optimum_model: Option<Model>, literals: &[Literal], maximize: bool, f: &FormulaFactory) {
+fn test_optimum_model(
+    formula: EncodedFormula,
+    optimum_model: Option<Model>,
+    literals: &[Literal],
+    maximize: bool,
+    f: &FormulaFactory,
+) -> LngResult<()> {
     let mut solver = MiniSat::new();
-    let _ = solver.add(formula, f);
+    solver.add(formula, f)?;
     if solver.sat() == True {
         let with_formula = solver.save_state().unwrap();
-        let _ = solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f);
+        solver.add(f.and(optimum_model.as_ref().unwrap().literals().iter().map(|l| EncodedFormula::from(*l))), f)?;
         assert_eq!(solver.sat(), True);
-        let _ = solver.load_state(&with_formula);
+        solver.load_state(&with_formula)?;
         let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals).len().try_into().unwrap();
         let sel_vars = literals
             .iter()
             .enumerate()
             .map(|(i, &lit)| {
                 let sel_var = f.variable(format!("SEL_VAR_{i}"));
-                let _ = solver.add(f.equivalence(sel_var, lit.into()), f);
-                sel_var.as_variable().unwrap()
+                solver.add(f.equivalence(sel_var, lit.into()), f)?;
+                Ok(sel_var.as_variable().unwrap())
             })
-            .collect::<Box<[_]>>();
+            .collect::<LngResult<Box<[_]>>>()?;
         if maximize || num_satisfied_literals > 0 {
-            let _ = solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars).unwrap(), f);
+            solver.add(f.cc(if maximize { GT } else { LT }, num_satisfied_literals, sel_vars).unwrap(), f)?;
         }
     } else {
         assert!(optimum_model.is_none());
     }
+
+    Ok(())
 }
 
 fn satisfied_literals(model: &Model, literals: &[Literal]) -> BTreeSet<Literal> {

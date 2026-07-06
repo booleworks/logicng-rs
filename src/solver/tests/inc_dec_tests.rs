@@ -1,3 +1,4 @@
+use crate::errors::LngResult;
 use crate::solver::minisat::sat::Tristate;
 use crate::solver::minisat::sat::Tristate::False;
 use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverState};
@@ -6,110 +7,118 @@ use crate::util::test_util::F;
 use Tristate::True;
 
 #[test]
-fn test_inc_dec() {
+fn test_inc_dec() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let mut s = MiniSat::new();
-    let _ = s.add(f.variable("a"), f);
+    s.add(f.variable("a"), f)?;
     let state1 = s.save_state().unwrap();
     assert_eq!(state1, SolverState::new(0, [1, 1, 0, 0, 1, 0, 0]));
     assert_eq!(s.sat(), True);
 
-    let _ = s.add(generate_pigeon_hole(5, f), f);
+    s.add(generate_pigeon_hole(5, f), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
     assert_eq!(s.sat(), True);
 
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
     assert_eq!(s.sat(), True);
 
-    let _ = s.add(generate_pigeon_hole(5, f), f);
+    s.add(generate_pigeon_hole(5, f), f)?;
     let state2 = s.save_state().unwrap();
     assert_eq!(state2, SolverState::new(1, [1, 31, 81, 0, 1, 0, 0]));
-    let _ = s.add(generate_pigeon_hole(4, f), f);
+    s.add(generate_pigeon_hole(4, f), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state2);
+    s.load_state(&state2)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
     assert_eq!(s.sat(), True);
+
+    Ok(())
 }
 
 #[test]
-fn test_inc_dec_deep_1() {
+fn test_inc_dec_deep_1() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let mut s = MiniSat::new();
-    let _ = s.add(f.variable("a"), f);
+    s.add(f.variable("a"), f)?;
     let state1 = s.save_state().unwrap();
-    let _ = s.add(f.variable("b"), f);
+    s.add(f.variable("b"), f)?;
     assert_eq!(s.sat(), True);
 
     let state2 = s.save_state().unwrap();
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
     assert!(s.load_state(&state2).is_err());
+
+    Ok(())
 }
 
 #[test]
-fn test_inc_dec_deep_2() {
+fn test_inc_dec_deep_2() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let mut s = MiniSat::new();
-    let _ = s.add(f.variable("a"), f);
+    s.add(f.variable("a"), f)?;
     let state1 = s.save_state().unwrap();
-    let _ = s.add(f.variable("b"), f);
+    s.add(f.variable("b"), f)?;
     assert_eq!(s.sat(), True);
 
     let _state2 = s.save_state().unwrap();
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
 
-    let _ = s.add(f.literal("b", false), f);
+    s.add(f.literal("b", false), f)?;
     assert_eq!(s.sat(), True);
     let state3 = s.save_state().unwrap();
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state3);
-    let _ = s.add(f.variable("c"), f);
+    s.load_state(&state3)?;
+    s.add(f.variable("c"), f)?;
     let state4 = s.save_state().unwrap();
     let state5 = s.save_state().unwrap();
-    let _ = s.load_state(&state4);
+    s.load_state(&state4)?;
     assert!(s.load_state(&state5).is_err());
+
+    Ok(())
 }
 
 #[test]
-fn test_inc_dec_deep_3() {
+fn test_inc_dec_deep_3() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let mut s = MiniSat::new();
-    let _ = s.add(f.variable("a"), f);
+    s.add(f.variable("a"), f)?;
     let state1 = s.save_state().unwrap();
-    let _ = s.add(f.variable("b"), f);
+    s.add(f.variable("b"), f)?;
     assert_eq!(s.sat(), True);
 
     let _state2 = s.save_state().unwrap();
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
 
-    let _ = s.add(f.literal("b", false), f);
+    s.add(f.literal("b", false), f)?;
     assert_eq!(s.sat(), True);
     let state3 = s.save_state().unwrap();
-    let _ = s.add(f.literal("a", false), f);
+    s.add(f.literal("a", false), f)?;
     assert_eq!(s.sat(), False);
-    let _ = s.load_state(&state3);
-    let _ = s.add(f.variable("c"), f);
+    s.load_state(&state3)?;
+    s.add(f.variable("c"), f)?;
     let state4 = s.save_state().unwrap();
     let _state5 = s.save_state().unwrap();
-    let _ = s.load_state(&state4);
+    s.load_state(&state4)?;
     assert_eq!(s.sat(), True);
-    let _ = s.load_state(&state1);
+    s.load_state(&state1)?;
     assert_eq!(s.sat(), True);
     assert!(s.load_state(&state3).is_err());
+
+    Ok(())
 }
 
 #[test]

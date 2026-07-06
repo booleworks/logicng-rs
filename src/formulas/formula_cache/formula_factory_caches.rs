@@ -56,6 +56,7 @@ impl Default for FormulaFactoryCaches {
 #[cfg(test)]
 mod test {
     mod config {
+        use crate::errors::LngResult;
         use crate::formulas::{FormulaFactory, ToFormula};
         use crate::operations::{functions, predicates, transformations};
 
@@ -264,112 +265,124 @@ mod test {
         }
 
         #[test]
-        fn enable_cc_encoding() {
+        fn enable_cc_encoding() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.cc_encoding = true;
 
             let formula1 = "a + b = 1".to_formula(&f);
             let formula2 = "a + c = 1".to_formula(&f);
 
-            let _ = formula1.as_cc(&f).unwrap().encode(&f);
+            formula1.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 1);
 
-            let _ = formula2.as_cc(&f).unwrap().encode(&f);
+            formula2.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 2);
 
-            let _ = formula1.as_cc(&f).unwrap().encode(&f);
+            formula1.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 2);
+
+            Ok(())
         }
 
         #[test]
-        fn disable_cc_encoding() {
+        fn disable_cc_encoding() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.cc_encoding = false;
 
             let formula1 = "a + b = 1".to_formula(&f);
             let formula2 = "a + c = 1".to_formula(&f);
 
-            let _ = formula1.as_cc(&f).unwrap().encode(&f);
+            formula1.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 0);
 
-            let _ = formula2.as_cc(&f).unwrap().encode(&f);
+            formula2.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 0);
 
-            let _ = formula1.as_cc(&f).unwrap().encode(&f);
+            formula1.as_cc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.cc_encoding.len(), 0);
+
+            Ok(())
         }
 
         #[test]
-        fn enable_pbc_encoding() {
+        fn enable_pbc_encoding() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.pbc_encoding = true;
 
             let formula1 = "2 * a + b = 1".to_formula(&f);
             let formula2 = "2 * a + c = 1".to_formula(&f);
 
-            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
+            formula1.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 1);
 
-            let _ = formula2.as_pbc(&f).unwrap().encode(&f);
+            formula2.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 2);
 
-            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
+            formula1.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 2);
+
+            Ok(())
         }
 
         #[test]
-        fn disable_pbc_encoding() {
+        fn disable_pbc_encoding() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.pbc_encoding = false;
 
             let formula1 = "2 * a + b = 1".to_formula(&f);
             let formula2 = "2 * a + c = 1".to_formula(&f);
 
-            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
+            formula1.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 0);
 
-            let _ = formula2.as_pbc(&f).unwrap().encode(&f);
+            formula2.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 0);
 
-            let _ = formula1.as_pbc(&f).unwrap().encode(&f);
+            formula1.as_pbc(&f).unwrap().encode(&f)?;
             assert_eq!(f.caches.pbc_encoding.len(), 0);
+
+            Ok(())
         }
 
         #[test]
-        fn enable_nnf() {
+        fn enable_nnf() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.nnf = true;
 
             let formula1 = "~(b | ~a)".to_formula(&f);
             let formula2 = "~(b | ~(a & c))".to_formula(&f);
 
-            let _ = transformations::nnf(formula1, &f);
+            transformations::nnf(formula1, &f)?;
             assert_eq!(f.caches.nnf.len(), 1);
 
-            let _ = transformations::nnf(formula2, &f);
+            transformations::nnf(formula2, &f)?;
             assert!(f.caches.nnf.len() > 1);
 
             let s = f.caches.nnf.len();
-            let _ = transformations::nnf(formula1, &f);
+            transformations::nnf(formula1, &f)?;
             assert_eq!(f.caches.nnf.len(), s);
+
+            Ok(())
         }
 
         #[test]
-        fn disable_nnf() {
+        fn disable_nnf() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.nnf = false;
 
             let formula1 = "~(b | ~a)".to_formula(&f);
             let formula2 = "~(b | ~(a & c))".to_formula(&f);
 
-            let _ = transformations::nnf(formula1, &f);
+            transformations::nnf(formula1, &f)?;
             assert_eq!(f.caches.nnf.len(), 0);
 
-            let _ = transformations::nnf(formula2, &f);
+            transformations::nnf(formula2, &f)?;
             assert_eq!(f.caches.nnf.len(), 0);
 
-            let _ = transformations::nnf(formula1, &f);
+            transformations::nnf(formula1, &f)?;
             assert_eq!(f.caches.nnf.len(), 0);
+
+            Ok(())
         }
 
         #[test]
@@ -395,25 +408,29 @@ mod test {
         }
 
         #[test]
-        fn enable_factorization_cnf() {
+        fn enable_factorization_cnf() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.factorization_cnf = true;
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            let _ = transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f);
+            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f)?;
             assert!(f.caches.factorization_cnf.len() > 0);
+
+            Ok(())
         }
 
         #[test]
-        fn disable_factorization_cnf() {
+        fn disable_factorization_cnf() -> LngResult<()> {
             let mut f = FormulaFactory::new();
             f.config.caches.factorization_cnf = false;
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            let _ = transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f);
+            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f)?;
             assert_eq!(f.caches.factorization_cnf.len(), 0);
+
+            Ok(())
         }
 
         #[test]

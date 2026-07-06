@@ -341,6 +341,7 @@ mod tests {
     use itertools::Itertools;
 
     use crate::datastructures::Assignment;
+    use crate::errors::LngResult;
     use crate::formulas::{FormulaFactory, Literal, ToFormula, Variable};
     use crate::solver::functions::{ModelEnumerationConfig, enumerate_models, enumerate_models_with_config};
     use crate::solver::minisat::SolverCnfMethod::PgOnSolver;
@@ -348,10 +349,10 @@ mod tests {
     use crate::solver::minisat::{MiniSat, MiniSatConfig};
 
     #[test]
-    fn test_model_enumeration_simple() {
+    fn test_model_enumeration_simple() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
-        let _ = solver.add("A & (B | C)".to_formula(f), f);
+        solver.add("A & (B | C)".to_formula(f), f)?;
         let models = enumerate_models(&mut solver).unwrap();
         let ass: HashSet<Assignment> = models.iter().map(Assignment::from).collect();
         assert_eq!(
@@ -364,13 +365,15 @@ mod tests {
             .collect::<HashSet<Assignment>>(),
             ass
         );
+
+        Ok(())
     }
 
     #[test]
-    fn test_model_enumeration_does_not_alter_solver() {
+    fn test_model_enumeration_does_not_alter_solver() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
-        let _ = solver.add("A & (B | C)".to_formula(f), f);
+        solver.add("A & (B | C)".to_formula(f), f)?;
         assert_eq!(True, solver.sat());
         let models1 = enumerate_models(&mut solver).unwrap();
         let ass1: HashSet<Assignment> = models1.iter().map(Assignment::from).collect();
@@ -379,14 +382,16 @@ mod tests {
         let ass2: HashSet<Assignment> = models2.iter().map(Assignment::from).collect();
         assert_eq!(True, solver.sat());
         assert_eq!(ass1, ass2);
+
+        Ok(())
     }
 
     #[test]
-    fn test_variables_removed_by_simplification_occurs_in_models() {
+    fn test_variables_removed_by_simplification_occurs_in_models() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
         let formula = "A & B => A".to_formula(f);
-        let _ = solver.add(formula, f);
+        solver.add(formula, f)?;
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(formula.variables(f).iter().copied().collect::<Box<[_]>>()),
@@ -396,17 +401,21 @@ mod tests {
         for model in models {
             assert_eq!(model.literals().iter().map(Literal::variable).sorted().collect::<Vec<Variable>>(), [f.var("A"), f.var("B")]);
         }
+
+        Ok(())
     }
 
     #[test]
-    fn test_unknown_variable_not_occurring_in_model() {
+    fn test_unknown_variable_not_occurring_in_model() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let mut solver = MiniSat::new();
         let a = "A".to_formula(f);
-        let _ = solver.add(a, f);
+        solver.add(a, f)?;
         let vars: Box<[Variable]> = Box::new([f.var("A"), f.var("X")]);
         let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars)).unwrap();
         assert_eq!(1, models.len());
         assert_eq!(models[0].literals(), vec![f.lit("A", true)]);
+
+        Ok(())
     }
 }

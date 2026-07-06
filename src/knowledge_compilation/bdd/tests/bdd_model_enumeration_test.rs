@@ -4,6 +4,7 @@ mod tests {
     use num_bigint::ToBigUint;
 
     use crate::cardinality_constraints::{AmoEncoder, CcConfig};
+    use crate::errors::LngResult;
     use crate::formulas::{CType, EncodedFormula, FormulaFactory, Variable};
     use crate::knowledge_compilation::bdd::bdd_kernel::BddKernel;
     use crate::knowledge_compilation::bdd::bdd_main::Bdd;
@@ -55,7 +56,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
-    fn large_bdd_test() {
+    fn large_bdd_test() -> LngResult<()> {
         let mut f = FormulaFactory::new();
         let expected_count = [0, 2, 10, 4, 40, 92, 352];
         for n in 3..=9 {
@@ -92,24 +93,28 @@ mod tests {
 
                 let cnf = bdd.cnf(&f, &mut kernel).unwrap();
                 assert!(cnf.is_cnf(&f));
-                check_equiv(n_queens, cnf, &f);
+                check_equiv(n_queens, cnf, &f)?;
 
                 let dnf = bdd.dnf(&f, &mut kernel).unwrap();
                 assert!(dnf.is_dnf(&f));
-                check_equiv(n_queens, dnf, &f);
+                check_equiv(n_queens, dnf, &f)?;
 
                 let formula = bdd.to_formula(&f, &mut kernel).unwrap();
-                check_equiv(n_queens, formula, &f);
+                check_equiv(n_queens, formula, &f)?;
             }
             println!("\n");
         }
+
+        Ok(())
     }
 
-    fn check_equiv(original: EncodedFormula, cnf: EncodedFormula, f: &FormulaFactory) {
+    fn check_equiv(original: EncodedFormula, cnf: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
         let mut solver = MiniSat::new();
         let formula = f.equivalence(original, cnf);
-        let _ = solver.add(f.negate(formula), f);
+        solver.add(f.negate(formula), f)?;
         assert_eq!(solver.sat(), Tristate::False);
+
+        Ok(())
     }
 
     fn generate_variables(n: usize, f: &FormulaFactory) -> Vec<Variable> {
