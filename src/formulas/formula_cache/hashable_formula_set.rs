@@ -16,8 +16,7 @@ impl<E: Encoding> HashableFormulaSet<E> {
 }
 
 impl<E> Hash for HashableFormulaSet<E>
-where
-    E: Encoding + Clone + Copy + Debug + PartialEq + Eq + Hash,
+where E: Encoding + Clone + Copy + Debug + PartialEq + Eq + Hash
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for op in &self.base {
@@ -29,8 +28,7 @@ where
 }
 
 impl<E> PartialEq for HashableFormulaSet<E>
-where
-    E: Encoding + Clone + Copy + Debug + PartialEq + Eq + Hash,
+where E: Encoding + Clone + Copy + Debug + PartialEq + Eq + Hash
 {
     fn eq(&self, other: &Self) -> bool {
         self.base.eq(&other.base)

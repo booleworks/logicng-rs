@@ -865,8 +865,7 @@ impl<B> MiniSat2Solver<B> {
     fn remove_satisfied_gen<R, RMUT>(&mut self, learnt: bool, remove_vec: R, remove_vec_mut: RMUT)
     where
         R: Fn(&Self) -> &Vec<ClauseRef>,
-        RMUT: Fn(&mut Self) -> &mut Vec<ClauseRef>,
-    {
+        RMUT: Fn(&mut Self) -> &mut Vec<ClauseRef>, {
         let mut j = 0;
         for i in 0..remove_vec(self).len() {
             let satisfied = {

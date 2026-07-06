@@ -1,7 +1,5 @@
-use crate::{
-    errors::LngResult,
-    formulas::{EncodedFormula, Formula, FormulaFactory},
-};
+use crate::errors::LngResult;
+use crate::formulas::{EncodedFormula, Formula, FormulaFactory};
 
 /// Constructs the _NNF_ form of `formula`.
 ///

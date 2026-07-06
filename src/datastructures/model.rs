@@ -66,8 +66,7 @@ impl Model {
     pub fn new<P, N>(pos: P, neg: N) -> Self
     where
         P: Into<Vec<Variable>>,
-        N: Into<Vec<Variable>>,
-    {
+        N: Into<Vec<Variable>>, {
         Self { pos: pos.into(), neg: neg.into() }
     }
 

@@ -263,9 +263,7 @@ fn handle_nary<B>(
 }
 
 fn add_clause<'a, B, L>(solver: &mut MiniSat2Solver<B>, clause: L, proposition: Option<Proposition<B>>, config: PgOnSolverConfig)
-where
-    L: IntoIterator<Item = &'a Literal>,
-{
+where L: IntoIterator<Item = &'a Literal> {
     let clause_vec = clause
         .into_iter()
         .map(|lit| {

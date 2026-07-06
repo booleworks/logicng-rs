@@ -1,16 +1,15 @@
 #![allow(missing_docs)]
-use crate::{
-    cardinality_constraints::CcError,
-    formulas::FormulaError,
-    graphs::GraphError,
-    io::IoError,
-    knowledge_compilation::{bdd::BddError, dnnf::DnnfError},
-    operations::OperationError,
-    parser::ParserError,
-    pseudo_booleans::PbcError,
-    solver::SolverError,
-    util::UtilError,
-};
+use crate::cardinality_constraints::CcError;
+use crate::formulas::FormulaError;
+use crate::graphs::GraphError;
+use crate::io::IoError;
+use crate::knowledge_compilation::bdd::BddError;
+use crate::knowledge_compilation::dnnf::DnnfError;
+use crate::operations::OperationError;
+use crate::parser::ParserError;
+use crate::pseudo_booleans::PbcError;
+use crate::solver::SolverError;
+use crate::util::UtilError;
 
 /// A generic LogicNG result which carries the result or an error
 pub type LngResult<T> = Result<T, LngError>;

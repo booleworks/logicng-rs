@@ -1,10 +1,6 @@
-use crate::{
-    errors::LngResult,
-    knowledge_compilation::bdd::{
-        BddError,
-        bdd_kernel::{BddKernel, is_const},
-    },
-};
+use crate::errors::LngResult;
+use crate::knowledge_compilation::bdd::BddError;
+use crate::knowledge_compilation::bdd::bdd_kernel::{BddKernel, is_const};
 
 use super::bdd_kernel::{BDD_FALSE, BDD_TRUE, OPCODE_NOT, Operand, is_one, is_zero, pair};
 

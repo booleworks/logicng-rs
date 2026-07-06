@@ -192,9 +192,7 @@ fn parse_constant(f: &FormulaFactory, constant: Pair<Rule>) -> LngResult<Encoded
 }
 
 fn next_pair<'a, I>(pairs: &mut I) -> LngResult<Pair<'a, Rule>>
-where
-    I: Iterator<Item = Pair<'a, Rule>>,
-{
+where I: Iterator<Item = Pair<'a, Rule>> {
     pairs.next().ok_or(ParserError::UnexpectedEnd.into())
 }
 

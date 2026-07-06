@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::{errors::LngResult, graphs::GraphError};
+use crate::errors::LngResult;
+use crate::graphs::GraphError;
 
 /// Index for nodes of the hypergraph.
 pub type NodeIndex = usize;
