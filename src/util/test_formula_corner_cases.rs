@@ -155,6 +155,6 @@ fn add_pbc_corner_cases_for(
     coefficients: &[i64],
 ) {
     for &rhs in &[-1, 0, 1, -3, -4, 3, 4] {
-        formulas.push(f.pbc(c_type, rhs, literals, coefficients));
+        formulas.push(f.pbc(c_type, rhs, literals, coefficients).unwrap());
     }
 }

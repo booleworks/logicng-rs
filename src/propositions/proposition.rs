@@ -27,7 +27,7 @@ impl<T> Proposition<T> {
         Self { formula, backpack: None }
     }
 
-    /// Constructs a new proposition for a formula with an assositated value (backpack).
+    /// Constructs a new proposition for a formula with an associated value (backpack).
     pub fn with_backpack(formula: EncodedFormula, backpack: T) -> Self {
         Self { formula, backpack: Some(Rc::new(backpack)) }
     }

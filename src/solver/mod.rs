@@ -1,3 +1,4 @@
+pub mod error;
 /// Function which works on a SAT solver and its state.
 pub mod functions;
 
@@ -5,6 +6,8 @@ mod minisat_config;
 mod minisat_datastructures;
 mod minisat_solver;
 mod sat;
+
+pub use error::SolverError;
 
 /// MiniSAT implementation.
 pub mod minisat {

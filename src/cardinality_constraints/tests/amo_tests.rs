@@ -1,6 +1,7 @@
 use crate::cardinality_constraints::cc_config::BimanderGroupSize::{Fixed, Half, Sqrt};
 use crate::cardinality_constraints::cc_config::{AmoEncoder, CcConfig};
 use crate::cardinality_constraints::cc_encoder::CcEncoder;
+use crate::errors::LngResult;
 use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
 use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
@@ -30,8 +31,8 @@ fn test_amo_0() {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config.clone();
-        let cc = f.cc(LE, 0, (&[]) as &[Variable]);
-        assert!(f.nnf_of(cc).is_verum());
+        let cc = f.cc(LE, 0, (&[]) as &[Variable]).unwrap();
+        assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
 
@@ -41,32 +42,37 @@ fn test_amo_1() {
     for config in configs() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
-        let cc = f.cc(LE, 1, (&[var]) as &[Variable]);
-        assert!(f.nnf_of(cc).is_verum());
-        assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).is_empty());
+        let cc = f.cc(LE, 1, (&[var]) as &[Variable]).unwrap();
+        assert!(f.nnf_of(cc).unwrap().is_verum());
+        assert!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap().is_empty());
     }
 }
 
 #[test]
-fn test_amo_k() {
+fn test_amo_k() -> LngResult<()> {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config;
-        test_amo(2, &f);
-        test_amo(10, &f);
-        test_amo(100, &f);
+        test_amo(2, &f)?;
+        test_amo(10, &f)?;
+        test_amo(100, &f)?;
     }
+
+    Ok(())
 }
 
-fn test_amo(num_lits: usize, f: &FormulaFactory) {
+fn test_amo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
     let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
     let mut solver = MiniSat::new();
-    let cc = f.cc(LE, 1, problem_vars.clone());
-    solver.add(cc, f);
+    let cc = f.cc(LE, 1, problem_vars.clone()).unwrap();
+    solver.add(cc, f)?;
     assert_eq!(solver.sat(), True);
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000));
+    let models =
+        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000)).unwrap();
     assert_eq!(models.len(), num_lits + 1);
     for model in models {
         assert!(model.pos().len() <= 1);
     }
+
+    Ok(())
 }

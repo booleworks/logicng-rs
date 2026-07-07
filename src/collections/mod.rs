@@ -4,7 +4,7 @@ mod ms_clause;
 mod ms_variable;
 mod vector_functions;
 
-pub use append_vec::*;
+pub(crate) use append_vec::*;
 pub use lng_heap::*;
 pub use ms_clause::*;
 pub use ms_variable::*;

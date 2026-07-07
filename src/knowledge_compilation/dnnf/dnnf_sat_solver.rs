@@ -8,10 +8,11 @@ use std::rc::Rc;
 use bitvec::vec::BitVec;
 
 use crate::collections::MsClause;
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
+use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::solver::minisat::sat::Tristate::Undef;
 use crate::solver::minisat::sat::{ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate, mk_lit};
-use crate::util::exceptions::panic_unexpected_formula_type;
 
 pub struct DnnfSatSolver {
     internal_solver: MiniSat2Solver<()>,
@@ -31,18 +32,22 @@ impl DnnfSatSolver {
         self.internal_solver.propagate().is_none()
     }
 
-    pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) {
+    pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
         match formula.unpack(f) {
-            Formula::True => {}
+            Formula::True => Ok(()),
             Formula::False | Formula::Or(_) | Formula::Lit(_) => {
                 let clause_vec = self.generate_clause_vec(&formula.literals(f));
                 self.internal_solver.add_clause(clause_vec, None);
+                Ok(())
             }
-            Formula::And(ops) => ops.for_each(|op| {
-                let clause_vec = self.generate_clause_vec(&op.literals(f));
-                self.internal_solver.add_clause(clause_vec, None);
-            }),
-            _ => panic_unexpected_formula_type(formula, Some(f)),
+            Formula::And(ops) => {
+                ops.for_each(|op| {
+                    let clause_vec = self.generate_clause_vec(&op.literals(f));
+                    self.internal_solver.add_clause(clause_vec, None);
+                });
+                Ok(())
+            }
+            _ => Err(DnnfError::NonCnfFormula.into()),
         }
     }
 

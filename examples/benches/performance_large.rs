@@ -56,7 +56,7 @@ fn main() {
         for _ in 0..1 {
             let mut minisat = MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
             let start = Instant::now();
-            minisat.add(formula, f);
+            let _ = minisat.add(formula, f);
             println!("{:?}", minisat.sat());
             if PRINT_PERFORMANCE {
                 println!("[{}] PG on solver: {:?}", file_name, start.elapsed());
@@ -73,7 +73,7 @@ fn main() {
         GLOBAL.print_memory(&format!("[{file_name}] Tseitin created"));
 
         let start = Instant::now();
-        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f);
+        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f).unwrap();
         if PRINT_PERFORMANCE {
             println!("[{}] PG CNF: {:?}", file_name, start.elapsed());
         }

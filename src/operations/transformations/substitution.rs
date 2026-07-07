@@ -1,13 +1,21 @@
+use crate::errors::LngResult;
 use crate::formulas::Literal::{Neg, Pos};
 use crate::formulas::{
     CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, LitType, PbConstraint, Variable, evaluate_comparator,
 };
+use crate::operations::OperationError;
 use std::collections::HashMap;
 
 /// A `Substitution` maps variables to formulas.
 pub type Substitution = HashMap<Variable, EncodedFormula>;
 
 /// Substitutes variables of the given formulas with specified formulas.
+///
+/// # Errors
+///
+/// Returns an error if a substitution would replace a variable inside a
+/// cardinality or pseudo-Boolean constraint with a non-literal formula, or if
+/// constructing the resulting constraint fails.
 ///
 /// # Examples
 ///
@@ -25,48 +33,48 @@ pub type Substitution = HashMap<Variable, EncodedFormula>;
 /// let mut substitutions = HashMap::new();
 /// substitutions.insert(f.var("a"), "c => d".to_formula(&f));
 ///
-/// let substituted = substitute(formula, &substitutions, &f);
+/// let substituted = substitute(formula, &substitutions, &f).unwrap();
 ///
 /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
 /// ```
-pub fn substitute(formula: EncodedFormula, substitution: &Substitution, f: &FormulaFactory) -> EncodedFormula {
+pub fn substitute(formula: EncodedFormula, substitution: &Substitution, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
     match formula.unpack(f) {
-        True | False => formula,
-        Lit(Pos(var)) => *substitution.get(&var).unwrap_or(&formula),
-        Lit(Neg(var)) => substitution.get(&var).map_or(formula, |subst| f.negate(*subst)),
+        True | False => Ok(formula),
+        Lit(Pos(var)) => Ok(*substitution.get(&var).unwrap_or(&formula)),
+        Lit(Neg(var)) => Ok(substitution.get(&var).map_or(formula, |subst| f.negate(*subst))),
         Not(op) => {
-            let formula = substitute(op, substitution, f);
-            f.negate(formula)
+            let formula = substitute(op, substitution, f)?;
+            Ok(f.negate(formula))
         }
         And(ops) => {
-            let new_ops = ops.map(|op| substitute(op, substitution, f));
-            f.and(new_ops)
+            let new_ops = ops.map(|op| substitute(op, substitution, f)).collect::<Result<Vec<_>, _>>()?;
+            Ok(f.and(new_ops))
         }
         Or(ops) => {
-            let new_ops = ops.map(|op| substitute(op, substitution, f));
-            f.or(new_ops)
+            let new_ops = ops.map(|op| substitute(op, substitution, f)).collect::<Result<Vec<_>, _>>()?;
+            Ok(f.or(new_ops))
         }
         Impl((left, right)) => {
-            let new_left = substitute(left, substitution, f);
-            let new_right = substitute(right, substitution, f);
-            f.implication(new_left, new_right)
+            let new_left = substitute(left, substitution, f)?;
+            let new_right = substitute(right, substitution, f)?;
+            Ok(f.implication(new_left, new_right))
         }
         Equiv((left, right)) => {
-            let new_left = substitute(left, substitution, f);
-            let new_right = substitute(right, substitution, f);
-            f.equivalence(new_left, new_right)
+            let new_left = substitute(left, substitution, f)?;
+            let new_right = substitute(right, substitution, f)?;
+            Ok(f.equivalence(new_left, new_right))
         }
         Cc(cc_ref) => handle_cc(cc_ref, substitution, f),
         Pbc(pbc_ref) => handle_pbc(pbc_ref, substitution, f),
     }
 }
 
-fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &FormulaFactory) -> EncodedFormula {
+fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     let mut new_lits = vec![];
     let mut lhs_fixed = 0;
     for &var in &*cc.variables {
-        let subst = substitute(var.into(), substitution, f);
+        let subst = substitute(var.into(), substitution, f)?;
         if subst == var.into() {
             new_lits.push(var.pos_lit());
         } else {
@@ -78,26 +86,26 @@ fn handle_cc(cc: &CardinalityConstraint, substitution: &Substitution, f: &Formul
                 FormulaType::Lit(LitType::Pos(_)) => {
                     new_lits.push(subst.as_literal().unwrap());
                 }
-                _ => panic!("Cannot substitute a formula for a variable in a cardinality constraint"),
+                _ => return Err(OperationError::SubstFormCcPbc.into()),
             }
         }
     }
     #[allow(clippy::cast_possible_wrap)]
     if new_lits.is_empty() {
-        f.constant(evaluate_comparator(lhs_fixed, cc.comparator, cc.rhs.into()))
+        Ok(f.constant(evaluate_comparator(lhs_fixed, cc.comparator, cc.rhs.into())))
     } else {
         let coeffs = vec![1; new_lits.len()];
         f.pbc(cc.comparator, i64::from(cc.rhs) - lhs_fixed, new_lits, coeffs)
     }
 }
 
-fn handle_pbc(pbc: &PbConstraint, substitution: &Substitution, f: &FormulaFactory) -> EncodedFormula {
+fn handle_pbc(pbc: &PbConstraint, substitution: &Substitution, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     let mut new_lits = vec![];
     let mut new_coeffs = vec![];
     let mut lhs_fixed = 0;
     for i in 0..pbc.literals.len() {
         let lit = pbc.literals[i];
-        let subst = substitute(lit.into(), substitution, f);
+        let subst = substitute(lit.into(), substitution, f)?;
         if subst == EncodedFormula::from(lit) {
             new_lits.push(lit);
             new_coeffs.push(pbc.coefficients[i]);
@@ -111,12 +119,12 @@ fn handle_pbc(pbc: &PbConstraint, substitution: &Substitution, f: &FormulaFactor
                     new_lits.push(subst.as_literal().unwrap());
                     new_coeffs.push(pbc.coefficients[i]);
                 }
-                _ => panic!("Cannot substitute a formula for a literal in a pseudo-Boolean constraint"),
+                _ => return Err(OperationError::SubstFormCcPbc.into()),
             }
         }
     }
     if new_lits.is_empty() {
-        f.constant(evaluate_comparator(lhs_fixed, pbc.comparator, pbc.rhs))
+        Ok(f.constant(evaluate_comparator(lhs_fixed, pbc.comparator, pbc.rhs)))
     } else {
         f.pbc(pbc.comparator, pbc.rhs - lhs_fixed, new_lits, new_coeffs)
     }
@@ -135,8 +143,8 @@ mod tests {
         let ff = F::new();
         let subst = create_substitution(&ff);
         let f = &ff.f;
-        assert_eq!(f.verum(), f.substitute(EncodedFormula::constant(true), &subst));
-        assert_eq!(f.falsum(), f.substitute(EncodedFormula::constant(false), &subst));
+        assert_eq!(f.verum(), f.substitute(EncodedFormula::constant(true), &subst).unwrap());
+        assert_eq!(f.falsum(), f.substitute(EncodedFormula::constant(false), &subst).unwrap());
     }
 
     #[test]
@@ -144,13 +152,13 @@ mod tests {
         let ff = F::new();
         let subst = create_substitution(&ff);
         let f = &ff.f;
-        assert_eq!(ff.C, f.substitute(ff.C, &subst));
-        assert_eq!(ff.NA, f.substitute(ff.A, &subst));
-        assert_eq!(ff.OR1, f.substitute(ff.B, &subst));
-        assert_eq!(ff.AND1, f.substitute(ff.X, &subst));
-        assert_eq!(ff.A, f.substitute(ff.NA, &subst));
-        assert_eq!(ff.NOT2, f.substitute(ff.NB, &subst));
-        assert_eq!(ff.NOT1, f.substitute(ff.NX, &subst));
+        assert_eq!(ff.C, f.substitute(ff.C, &subst).unwrap());
+        assert_eq!(ff.NA, f.substitute(ff.A, &subst).unwrap());
+        assert_eq!(ff.OR1, f.substitute(ff.B, &subst).unwrap());
+        assert_eq!(ff.AND1, f.substitute(ff.X, &subst).unwrap());
+        assert_eq!(ff.A, f.substitute(ff.NA, &subst).unwrap());
+        assert_eq!(ff.NOT2, f.substitute(ff.NB, &subst).unwrap());
+        assert_eq!(ff.NOT1, f.substitute(ff.NX, &subst).unwrap());
     }
 
     #[test]
@@ -158,8 +166,8 @@ mod tests {
         let ff = F::new();
         let subst = create_substitution(&ff);
         let f = &ff.f;
-        assert_eq!("~(~a & (x | y))".to_formula(f), f.substitute(ff.NOT1, &subst));
-        assert_eq!("~(a & b | y)".to_formula(f), f.substitute(ff.NOT2, &subst));
+        assert_eq!("~(~a & (x | y))".to_formula(f), f.substitute(ff.NOT1, &subst).unwrap());
+        assert_eq!("~(a & b | y)".to_formula(f), f.substitute(ff.NOT2, &subst).unwrap());
     }
 
     #[test]
@@ -167,10 +175,10 @@ mod tests {
         let ff = F::new();
         let subst = create_substitution(&ff);
         let f = &ff.f;
-        assert_eq!("~a => (x | y)".to_formula(f), f.substitute(ff.IMP1, &subst));
-        assert_eq!("(~a <=> (x | y)) => (~(a & b) <=> ~y)".to_formula(f), f.substitute(ff.IMP4, &subst));
-        assert_eq!("a <=> ~(x | y)".to_formula(f), f.substitute(ff.EQ2, &subst));
-        assert_eq!("(~a & (x | y)) <=> (a & b | y)".to_formula(f), f.substitute(ff.EQ3, &subst));
+        assert_eq!("~a => (x | y)".to_formula(f), f.substitute(ff.IMP1, &subst).unwrap());
+        assert_eq!("(~a <=> (x | y)) => (~(a & b) <=> ~y)".to_formula(f), f.substitute(ff.IMP4, &subst).unwrap());
+        assert_eq!("a <=> ~(x | y)".to_formula(f), f.substitute(ff.EQ2, &subst).unwrap());
+        assert_eq!("(~a & (x | y)) <=> (a & b | y)".to_formula(f), f.substitute(ff.EQ3, &subst).unwrap());
     }
 
     #[test]
@@ -178,12 +186,12 @@ mod tests {
         let ff = F::new();
         let subst = create_substitution(&ff);
         let f = &ff.f;
-        assert_eq!("(a & b | y) & (~(a & b) | ~y)".to_formula(f), f.substitute(ff.AND3, &subst));
+        assert_eq!("(a & b | y) & (~(a & b) | ~y)".to_formula(f), f.substitute(ff.AND3, &subst).unwrap());
         let formula1 = f.and([ff.NB, ff.C, ff.X, ff.NY]);
-        assert_eq!("~(x | y) & c & a & b & ~y".to_formula(f), f.substitute(formula1, &subst));
-        assert_eq!("(~a & (x | y)) | (a & ~(x | y))".to_formula(f), f.substitute(ff.OR3, &subst));
+        assert_eq!("~(x | y) & c & a & b & ~y".to_formula(f), f.substitute(formula1, &subst).unwrap());
+        assert_eq!("(~a & (x | y)) | (a & ~(x | y))".to_formula(f), f.substitute(ff.OR3, &subst).unwrap());
         let formula2 = f.or([ff.A, ff.NB, ff.C, ff.X, ff.NY]);
-        assert_eq!("~a | ~(x | y) | c | a & b | ~y".to_formula(f), f.substitute(formula2, &subst));
+        assert_eq!("~a | ~(x | y) | c | a & b | ~y".to_formula(f), f.substitute(formula2, &subst).unwrap());
     }
 
     #[test]
@@ -205,16 +213,16 @@ mod tests {
             (f.var("d"), f.variable("d2")),
         ]);
         let s6 = HashMap::from([(f.var("a"), f.variable("a2")), (f.var("b"), f.falsum())]);
-        let cc1 = f.cc(EQ, 2, vars.clone());
-        let cc2 = f.cc(LE, 8, vars);
-        assert_eq!(f.cc(EQ, 1, vars_s1), f.substitute(cc1, &s1));
-        assert_eq!(f.cc(EQ, 1, vars_s2), f.substitute(cc1, &s2));
-        assert_eq!(f.verum(), f.substitute(cc1, &s3));
-        assert_eq!(f.falsum(), f.substitute(cc1, &s4));
-        assert_eq!(f.verum(), f.substitute(cc2, &s3));
-        assert_eq!(f.verum(), f.substitute(cc2, &s4));
-        assert_eq!(f.cc(EQ, 2, vars_s5), f.substitute(cc1, &s5));
-        assert_eq!(f.cc(EQ, 2, vars_s6), f.substitute(cc1, &s6));
+        let cc1 = f.cc(EQ, 2, vars.clone()).unwrap();
+        let cc2 = f.cc(LE, 8, vars).unwrap();
+        assert_eq!(f.cc(EQ, 1, vars_s1).unwrap(), f.substitute(cc1, &s1).unwrap());
+        assert_eq!(f.cc(EQ, 1, vars_s2).unwrap(), f.substitute(cc1, &s2).unwrap());
+        assert_eq!(f.verum(), f.substitute(cc1, &s3).unwrap());
+        assert_eq!(f.falsum(), f.substitute(cc1, &s4).unwrap());
+        assert_eq!(f.verum(), f.substitute(cc2, &s3).unwrap());
+        assert_eq!(f.verum(), f.substitute(cc2, &s4).unwrap());
+        assert_eq!(f.cc(EQ, 2, vars_s5).unwrap(), f.substitute(cc1, &s5).unwrap());
+        assert_eq!(f.cc(EQ, 2, vars_s6).unwrap(), f.substitute(cc1, &s6).unwrap());
     }
 
     #[test]
@@ -241,34 +249,37 @@ mod tests {
             (f.var("d"), f.variable("d2")),
         ]);
         let s6 = HashMap::from([(f.var("a"), f.variable("a2")), (f.var("b"), f.falsum())]);
-        let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone());
-        let pb2 = f.pbc(LE, 8, lits, coeffs2);
-        assert_eq!(f.pbc(EQ, 0, lits_s1, coeff_s1), f.substitute(pb1, &s1));
-        assert_eq!(f.pbc(EQ, 2, lits_s2, coeff_s2), f.substitute(pb1, &s2));
-        assert_eq!(f.falsum(), f.substitute(pb1, &s3));
-        assert_eq!(f.verum(), f.substitute(pb2, &s3));
-        assert_eq!(f.falsum(), f.substitute(pb1, &s4));
-        assert_eq!(f.verum(), f.substitute(pb2, &s4));
-        assert_eq!(f.pbc(EQ, 2, lits_s5, coeffs), f.substitute(pb1, &s5));
-        assert_eq!(f.pbc(EQ, 4, lits_s6, coeff_s6), f.substitute(pb1, &s6));
+        let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone()).unwrap();
+        let pb2 = f.pbc(LE, 8, lits, coeffs2).unwrap();
+        assert_eq!(f.pbc(EQ, 0, lits_s1, coeff_s1).unwrap(), f.substitute(pb1, &s1).unwrap());
+        assert_eq!(f.pbc(EQ, 2, lits_s2, coeff_s2).unwrap(), f.substitute(pb1, &s2).unwrap());
+        assert_eq!(f.falsum(), f.substitute(pb1, &s3).unwrap());
+        assert_eq!(f.verum(), f.substitute(pb2, &s3).unwrap());
+        assert_eq!(f.falsum(), f.substitute(pb1, &s4).unwrap());
+        assert_eq!(f.verum(), f.substitute(pb2, &s4).unwrap());
+        assert_eq!(f.pbc(EQ, 2, lits_s5, coeffs).unwrap(), f.substitute(pb1, &s5).unwrap());
+        assert_eq!(f.pbc(EQ, 4, lits_s6, coeff_s6).unwrap(), f.substitute(pb1, &s6).unwrap());
     }
 
     #[test]
     fn test_substitute_var() {
         let ff = F::new();
         let f = &ff.f;
-        assert_eq!("x | y".to_formula(f), f.substitute_var(ff.A, ff.A.as_variable().unwrap(), ff.OR1));
-        assert_eq!("~(x | y)".to_formula(f), f.substitute_var(ff.NA, ff.A.as_variable().unwrap(), ff.OR1));
-        assert_eq!("a => (x | y)".to_formula(f), f.substitute_var(ff.IMP1, ff.B.as_variable().unwrap(), ff.OR1));
-        assert_eq!("~a <=> ~(x | y)".to_formula(f), f.substitute_var(ff.EQ2, ff.B.as_variable().unwrap(), ff.OR1));
+        assert_eq!("x | y".to_formula(f), f.substitute_var(ff.A, ff.A.as_variable().unwrap(), ff.OR1).unwrap());
+        assert_eq!("~(x | y)".to_formula(f), f.substitute_var(ff.NA, ff.A.as_variable().unwrap(), ff.OR1).unwrap());
+        assert_eq!("a => (x | y)".to_formula(f), f.substitute_var(ff.IMP1, ff.B.as_variable().unwrap(), ff.OR1).unwrap());
+        assert_eq!("~a <=> ~(x | y)".to_formula(f), f.substitute_var(ff.EQ2, ff.B.as_variable().unwrap(), ff.OR1).unwrap());
         let formula1 = f.and([ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
-        assert_eq!("a & ~b & c & ~x".to_formula(f), f.substitute_var(formula1, ff.Y.as_variable().unwrap(), ff.X));
+        assert_eq!("a & ~b & c & ~x".to_formula(f), f.substitute_var(formula1, ff.Y.as_variable().unwrap(), ff.X).unwrap());
         let formula2 = f.or([ff.A, ff.NB, ff.C, ff.NX, ff.NY]);
-        assert_eq!("a | ~b | c | ~x".to_formula(f), f.substitute_var(formula2, ff.Y.as_variable().unwrap(), ff.X));
+        assert_eq!("a | ~b | c | ~x".to_formula(f), f.substitute_var(formula2, ff.Y.as_variable().unwrap(), ff.X).unwrap());
         let formula3 = "a + b + c + d < 3".to_formula(f);
-        assert_eq!("a + b + x + d < 3".to_formula(f), f.substitute_var(formula3, ff.C.as_variable().unwrap(), ff.X));
+        assert_eq!("a + b + x + d < 3".to_formula(f), f.substitute_var(formula3, ff.C.as_variable().unwrap(), ff.X).unwrap());
         let formula4 = "2 * a + -3 * b + 4 * ~c + 5 * d < 3".to_formula(f);
-        assert_eq!("2 * a + -3 * b + 4 * ~x + 5 * d < 3".to_formula(f), f.substitute_var(formula4, ff.C.as_variable().unwrap(), ff.X));
+        assert_eq!(
+            "2 * a + -3 * b + 4 * ~x + 5 * d < 3".to_formula(f),
+            f.substitute_var(formula4, ff.C.as_variable().unwrap(), ff.X).unwrap()
+        );
     }
 
     fn create_substitution(ff: &F) -> Substitution {

@@ -33,13 +33,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     GLOBAL.print_memory("read");
     let t2 = std::time::Instant::now();
     let mut solver = MiniSat::new();
-    solver.add(formula, &f);
+    let _ = solver.add(formula, &f);
     GLOBAL.print_memory("add to solver");
     let t3 = std::time::Instant::now();
     solver.sat();
     GLOBAL.print_memory("solve");
     let t4 = std::time::Instant::now();
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars));
+    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars)).unwrap();
     GLOBAL.print_memory("model enumeration");
     let t5 = std::time::Instant::now();
     let bb =

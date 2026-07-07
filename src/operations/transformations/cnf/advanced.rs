@@ -1,21 +1,29 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::handlers::{ClauseLimitFactorizationHandler, FactorizationHandler};
+use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent};
+use crate::operations::OperationError;
+use crate::operations::transformations::cnf::CnfAlgorithm;
 use crate::operations::transformations::cnf::CnfAlgorithm::Tseitin;
-use crate::operations::transformations::cnf::{CancellableCnfAlgorithm, CnfAlgorithm};
 
 use super::CnfEncoder;
 
 /// Constructs the _CNF_ of a formula with factorization and the given
 /// [`AdvancedFactorizationConfig`].
+///
+/// # Errors
+///
+/// Returns an error if factorization is configured as fallback algorithm or if
+/// the selected fallback algorithm cannot encode the formula.
 pub fn advanced_cnf_encoding(
     formula: EncodedFormula,
     f: &FormulaFactory,
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
-) -> EncodedFormula {
+) -> LngResult<EncodedFormula> {
     if formula.is_and() {
-        let new_ops = formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state));
-        f.and(new_ops)
+        let new_ops =
+            formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state)).collect::<Result<Vec<_>, _>>()?;
+        Ok(f.and(new_ops))
     } else {
         single_advanced_encoding(formula, f, config, state)
     }
@@ -26,10 +34,17 @@ fn single_advanced_encoding(
     f: &FormulaFactory,
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
-) -> EncodedFormula {
-    CancellableCnfAlgorithm::FactorizationWithHandler(config.handler())
-        .transform(formula, f)
-        .unwrap_or_else(|_| (*config.fallback_algorithm).transform(formula, f, state))
+) -> LngResult<EncodedFormula> {
+    let fac = CnfAlgorithm::Factorization.transform_with_handler(formula, f, state, &mut config.handler())?;
+    match fac {
+        CancelableResult::Ok(res) => Ok(res),
+        CancelableResult::Canceled(_) | CancelableResult::Partial(_, _) => {
+            if (*config.fallback_algorithm) == CnfAlgorithm::Factorization {
+                return Err(OperationError::FactorizationAsFallback.into());
+            }
+            (*config.fallback_algorithm).transform(formula, f, state)
+        }
+    }
 }
 
 /// Configuration for advanced _CNF_ algorithms.
@@ -85,8 +100,80 @@ impl AdvancedFactorizationConfig {
         self
     }
 
-    /// Creates a new handler based on this configuration.
-    pub fn handler(&self) -> Box<dyn FactorizationHandler> {
-        Box::new(ClauseLimitFactorizationHandler::new(self.distribution_boundary, self.created_clause_boundary))
+    /// Creates an new handler based on this configuration.
+    pub fn handler(&self) -> AdvancedFactorizationHandler {
+        AdvancedFactorizationHandler::new(Some(self.distribution_boundary), Some(self.created_clause_boundary))
+    }
+}
+
+/// Handler used by advanced CNF factorization to stop factorization after
+/// configurable distribution or clause creation limits.
+///
+/// ```
+/// use logicng::handlers::{ComputationHandler, LngEvent};
+/// use logicng::operations::transformations::AdvancedFactorizationHandler;
+///
+/// let mut handler = AdvancedFactorizationHandler::new(Some(1), None);
+///
+/// assert!(handler.should_resume(LngEvent::DistributionPerformed));
+/// assert!(!handler.should_resume(LngEvent::DistributionPerformed));
+/// ```
+#[derive(Debug, Clone)]
+pub struct AdvancedFactorizationHandler {
+    distribution_boundary: Option<u64>,
+    created_clause_boundary: Option<u64>,
+    canceled: bool,
+    current_distribution: usize,
+    current_clause: usize,
+}
+
+impl AdvancedFactorizationHandler {
+    /// Creates a handler with optional distribution and created-clause
+    /// boundaries.
+    ///
+    /// If a boundary is `None`, the corresponding event count is unbounded. If
+    /// it is `Some(bound)`, the handler cancels after more than `bound` events.
+    pub fn new(distribution_boundary: Option<u64>, created_clause_boundary: Option<u64>) -> Self {
+        Self { distribution_boundary, created_clause_boundary, canceled: false, current_distribution: 0, current_clause: 0 }
+    }
+
+    #[cfg(test)]
+    /// Returns whether the handler has canceled the current computation.
+    pub fn canceled(&self) -> bool {
+        self.canceled
+    }
+
+    #[cfg(test)]
+    /// Returns the number of observed distribution events in the current computation.
+    pub fn current_distribution(&self) -> usize {
+        self.current_distribution
+    }
+
+    #[cfg(test)]
+    /// Returns the number of observed clause creation events in the current computation.
+    pub fn current_clause(&self) -> usize {
+        self.current_clause
+    }
+}
+
+impl ComputationHandler for AdvancedFactorizationHandler {
+    fn should_resume(&mut self, event: LngEvent) -> bool {
+        match event {
+            LngEvent::ComputationStarted(LngComputation::Factorization) => {
+                self.current_distribution = 0;
+                self.current_clause = 0;
+                self.canceled = false;
+            }
+            LngEvent::DistributionPerformed => {
+                self.current_distribution += 1;
+                self.canceled = self.distribution_boundary.is_some_and(|bound| self.current_distribution > bound as usize);
+            }
+            LngEvent::FactorizationCreatedClause(_) => {
+                self.current_clause += 1;
+                self.canceled = self.created_clause_boundary.is_some_and(|bound| self.current_clause > bound as usize);
+            }
+            _ => {}
+        }
+        !self.canceled
     }
 }

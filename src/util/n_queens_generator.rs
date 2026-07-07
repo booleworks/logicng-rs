@@ -11,7 +11,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
     for name_vec in &*var_names {
         let vars = &name_vec[0..n];
         let formula = f.exo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     for i in 0..n {
         let mut vars = Vec::new();
@@ -19,7 +19,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
             vars.push(name_vec[i]);
         }
         let formula = f.exo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     for i in 0..n - 1 {
         let mut vars = Vec::new();
@@ -27,7 +27,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
             vars.push(var_names[j][i + j]);
         }
         let formula = f.amo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     for i in 1..n - 1 {
         let mut vars = Vec::new();
@@ -35,7 +35,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
             vars.push(var_names[j + i][j]);
         }
         let formula = f.amo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     for i in 0..n - 1 {
         let mut vars = Vec::new();
@@ -43,7 +43,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
             vars.push(var_names[j][n - 1 - (i + j)]);
         }
         let formula = f.amo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     for i in 1..n - 1 {
         let mut vars = Vec::new();
@@ -51,7 +51,7 @@ pub fn generate_n_queens(n: usize, f: &mut FormulaFactory) -> EncodedFormula {
             vars.push(var_names[j + i][n - 1 - j]);
         }
         let formula = f.amo(vars);
-        operands.push(f.nnf_of(formula));
+        operands.push(f.nnf_of(formula).unwrap());
     }
     f.and(&operands)
 }

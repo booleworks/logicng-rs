@@ -141,11 +141,11 @@ impl F {
 
         let literals: Box<[Literal]> = Box::new([A, B, C].map(|lit| lit.as_literal().unwrap()));
         let coefficients: Box<[i64]> = Box::new([2_i64, -4, 3]);
-        let PBC1 = f.pbc(EQ, 2, literals.clone(), coefficients.clone());
-        let PBC2 = f.pbc(GT, 2, literals.clone(), coefficients.clone());
-        let PBC3 = f.pbc(GE, 2, literals.clone(), coefficients.clone());
-        let PBC4 = f.pbc(LT, 2, literals.clone(), coefficients.clone());
-        let PBC5 = f.pbc(LE, 2, literals, coefficients);
+        let PBC1 = f.pbc(EQ, 2, literals.clone(), coefficients.clone()).unwrap();
+        let PBC2 = f.pbc(GT, 2, literals.clone(), coefficients.clone()).unwrap();
+        let PBC3 = f.pbc(GE, 2, literals.clone(), coefficients.clone()).unwrap();
+        let PBC4 = f.pbc(LT, 2, literals.clone(), coefficients.clone()).unwrap();
+        let PBC5 = f.pbc(LE, 2, literals, coefficients).unwrap();
         Self {
             f,
             g,

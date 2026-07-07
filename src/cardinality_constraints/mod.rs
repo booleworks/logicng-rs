@@ -9,6 +9,7 @@ mod cc_amo_ladder;
 mod cc_amo_nested;
 mod cc_amo_product;
 mod cc_amo_pure;
+mod error;
 
 pub(crate) mod cc_cardinality_networks;
 pub(crate) mod cc_modular_totalizer;
@@ -18,6 +19,7 @@ pub(crate) mod cc_totalizer;
 pub use cc_config::*;
 pub use cc_encoder::*;
 pub use cc_incremental_data::*;
+pub use error::CcError;
 
 use cc_amo_bimander::build_amo_bimander;
 use cc_amo_binary::build_amo_binary;

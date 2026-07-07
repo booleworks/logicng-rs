@@ -38,7 +38,7 @@ fn solve(thread_count: usize) {
                 }
                 let formula = formulas_l[c];
                 let mut solver = MiniSat::new();
-                solver.add(formula, &f_l);
+                let _ = solver.add(formula, &f_l);
                 let _ = solver.sat();
             }
         });

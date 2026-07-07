@@ -1,4 +1,5 @@
 use crate::datastructures::Assignment;
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, FormulaType, Literal};
 use crate::operations::transformations::cnf::factorization::factorization_cnf;
 use crate::util::exceptions::panic_unexpected_formula_type;
@@ -10,16 +11,16 @@ pub(super) fn pg_on_formula(
     f: &FormulaFactory,
     boundary_for_factorization: u64,
     state: &mut PGState,
-) -> EncodedFormula {
-    let nnf = f.nnf_of(formula);
+) -> LngResult<EncodedFormula> {
+    let nnf = f.nnf_of(formula)?;
     if nnf.is_cnf(f) {
-        nnf
+        Ok(nnf)
     } else if nnf.number_of_atoms(f) < boundary_for_factorization {
         factorization_cnf(nnf, f)
     } else {
         let pg = compute_transformation(nnf, f, state);
         let top_level = Assignment::from_lit(state.variable[&nnf]);
-        f.restrict(pg, &top_level)
+        Ok(f.restrict(pg, &top_level))
     }
 }
 
@@ -95,12 +96,12 @@ mod tests {
 
     fn test_formula(f: &FormulaFactory, formula: EncodedFormula) {
         let mut transformer = pg_transformer();
-        let pg = transformer.transform(formula, f);
+        let pg = transformer.transform(formula, f).unwrap();
         assert!(pg.is_cnf(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
         let config = ModelEnumerationConfig::default().variables(vars);
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config);
-        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config);
+        let original_models = enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
+        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
         assert_eq!(original_models.len(), pg_models.len());
     }
 
@@ -109,8 +110,8 @@ mod tests {
         let F = F::new();
         let f = &F.f;
         let mut pg = pg_transformer();
-        assert_eq!(pg.transform(F.TRUE, f), F.TRUE);
-        assert_eq!(pg.transform(F.FALSE, f), F.FALSE);
+        assert_eq!(pg.transform(F.TRUE, f).unwrap(), F.TRUE);
+        assert_eq!(pg.transform(F.FALSE, f).unwrap(), F.FALSE);
     }
 
     #[test]
@@ -118,8 +119,8 @@ mod tests {
         let F = F::new();
         let f = &F.f;
         let mut pg = pg_transformer();
-        assert_eq!(pg.transform(F.A, f), F.A);
-        assert_eq!(pg.transform(F.NA, f), F.NA);
+        assert_eq!(pg.transform(F.A, f).unwrap(), F.A);
+        assert_eq!(pg.transform(F.NA, f).unwrap(), F.NA);
     }
 
     #[test]
@@ -140,8 +141,8 @@ mod tests {
         let F = F::new();
         let f = &F.f;
         let mut pg = pg_transformer();
-        assert_eq!(pg.transform(F.AND1, f), F.AND1);
-        assert_eq!(pg.transform(F.OR1, f), F.OR1);
+        assert_eq!(pg.transform(F.AND1, f).unwrap(), F.AND1);
+        assert_eq!(pg.transform(F.OR1, f).unwrap(), F.OR1);
         let f1 = "(a & b & x) | (c & d & ~y)".to_formula(f);
         let f2 = "(a & b & x) | (c & d & ~y) | (~z | (c & d & ~y)) ".to_formula(f);
         let f3 = "a | b | (~x & ~y)".to_formula(f);
@@ -184,10 +185,13 @@ mod tests {
     fn test_cc() {
         let f = &FormulaFactory::with_id("");
         let mut pg = pg_transformer();
-        assert_eq!(pg.transform("a <=> (1 * b <= 1)".to_formula(f), f), "a".to_formula(f));
-        assert_eq!(pg.transform("~(1 * b <= 1)".to_formula(f), f), "$false".to_formula(f));
-        assert_eq!(pg.transform("(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f), "(~b | ~c) & (~b | ~d) & (~c | ~d)".to_formula(f));
-        assert_eq!(pg.transform("~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f),"(d | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | d | @RESERVED__CC_4) & (~@RESERVED__CC_4 | @RESERVED__CC_0) & (~@RESERVED__CC_2 | @RESERVED__CC_0) & (~@RESERVED__CC_4 | ~@RESERVED__CC_2) & (c | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | c | @RESERVED__CC_5) & (~@RESERVED__CC_5 | @RESERVED__CC_2) & ~@RESERVED__CC_0".to_formula(f));
+        assert_eq!(pg.transform("a <=> (1 * b <= 1)".to_formula(f), f).unwrap(), "a".to_formula(f));
+        assert_eq!(pg.transform("~(1 * b <= 1)".to_formula(f), f).unwrap(), "$false".to_formula(f));
+        assert_eq!(
+            pg.transform("(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),
+            "(~b | ~c) & (~b | ~d) & (~c | ~d)".to_formula(f)
+        );
+        assert_eq!(pg.transform("~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),"(d | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | d | @RESERVED__CC_4) & (~@RESERVED__CC_4 | @RESERVED__CC_0) & (~@RESERVED__CC_2 | @RESERVED__CC_0) & (~@RESERVED__CC_4 | ~@RESERVED__CC_2) & (c | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | c | @RESERVED__CC_5) & (~@RESERVED__CC_5 | @RESERVED__CC_2) & ~@RESERVED__CC_0".to_formula(f));
     }
 
     #[test]
@@ -198,10 +202,10 @@ mod tests {
         let f3 = "d & ((a | b) => c)".to_formula(f);
         let f4 = "d & ((a | b) => c) | ~x & ~y".to_formula(f);
         let mut pg = pg_transformer();
-        let pg1 = pg.transform(f1, f).to_string(f);
-        let pg2 = pg.transform(f2, f).to_string(f);
-        let pg3 = pg.transform(f3, f).to_string(f);
-        let pg4 = pg.transform(f4, f).to_string(f);
+        let pg1 = pg.transform(f1, f).unwrap().to_string(f);
+        let pg2 = pg.transform(f2, f).unwrap().to_string(f);
+        let pg3 = pg.transform(f3, f).unwrap().to_string(f);
+        let pg4 = pg.transform(f4, f).unwrap().to_string(f);
         let expected1 = "(@RESERVED__CNF_1 | c) & (~@RESERVED__CNF_1 | ~a) & (~@RESERVED__CNF_1 | ~b)".to_formula(f);
         let expected2 = "~x & ~y".to_formula(f);
         let expected3 =
@@ -226,11 +230,11 @@ mod tests {
         let f3 = "d & ((a | b) => c)".to_formula(f);
         let f4 = "d & ((a | b) => c) | ~x & ~y".to_formula(f);
         let mut cnf_transformator = CnfEncoder::new(PlaistedGreenbaum);
-        assert_eq!(cnf_transformator.transform(f1, f), "(~a | c) & (~b | c)".to_formula(f));
-        assert_eq!(cnf_transformator.transform(f2, f), f2);
-        assert_eq!(cnf_transformator.transform(f3, f), "d & (~a | c) & (~b | c)".to_formula(f));
+        assert_eq!(cnf_transformator.transform(f1, f).unwrap(), "(~a | c) & (~b | c)".to_formula(f));
+        assert_eq!(cnf_transformator.transform(f2, f).unwrap(), f2);
+        assert_eq!(cnf_transformator.transform(f3, f).unwrap(), "d & (~a | c) & (~b | c)".to_formula(f));
         assert_eq!(
-            cnf_transformator.transform(f4, f),
+            cnf_transformator.transform(f4, f).unwrap(),
             "(d | ~x) & (~a | c | ~x) & (~b | c | ~x) & (d | ~y) & (~a | c | ~y) & (~b | c | ~y)".to_formula(f)
         );
     }

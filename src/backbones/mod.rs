@@ -92,8 +92,7 @@ impl Backbone {
     /// assert!(Backbone::new_unsat().is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        (self.positive_backbone.is_none() || self.positive_backbone.as_ref().unwrap().is_empty())
-            && (self.negative_backbone.is_none() || self.negative_backbone.as_ref().unwrap().is_empty())
+        self.positive_backbone.as_ref().is_none_or(|b| b.is_empty()) && self.negative_backbone.as_ref().is_none_or(|b| b.is_empty())
     }
 
     /// Returns all literals of the backbone. Positive backbone variables have

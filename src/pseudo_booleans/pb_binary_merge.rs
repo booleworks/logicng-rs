@@ -1,11 +1,4 @@
-#![allow(
-    clippy::too_many_arguments,
-    clippy::many_single_char_names,
-    clippy::if_not_else,
-    clippy::cast_possible_wrap,
-    clippy::cast_sign_loss,
-    clippy::cast_possible_truncation
-)]
+#![allow(clippy::too_many_arguments, clippy::many_single_char_names, clippy::if_not_else, clippy::cast_possible_truncation)]
 
 use crate::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
@@ -16,12 +9,10 @@ use crate::pseudo_booleans::pb_config::PbConfig;
 pub fn encode_binary_merge(
     config: &PbConfig,
     mut lits: Vec<Literal>,
-    mut coeffs: Vec<i64>,
-    rhs: u64,
+    mut coeffs: Vec<usize>,
+    rhs: usize,
     f: &FormulaFactory,
 ) -> Vec<EncodedFormula> {
-    let rhs =
-        rhs.try_into().unwrap_or_else(|_| panic!("Can only encode PBCs with right-hand-sides up to {} on this architecture", usize::MAX));
     let mut formula = Vec::new();
     let max_weight = *coeffs.iter().max().unwrap();
     if !config.binary_merge_use_gac {
@@ -43,24 +34,15 @@ pub fn encode_binary_merge(
                 coeffs.pop();
                 if max_weight == tmp_coeff {
                     let mw = *coeffs.iter().max().unwrap();
-                    if rhs as i64 <= tmp_coeff {
+                    if rhs <= tmp_coeff {
                         for lit in &lits {
                             formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
                     } else {
-                        formula.extend(binary_merge(
-                            &lits,
-                            &coeffs,
-                            rhs - tmp_coeff as usize,
-                            mw,
-                            lits.len(),
-                            Some(tmp_lit.negate()),
-                            config,
-                            f,
-                        ));
+                        formula.extend(binary_merge(&lits, &coeffs, rhs - tmp_coeff, mw, lits.len(), Some(tmp_lit.negate()), config, f));
                     }
                 } else {
-                    if rhs as i64 <= tmp_coeff {
+                    if rhs <= tmp_coeff {
                         for lit in &lits {
                             formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
@@ -68,7 +50,7 @@ pub fn encode_binary_merge(
                     formula.extend(binary_merge(
                         &lits,
                         &coeffs,
-                        rhs - tmp_coeff as usize,
+                        rhs - tmp_coeff,
                         max_weight,
                         lits.len(),
                         Some(tmp_lit.negate()),
@@ -94,9 +76,9 @@ pub fn encode_binary_merge(
 
 fn binary_merge(
     literals: &[Literal],
-    coefficients: &[i64],
+    coefficients: &[usize],
     leq: usize,
-    max_weight: i64,
+    max_weight: usize,
     n: usize,
     gac_lit: Option<Literal>,
     config: &PbConfig,
@@ -107,7 +89,7 @@ fn binary_merge(
     let p = usize::BITS - max_weight.leading_zeros() - 1;
     let m = div_ceil(less_then, 2_usize.pow(p));
     let new_less_then = m * 2_usize.pow(p);
-    let t = new_less_then as i64 - less_then as i64;
+    let t = new_less_then - less_then;
 
     let true_lit = f.new_pb_variable().pos_lit();
     formula.push(true_lit.into());
@@ -122,7 +104,7 @@ fn binary_merge(
             let coeff_j = coefficients[j];
             if coeff_j & bit != 0 {
                 let lit_j = literals[j];
-                if let (Some(gac), true) = (gac_lit, coeff_j >= less_then as i64) {
+                if let (Some(gac), true) = (gac_lit, coeff_j >= less_then) {
                     formula.push(f.clause([gac, lit_j.negate()]));
                 } else {
                     bucket.push(lit_j);

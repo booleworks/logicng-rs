@@ -1,3 +1,4 @@
+mod error;
 pub(crate) mod exceptions;
 /// Module for anonymizing formulas in files.
 pub mod file_anonymizer;
@@ -11,3 +12,5 @@ pub mod read_model_counting_examples;
 pub(crate) mod test_formula_corner_cases;
 #[cfg(test)]
 pub(crate) mod test_util;
+
+pub use error::UtilError;

@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::sync::Arc;
 
+use crate::errors::LngResult;
 use crate::formulas::{CardinalityConstraint, FormulaFactory, Literal, PbConstraint, StringLiteral, Variable};
 use crate::operations::{functions, predicates};
 
@@ -789,12 +790,11 @@ impl EncodedFormula {
     /// Assuming this formula is a clause or term, it returns all literals in
     /// this formula.
     ///
-    /// # Panic
+    /// # Errors
     ///
-    /// This function panics, if the passed formula is not a clause or a term. A
+    /// Returns an error if the passed formula is not a clause or a term. A
     /// formula is a clause/term if all operands of the `n-ary` operators are
-    /// literals or the formula is a literal or a constant. Otherwise, it will
-    /// panic!
+    /// literals or the formula is a literal or a constant.
     ///
     /// # Example
     ///
@@ -813,16 +813,16 @@ impl EncodedFormula {
     /// let formula3 = "~a & b & c".to_formula(&f);
     /// let formula4 = "~a | b | c".to_formula(&f);
     ///
-    /// assert_eq!(formula1.literals_for_clause_or_term(&f), vec![]);
-    /// assert_eq!(formula2.literals_for_clause_or_term(&f), vec![a]);
-    /// assert_eq!(formula3.literals_for_clause_or_term(&f), vec![a, b, c]);
-    /// assert_eq!(formula4.literals_for_clause_or_term(&f), vec![a, b, c]);
+    /// assert_eq!(formula1.literals_for_clause_or_term(&f).unwrap(), vec![]);
+    /// assert_eq!(formula2.literals_for_clause_or_term(&f).unwrap(), vec![a]);
+    /// assert_eq!(formula3.literals_for_clause_or_term(&f).unwrap(), vec![a, b, c]);
+    /// assert_eq!(formula4.literals_for_clause_or_term(&f).unwrap(), vec![a, b, c]);
     /// ```
     ///
-    /// Panic behavior:
+    /// Error behavior:
     ///
-    /// The `literals_for_clause_or_term` panics if the passed formula isn't a
-    /// clause/term.
+    /// The `literals_for_clause_or_term` function returns an error if the
+    /// passed formula isn't a clause/term.
     /// ```
     /// # use logicng::formulas::FormulaFactory;
     /// # use logicng::formulas::ToFormula;
@@ -831,10 +831,10 @@ impl EncodedFormula {
     /// let formula1 = "a => b".to_formula(&f);
     /// let formula2 = "a & b & (c => d)".to_formula(&f);
     ///
-    /// //formula1.literals_for_clause_or_term(&f); //PANIC!
-    /// //formula2.literals_for_clause_or_term(&f); //PANIC!
+    /// assert!(formula1.literals_for_clause_or_term(&f).is_err());
+    /// assert!(formula2.literals_for_clause_or_term(&f).is_err());
     /// ```
-    pub fn literals_for_clause_or_term(self, f: &FormulaFactory) -> Vec<Literal> {
+    pub fn literals_for_clause_or_term(self, f: &FormulaFactory) -> LngResult<Vec<Literal>> {
         functions::literals_for_clause_or_term(self, f)
     }
 

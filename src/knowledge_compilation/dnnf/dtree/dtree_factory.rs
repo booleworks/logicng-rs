@@ -9,7 +9,9 @@ use bitvec::bitvec;
 use bitvec::prelude::*;
 use bitvec::vec::BitVec;
 
+use crate::errors::LngResult;
 use crate::formulas::{Literal, Variable};
+use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf, Node};
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{DTree, DTreeEncoding, DTreeIndex};
@@ -56,15 +58,19 @@ impl DTreeFactory {
         }
     }
 
-    pub fn leaf(&mut self, literals: Vec<Literal>) -> DTree {
-        assert!(!self.finished, "DTree is already finished.");
+    pub fn leaf(&mut self, literals: Vec<Literal>) -> LngResult<DTree> {
+        if self.finished {
+            return Err(DnnfError::DTreeFinished.into());
+        }
         self.leafs_static_variable_set.push(literals.iter().map(Literal::variable).collect::<HashSet<_>>());
         self.leafs.push(literals);
-        Leaf(self.leafs.len() as DTreeIndex - 1)
+        Ok(Leaf(self.leafs.len() as DTreeIndex - 1))
     }
 
-    pub fn node(&mut self, left: DTree, right: DTree) -> DTree {
-        assert!(!self.finished, "DTree is already finished.");
+    pub fn node(&mut self, left: DTree, right: DTree) -> LngResult<DTree> {
+        if self.finished {
+            return Err(DnnfError::DTreeFinished.into());
+        }
         let left_encoding = Self::encode(left);
         let right_encoding = Self::encode(right);
         let mut var_set: HashSet<Variable> = left.static_variable_set(self).iter().copied().collect();
@@ -74,7 +80,7 @@ impl DTreeFactory {
         let mut leaf_indices = left.leaf_indices(self);
         leaf_indices.extend(right.leaf_indices(self));
         self.node_2_leaf_indices.push(leaf_indices);
-        Node(self.nodes.len() as DTreeIndex - 1)
+        Ok(Node(self.nodes.len() as DTreeIndex - 1))
     }
 
     pub fn children(&self, node_index: DTreeIndex) -> (DTree, DTree) {
@@ -86,15 +92,16 @@ impl DTreeFactory {
         self.leafs.len() * 2 - 1
     }
 
-    pub(crate) fn finish(&mut self, root: DTree, solver: &DnnfSatSolver) {
+    pub(crate) fn finish(&mut self, root: DTree, solver: &DnnfSatSolver) -> LngResult<()> {
         self.leaf_literals = self.generate_leaf_literals(solver);
-        self.max_var = *self.leaf_literals.iter().map(|leaf| leaf.iter().max().unwrap()).max().unwrap();
+        self.max_var = *self.leaf_literals.iter().filter_map(|leaf| leaf.iter().max()).max().ok_or(DnnfError::EmptyDTreeLeaf)?;
         let (clause_contents, clause_content_ranges) = self.generate_clause_contents(root);
         self.clause_contents = clause_contents;
         self.clause_content_ranges = clause_content_ranges;
         self.static_var_sets = repeat_n(Arc::new(bitvec![]), 2 * self.leafs.len()).collect();
         self.compute_static_var_sets(root);
         self.finished = true;
+        Ok(())
     }
 
     pub(crate) fn dynamic_separator(&mut self, tree: DTree, solver: &DnnfSatSolver) -> BitVec {

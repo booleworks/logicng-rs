@@ -7,15 +7,16 @@ use std::sync::Arc;
 use crate::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::{EncodingResultSatSolver, Model};
+use crate::errors::LngResult;
 use crate::explanations::UnsatCore;
 use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
 use crate::operations::transformations::{CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver};
 use crate::propositions::Proposition;
+use crate::solver::SolverError;
 use crate::solver::functions::compute_unsat_core;
 use crate::solver::minisat::sat::Tristate::{False, True, Undef};
 use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, Tristate, mk_lit, sign, var};
 use crate::solver::minisat::{MiniSatConfig, SolverCnfMethod, SolverState};
-use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::functions::OptimizationFunction;
 use super::minisat::sat::MsVar;
@@ -83,23 +84,34 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Adds the given formulas to the solver.
-    pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formulas cannot be encoded or added to
+    /// the solver.
+    pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()> {
         for &formula in formulas {
-            self.add(formula, f);
+            self.add(formula, f)?;
         }
+        Ok(())
     }
 
     /// Adds the given formula to the solver.
-    pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be converted to the configured
+    /// CNF representation or if encoding a cardinality constraint fails.
+    pub fn add(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
         self.result = Undef;
         if formula.formula_type() == FormulaType::Cc {
             let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
-            CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap());
+            CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap())?;
         } else {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
-                    let cnf = f.cnf_of(formula);
-                    self.add_clause_set(cnf, None, f);
+                    let cnf = f.cnf_of(formula)?;
+                    self.add_clause_set(cnf, None, f)?;
                 }
                 SolverCnfMethod::PgOnSolver => {
                     add_cnf_to_solver(
@@ -109,7 +121,7 @@ impl<B: Clone> MiniSat<B> {
                         f,
                         &mut self.pg_variable_cache,
                         PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
-                    );
+                    )?;
                 }
                 SolverCnfMethod::FullPgOnSolver => {
                     add_cnf_to_solver(
@@ -119,25 +131,41 @@ impl<B: Clone> MiniSat<B> {
                         f,
                         &mut self.full_pg_variable_cache,
                         PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
-                    );
+                    )?;
                 }
             }
         }
         self.add_all_original_variables(formula, f);
+        Ok(())
     }
 
     /// Adds the given propositions to the solver.
-    pub fn add_propositions<Props: IntoIterator<Item = Proposition<B>>>(&mut self, propositions: Props, f: &FormulaFactory) {
-        propositions.into_iter().for_each(|proposition| self.add_proposition(proposition, f));
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the proposition formulas cannot be encoded or
+    /// added to the solver.
+    pub fn add_propositions<Props: IntoIterator<Item = Proposition<B>>>(
+        &mut self,
+        propositions: Props,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
+        propositions.into_iter().try_for_each(|proposition| self.add_proposition(proposition, f))?;
+        Ok(())
     }
 
     /// Adds the given proposition to the solver.
-    pub fn add_proposition(&mut self, proposition: Proposition<B>, f: &FormulaFactory) {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the proposition formula cannot be encoded or added
+    /// to the solver.
+    pub fn add_proposition(&mut self, proposition: Proposition<B>, f: &FormulaFactory) -> LngResult<()> {
         self.result = Undef;
         match self.config.cnf_method {
             SolverCnfMethod::FactoryCnf => {
-                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f);
-                self.add_clause_set(cnf, Some(proposition), f);
+                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f)?;
+                self.add_clause_set(cnf, Some(proposition), f)?;
             }
             SolverCnfMethod::PgOnSolver => {
                 add_cnf_to_solver(
@@ -147,7 +175,7 @@ impl<B: Clone> MiniSat<B> {
                     f,
                     &mut self.pg_variable_cache,
                     PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
-                );
+                )?;
             }
             SolverCnfMethod::FullPgOnSolver => {
                 add_cnf_to_solver(
@@ -157,9 +185,10 @@ impl<B: Clone> MiniSat<B> {
                     f,
                     &mut self.full_pg_variable_cache,
                     PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
-                );
+                )?;
             }
         }
+        Ok(())
     }
 
     /// Solves the current problem on the solver.
@@ -175,11 +204,7 @@ impl<B: Clone> MiniSat<B> {
         if let Some(selection_order) = sat_builder.selection_order {
             self.underlying_solver.set_selection_order(selection_order);
         }
-        let assumptions: Option<Vec<MsLit>> = if let Some(assumption) = sat_builder.single_assumption {
-            Some(self.generate_clause_vec(&[assumption]))
-        } else {
-            sat_builder.assumptions.map(|ass| self.generate_clause_vec(ass))
-        };
+        let assumptions: Option<Vec<MsLit>> = sat_builder.assumptions.map(|ass| self.generate_clause_vec(ass));
         self.result = if let Some(assumptions) = assumptions {
             let result = self.underlying_solver.solve_with_assumptions(assumptions);
             self.last_computation_with_assumptions = true;
@@ -207,16 +232,15 @@ impl<B: Clone> MiniSat<B> {
     }
 
     /// Returns the model the solver found, if the search was successful. If the
-    /// result is `false`, it returns `None`. And panics if the result is
-    /// undefined.
+    /// result is `false`, it returns `None`.
     ///
-    /// # Panic
+    /// # Errors
     ///
-    /// Panics, if the result of the solver is `Undef`.
-    pub fn model(&self, variables: Option<&[Variable]>) -> Option<Model> {
+    /// Returns an error if the solver has not been solved yet.
+    pub fn model(&self, variables: Option<&[Variable]>) -> LngResult<Option<Model>> {
         match self.result {
-            Undef => panic!("Cannot get a model as long as the formula is not solved.  Call 'sat' first."),
-            False => None,
+            Undef => Err(SolverError::NotSolved.into()),
+            False => Ok(None),
             True => {
                 let relevant_indices = variables.map(|vars| {
                     let mut result = Vec::<MsVar>::with_capacity(vars.len());
@@ -227,34 +251,47 @@ impl<B: Clone> MiniSat<B> {
                     }
                     result
                 });
-                Some(self.create_assignment(&self.underlying_solver.model, &relevant_indices))
+                Ok(Some(self.create_assignment(&self.underlying_solver.model, &relevant_indices)))
             }
         }
     }
 
     /// Saves the state of the solver.
-    pub fn save_state(&mut self) -> SolverState {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver is not configured for incremental use.
+    pub fn save_state(&mut self) -> LngResult<SolverState> {
+        if !self.config.incremental {
+            return Err(SolverError::StateRequiresIncrementalMode.into());
+        }
         let id = self.next_state_id;
         self.next_state_id += 1;
         self.valid_states.push(id);
-        SolverState::new(id, self.underlying_solver.save_state())
+        Ok(SolverState::new(id, self.underlying_solver.save_state()))
     }
 
     /// Loads the state of the solver.
-    pub fn load_state(&mut self, state: &SolverState) {
-        let index = self
-            .valid_states
-            .iter()
-            .enumerate()
-            .rev()
-            .find(|(_index, id)| **id == state.id)
-            .expect("The given solver state is not valid anymore.")
-            .0;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver is not configured for incremental use or
+    /// if the state is not valid for this solver anymore.
+    pub fn load_state(&mut self, state: &SolverState) -> LngResult<()> {
+        if !self.config.incremental {
+            return Err(SolverError::StateRequiresIncrementalMode.into());
+        }
+        let found = self.valid_states.iter().enumerate().rev().find(|(_index, id)| **id == state.id);
+        let index = match found {
+            Some(i) => i.0,
+            None => return Err(SolverError::InvalidSolverState.into()),
+        };
         self.valid_states.truncate(index + 1);
         self.underlying_solver.load_state(state.state);
         self.result = Undef;
         self.pg_variable_cache.clear();
         self.full_pg_variable_cache.clear();
+        Ok(())
     }
 
     /// Returns all known variables on the solver.
@@ -277,7 +314,12 @@ impl<B: Clone> MiniSat<B> {
     /// - "&gt;=": Returns null for right-hand side 1 or number of variables,
     ///   but constraint is added to solver. Adds false to solver for right-hand
     ///   side &gt; number of variables.
-    pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> Option<CcIncrementalData> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cardinality constraint cannot be encoded
+    /// incrementally for the current encoder configuration.
+    pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> LngResult<Option<CcIncrementalData>> {
         let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
         CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc)
     }
@@ -285,24 +327,34 @@ impl<B: Clone> MiniSat<B> {
     /// A solver function which returns all unit propagated literals on level 0
     /// of the current formula on the solver. If the formula is UNSAT, `None`
     /// will be returned.
-    pub fn up_zero_literals(&self) -> Option<BTreeSet<Literal>> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver has not been solved yet.
+    pub fn up_zero_literals(&self) -> LngResult<Option<BTreeSet<Literal>>> {
         match self.result {
-            Undef => panic!("Cannot get unit propagated literals on level 0 as long as the formula is not solved.  Call 'sat' first."),
-            False => None,
-            True => Some(
+            Undef => Err(SolverError::NotSolved.into()),
+            False => Ok(None),
+            True => Ok(Some(
                 self.underlying_solver
                     .up_zero_literals()
                     .iter()
                     .map(|&lit| Literal::new(*self.underlying_solver.idx2name.get(&var(lit)).unwrap(), !sign(lit)))
                     .collect(),
-            ),
+            )),
         }
     }
 
     /// Computes a model for the formula on the solver which has a global
     /// minimum or maximum of satisfied literals. If the formula is UNSAT or the
     /// optimization handler aborted the computation, `None` will be returned.
-    pub fn optimize(&mut self, f: &FormulaFactory, optimization_function: &OptimizationFunction) -> Option<Model> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if optimization constraints cannot be encoded or added,
+    /// if an incremental solver state cannot be saved/restored, or if an
+    /// optimization bound cannot be represented.
+    pub fn optimize(&mut self, f: &FormulaFactory, optimization_function: &OptimizationFunction) -> LngResult<Option<Model>> {
         optimization_function.optimize(self, f)
     }
 
@@ -345,19 +397,23 @@ impl<B: Clone> MiniSat<B> {
         });
     }
 
-    fn add_clause_set(&mut self, cnf: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) {
+    fn add_clause_set(&mut self, cnf: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) -> LngResult<()> {
         match cnf.unpack(f) {
             Formula::True => {}
-            Formula::False | Formula::Or(_) | Formula::Lit(_) => self.add_clause(cnf, proposition, f),
-            Formula::And(ops) => ops.for_each(|op| self.add_clause(op, proposition.clone(), f)),
-            _ => panic_unexpected_formula_type(cnf, Some(f)),
+            Formula::False | Formula::Or(_) | Formula::Lit(_) => self.add_clause(cnf, proposition, f)?,
+            Formula::And(mut ops) => ops.try_for_each(|op| self.add_clause(op, proposition.clone(), f))?,
+            _ => {
+                return Err(SolverError::NotInCnf { formula: cnf }.into());
+            }
         }
+        Ok(())
     }
 
-    fn add_clause(&mut self, clause: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) {
+    fn add_clause(&mut self, clause: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) -> LngResult<()> {
         self.result = Undef;
-        let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f));
+        let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f)?);
         self.underlying_solver.add_clause(clause_vec, proposition);
+        Ok(())
     }
 
     fn generate_clause_vec(&mut self, literals: &[Literal]) -> Vec<MsLit> {
@@ -427,7 +483,13 @@ impl<B: Clone> MiniSat<B> {
 
 impl<B: PartialEq> MiniSat<B> {
     /// Computes the unsatisfiable core on this solver.
-    pub fn unsat_core(&mut self, f: &FormulaFactory) -> UnsatCore<B> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if proof generation is disabled, the solver has not
+    /// been solved yet, the formula is satisfiable, or the last computation
+    /// used assumptions.
+    pub fn unsat_core(&mut self, f: &FormulaFactory) -> LngResult<UnsatCore<B>> {
         compute_unsat_core(self, f)
     }
 }
@@ -436,7 +498,6 @@ impl<B: PartialEq> MiniSat<B> {
 /// [`MiniSat::sat_with()`]. It allows you to feed the solver with assumptions
 /// and a selection order.
 pub struct SatBuilder<'a, 'o> {
-    single_assumption: Option<Literal>,
     assumptions: Option<&'a [Literal]>,
     selection_order: Option<&'o [Literal]>,
 }
@@ -444,24 +505,12 @@ pub struct SatBuilder<'a, 'o> {
 impl<'a, 'o> SatBuilder<'a, 'o> {
     /// Creates an empty instance.
     pub const fn new() -> Self {
-        Self { single_assumption: None, assumptions: None, selection_order: None }
-    }
-
-    /// Stores a single assumption.
-    ///
-    /// You can only have one _single assumption_. If you need multiple
-    /// assumptions you need to use [`SatBuilder::assumptions()`].
-    #[must_use]
-    pub fn assumption(mut self, lit: Literal) -> Self {
-        assert_eq!(None, self.assumptions, "You cannot set both `assumption` and `assumptions`.");
-        self.single_assumption = Some(lit);
-        self
+        Self { assumptions: None, selection_order: None }
     }
 
     /// Stores a list of assumptions.
     #[must_use]
     pub fn assumptions(mut self, assumptions: &'a [Literal]) -> Self {
-        assert_eq!(None, self.single_assumption, "You cannot set both `assumption` and `assumptions`.");
         self.assumptions = Some(assumptions);
         self
     }

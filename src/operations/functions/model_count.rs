@@ -3,10 +3,12 @@ use std::collections::BTreeSet;
 use num_bigint::BigUint;
 
 use crate::datastructures::Assignment;
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
 use crate::knowledge_compilation::bdd::orderings::force_ordering;
 use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
 use crate::knowledge_compilation::dnnf::compile_dnnf;
+use crate::operations::OperationError;
 use crate::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion};
 
 #[cfg(feature = "sharp_sat")]
@@ -31,39 +33,57 @@ pub enum ModelCountAlgorithm {
 }
 
 /// Computes the model count for a given formula.
-pub fn count_models(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be encoded for the chosen model
+/// counting algorithm or if the algorithm itself fails.
+pub fn count_models(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     count_models_with_vars(formula, algorithm, &formula.variables(f), f)
 }
 
 /// Computes the model count for a given formula and a set of relevant
 /// variables. This set can only be a superset of the original formula's
 /// variables.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` does not contain all variables of the
+/// formula, if the formula cannot be encoded for the chosen model counting
+/// algorithm, or if the algorithm itself fails.
 pub fn count_models_with_vars(
     formula: EncodedFormula,
     algorithm: ModelCountAlgorithm,
     relevant_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
-) -> BigUint {
+) -> LngResult<BigUint> {
     let vars = formula.variables(f);
-    assert!(vars.is_subset(relevant_vars), "Expected variables to contain all of the formula's variables");
+    if !vars.is_subset(relevant_vars) {
+        return Err(OperationError::MCNotAllVars.into());
+    }
 
     if vars.is_empty() {
-        return if formula.is_verum() { BigUint::from(1_usize) } else { BigUint::from(0_usize) };
+        return if formula.is_verum() { Ok(BigUint::from(1_usize)) } else { Ok(BigUint::from(0_usize)) };
     }
 
     let mut cnf_encoder =
         CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
-    let cnf = cnf_encoder.transform(pure_expansion(formula, f), f);
-    let mut count = count_formula(cnf, algorithm, f);
+    let cnf = cnf_encoder.transform(pure_expansion(formula, f)?, f)?;
+    let count = count_formula(cnf, algorithm, f)?;
 
     let dont_care_vars = relevant_vars.difference(&cnf.variables(f)).count();
-    let factor = BigUint::from(2_usize).pow(u32::try_from(dont_care_vars).expect("Too many dont-care variables"));
-    count *= factor;
-    count
+    let dc_size = u32::try_from(dont_care_vars).map_err(|_| OperationError::MCTooManyDontCares)?;
+    let factor = BigUint::from(2_usize).pow(dc_size);
+    Ok(count * factor)
 }
 
 /// Computes the model count for a given set of formulas (interpreted as conjunction).
-pub fn count_models_conjunction(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+///
+/// # Errors
+///
+/// Returns an error if the formulas cannot be encoded for the chosen model
+/// counting algorithm or if the algorithm itself fails.
+pub fn count_models_conjunction(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     let vars = formulas.iter().fold(BTreeSet::default(), |mut akk, formula| {
         akk.extend((*formula.variables(f)).clone());
         akk
@@ -74,12 +94,18 @@ pub fn count_models_conjunction(formulas: &[EncodedFormula], algorithm: ModelCou
 /// Computes the model count for a given set of formulas (interpreted as conjunction)
 /// and a set of relevant variables.  This set can only be a superset of the original
 /// formulas' variables.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` does not contain all variables of the
+/// formulas, if the formulas cannot be encoded for the chosen model counting
+/// algorithm, or if the algorithm itself fails.
 pub fn count_models_conjunction_with_vars<I>(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,
     relevant_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
-) -> BigUint {
+) -> LngResult<BigUint> {
     let vars = formulas.iter().fold(BTreeSet::default(), |mut akk, formula| {
         akk.extend((*formula.variables(f)).clone());
         akk
@@ -93,34 +119,36 @@ fn count_models_internal(
     relevant_vars: &BTreeSet<Variable>,
     all_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
-) -> BigUint {
-    assert!(all_vars.is_subset(relevant_vars), "Expected variables to contain all of the formulas' variables");
+) -> LngResult<BigUint> {
+    if !all_vars.is_subset(relevant_vars) {
+        return Err(OperationError::MCNotAllVars.into());
+    }
 
     if all_vars.is_empty() {
         let all_verum = formulas.iter().all(|formula| formula.is_verum());
-        return if all_verum { BigUint::from(1_usize) } else { BigUint::from(0_usize) };
+        return if all_verum { Ok(BigUint::from(1_usize)) } else { Ok(BigUint::from(0_usize)) };
     }
 
-    let cnfs = encode_as_cnf(formulas, f);
+    let cnfs = encode_as_cnf(formulas, f)?;
     let (backbone_variables, simplified) = simplify(&cnfs, f);
-    let count = count(&simplified, algorithm, f);
-    let factor = dont_care_factor(backbone_variables, &simplified, relevant_vars, f);
-    count * factor
+    let count = count(&simplified, algorithm, f)?;
+    let factor = dont_care_factor(backbone_variables, &simplified, relevant_vars, f)?;
+    Ok(count * factor)
 }
 
-fn count(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+fn count(formulas: &[EncodedFormula], algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     count_formula(f.and(formulas), algorithm, f)
 }
 
-fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> BigUint {
+fn count_formula(formula: EncodedFormula, algorithm: ModelCountAlgorithm, f: &FormulaFactory) -> LngResult<BigUint> {
     match algorithm {
         ModelCountAlgorithm::Dnnf => {
-            let dnnf = compile_dnnf(formula, f);
-            crate::knowledge_compilation::dnnf::count(&dnnf, f)
+            let dnnf = compile_dnnf(formula, f)?;
+            Ok(crate::knowledge_compilation::dnnf::count(&dnnf, f))
         }
         ModelCountAlgorithm::Bdd { node_size, cache_size } => {
-            let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f), node_size, cache_size);
-            Bdd::from_formula(formula, f, &mut kernel).model_count(&mut kernel)
+            let mut kernel = BddKernel::new_with_var_ordering(&force_ordering(formula, f)?, node_size, cache_size)?;
+            Ok(Bdd::from_formula(formula, f, &mut kernel)?.model_count(&mut kernel))
         }
         #[cfg(feature = "sharp_sat")]
         ModelCountAlgorithm::SharpSat => {
@@ -136,20 +164,22 @@ fn dont_care_factor(
     simplified: &[EncodedFormula],
     relevant_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
-) -> BigUint {
+) -> LngResult<BigUint> {
     let used_vars = simplified.iter().fold(backbone_variables, |mut akk, formula| {
         akk.extend((*formula.variables(f)).clone());
         akk
     });
     let dont_care_vars = relevant_vars.difference(&used_vars).count();
-    BigUint::from(2_usize).pow(u32::try_from(dont_care_vars).expect("Too many dont-care variables"))
+    let dc_size = u32::try_from(dont_care_vars).map_err(|_| OperationError::MCTooManyDontCares)?;
+    Ok(BigUint::from(2_usize).pow(dc_size))
 }
 
-fn encode_as_cnf(formulas: &[EncodedFormula], f: &FormulaFactory) -> Vec<EncodedFormula> {
+fn encode_as_cnf(formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
     let mut cnf_encoder =
         CnfEncoder::new(CnfAlgorithm::Advanced(AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin)));
-
-    formulas.iter().map(|&formula| pure_expansion(formula, f)).map(|formula| cnf_encoder.transform(formula, f)).collect()
+    let expanded = formulas.iter().map(|&formula| pure_expansion(formula, f)).collect::<Result<Vec<_>, _>>()?;
+    let transformed = expanded.iter().map(|formula| cnf_encoder.transform(*formula, f)).collect::<Result<Vec<_>, _>>()?;
+    Ok(transformed)
 }
 
 fn simplify(formulas: &[EncodedFormula], f: &FormulaFactory) -> (BTreeSet<Variable>, Vec<EncodedFormula>) {
@@ -182,14 +212,14 @@ mod tests {
         #[test]
         fn test_verum() {
             let f = FormulaFactory::new();
-            let count = count_models(f.verum(), ModelCountAlgorithm::Dnnf, &f);
+            let count = count_models(f.verum(), ModelCountAlgorithm::Dnnf, &f).unwrap();
             assert_eq!(count, BigUint::from(1_u64));
         }
 
         #[test]
         fn test_falsum() {
             let f = FormulaFactory::new();
-            let count = count_models(f.falsum(), ModelCountAlgorithm::Dnnf, &f);
+            let count = count_models(f.falsum(), ModelCountAlgorithm::Dnnf, &f).unwrap();
             assert_eq!(count, BigUint::from(0_u64));
         }
 
@@ -198,7 +228,7 @@ mod tests {
             let f = FormulaFactory::new();
             let tests = read_normal(&f);
             for (formula, expected) in tests {
-                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
+                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f).unwrap();
                 assert_eq!(count, expected);
             }
         }
@@ -208,7 +238,7 @@ mod tests {
             let f = FormulaFactory::new();
             let tests = read_cnf(&f);
             for (formula, expected) in tests {
-                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
+                let count = count_models(formula, ModelCountAlgorithm::Dnnf, &f).unwrap();
                 assert_eq!(count, expected);
             }
         }
@@ -223,14 +253,14 @@ mod tests {
         #[test]
         fn test_verum() {
             let f = FormulaFactory::new();
-            let count = count_models(f.verum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+            let count = count_models(f.verum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f).unwrap();
             assert_eq!(count, BigUint::from(1_u64));
         }
 
         #[test]
         fn test_falsum() {
             let f = FormulaFactory::new();
-            let count = count_models(f.falsum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+            let count = count_models(f.falsum(), ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f).unwrap();
             assert_eq!(count, BigUint::from(0_u64));
         }
 
@@ -239,7 +269,7 @@ mod tests {
             let f = FormulaFactory::new();
             let tests = read_normal(&f);
             for (formula, expected) in tests {
-                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f).unwrap();
                 assert_eq!(count, expected);
             }
         }
@@ -249,7 +279,7 @@ mod tests {
             let f = FormulaFactory::new();
             let tests = read_cnf(&f);
             for (formula, expected) in tests {
-                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f);
+                let count = count_models(formula, ModelCountAlgorithm::Bdd { node_size: 1000, cache_size: 1000 }, &f).unwrap();
                 assert_eq!(count, expected);
             }
         }

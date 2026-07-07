@@ -10,19 +10,21 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use pest::error::Error;
 use regex::Regex;
 
 use CType::{EQ, LE, LT};
 
 use crate::datastructures::Assignment;
+use crate::errors::LngResult;
 use crate::formulas::CType::{GE, GT};
 use crate::formulas::Literal::Pos;
 use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
-use crate::formulas::{AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaFactoryConfig, Literal, PbConstraint, Variable};
+use crate::formulas::{
+    AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig, Literal, PbConstraint, Variable,
+};
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
-use crate::parser::pseudo_boolean_parser::{Rule, parse};
+use crate::parser::pseudo_boolean_parser::parse;
 
 use super::formula_cache::equivalence_cache::EquivalenceCache;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding, SmallFormulaEncoding};
@@ -186,7 +188,7 @@ struct FilterResult {
 /// # use logicng::formulas::{FormulaFactory, CType};
 /// # let f = FormulaFactory::new();
 /// let vars = vec![f.var("A"), f.var("B"), f.var("C")];
-/// f.cc(CType::LE, 1, vars);
+/// f.cc(CType::LE, 1, vars).unwrap();
 /// ```
 ///
 /// which means from variables `A`, `B`, `C` can be at most one variable
@@ -198,7 +200,7 @@ struct FilterResult {
 /// # let f = FormulaFactory::new();
 /// let lits = vec![f.lit("A", true), f.lit("B", false), f.lit("C", true)];
 /// let coeffs = vec![1, 2, -3];
-/// f.pbc(CType::EQ, 2, lits, coeffs);
+/// f.pbc(CType::EQ, 2, lits, coeffs).unwrap();
 /// ```
 ///
 /// Beside the mentioned factory methods there are many convenience methods to
@@ -311,6 +313,10 @@ impl FormulaFactory {
 
     /// Parses a given string to a formula using a Pseudo-Boolean parser.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the input cannot be parsed as a formula.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -334,7 +340,7 @@ impl FormulaFactory {
     /// let b = f.var("b");
     /// let a = f.var("a");
     /// let expected2 = f.and(&[EncodedFormula::from(a), EncodedFormula::from(b)]);
-    /// let expected3 = f.cc(CType::EQ, 1, vec![a, b]);
+    /// let expected3 = f.cc(CType::EQ, 1, vec![a, b]).unwrap();
     ///
     /// assert_eq!(parsed1, expected1);
     /// assert_eq!(parsed2, expected2);
@@ -342,7 +348,7 @@ impl FormulaFactory {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn parse(&self, input: &str) -> Result<EncodedFormula, Box<Error<Rule>>> {
+    pub fn parse(&self, input: &str) -> LngResult<EncodedFormula> {
         parse(self, input)
     }
 
@@ -495,8 +501,8 @@ impl FormulaFactory {
     /// # use logicng::formulas::FormulaFactory;
     /// let f = FormulaFactory::new();
     ///
-    /// let _ = f.parsed_variable("MyVar"); //Normal variable
-    /// let _ = f.parsed_variable("@RESERVED_00_CNF_00"); //Auxiliary variable
+    /// f.parsed_variable("MyVar"); //Normal variable
+    /// f.parsed_variable("@RESERVED_00_CNF_00"); //Auxiliary variable
     /// ```
     pub fn parsed_variable(&self, name: &str) -> EncodedFormula {
         AUX_REGEX_LOCK.captures(name).map_or_else(
@@ -613,7 +619,8 @@ impl FormulaFactory {
     pub fn and<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -656,7 +663,8 @@ impl FormulaFactory {
     pub fn or<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
             Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
@@ -704,7 +712,8 @@ impl FormulaFactory {
     pub fn clause<E, Ops>(&self, operands: Ops) -> EncodedFormula
     where
         E: Borrow<Literal>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         self.or(operands.into_iter().map(|lit| EncodedFormula::from(*lit.borrow())))
     }
 
@@ -857,6 +866,11 @@ impl FormulaFactory {
 
     /// Creates a new cardinality constraints.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the comparator and right-hand side do not describe
+    /// a valid cardinality constraint.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -870,15 +884,17 @@ impl FormulaFactory {
     /// let b = f.var("b");
     /// let c = f.var("c");
     ///
-    /// let cc1 = f.cc(EQ, 2, vec![a, b, c]);
-    /// let cc2 = f.cc(LT, 1, vec![a, c]);
+    /// let cc1 = f.cc(EQ, 2, vec![a, b, c]).unwrap();
+    /// let cc2 = f.cc(LT, 1, vec![a, c]).unwrap();
     ///
     /// assert_eq!(cc1.to_string(&f), "a + b + c = 2");
     /// assert_eq!(cc2.to_string(&f), "a + c < 1");
     /// ```
-    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> EncodedFormula {
-        assert!(is_cc(comparator, rhs.into()), "Given values do not represent a cardinality constraint.");
-        self.construct_cc_unsafe(comparator, rhs.into(), variables.into())
+    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> LngResult<EncodedFormula> {
+        if !is_cc(comparator, rhs.into()) {
+            return Err(FormulaError::NoCc { comp: comparator, rhs }.into());
+        }
+        Ok(self.construct_cc_unsafe(comparator, rhs.into(), variables.into()))
     }
 
     /// Creates a new _exactly-one_ cardinality constraint.
@@ -906,10 +922,10 @@ impl FormulaFactory {
     /// let exo = f.exo(vec![a, b]);
     ///
     /// assert_eq!(exo.to_string(&f), "a + b = 1");
-    /// assert_eq!(exo, f.cc(EQ, 1, vec![a, b]));
+    /// assert_eq!(exo, f.cc(EQ, 1, vec![a, b]).unwrap());
     /// ```
     pub fn exo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(EQ, 1, variables)
+        self.cc(EQ, 1, variables).expect("exo is a valid cardinality constraint")
     }
 
     /// Creates a new _at-most-one_ cardinality constraint.
@@ -937,13 +953,17 @@ impl FormulaFactory {
     /// let amo = f.amo(vec![a, b]);
     ///
     /// assert_eq!(amo.to_string(&f), "a + b <= 1");
-    /// assert_eq!(amo, f.cc(LE, 1, vec![a, b]));
+    /// assert_eq!(amo, f.cc(LE, 1, vec![a, b]).unwrap());
     /// ```
     pub fn amo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(LE, 1, variables)
+        self.cc(LE, 1, variables).expect("amo is a valid cardinality constraint")
     }
 
     /// Creates a new pseudo-boolean constraint.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the number of literals and coefficients differs.
     ///
     /// # Examples
     ///
@@ -958,25 +978,28 @@ impl FormulaFactory {
     /// let b = f.lit("b", true);
     /// let c = f.lit("c", false);
     ///
-    /// let pbc1 = f.pbc(EQ, 2, vec![a, b, c], vec![2, -1, 1]);
-    /// let pbc2 = f.pbc(LT, 1, vec![a, c], vec![3, -4]);
+    /// let pbc1 = f.pbc(EQ, 2, vec![a, b, c], vec![2, -1, 1]).unwrap();
+    /// let pbc2 = f.pbc(LT, 1, vec![a, c], vec![3, -4]).unwrap();
     ///
     /// assert_eq!(pbc1.to_string(&f), "2*a + -1*b + ~c = 2");
     /// assert_eq!(pbc2.to_string(&f), "3*a + -4*~c < 1");
     /// ```
-    pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> EncodedFormula
+    pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> LngResult<EncodedFormula>
     where
         L: Into<Box<[Literal]>>,
-        C: Into<Box<[i64]>>, {
+        C: Into<Box<[i64]>>,
+    {
         let l = literals.into();
         let c = coefficients.into();
-        assert_eq!(l.len(), c.len(), "The number of literals and coefficients in a pseudo-boolean constraint must be the same.");
+        if l.len() != c.len() {
+            return Err(FormulaError::NoPbc { lits: l.len(), coeffs: c.len() }.into());
+        }
         if l.is_empty() {
-            self.constant(evaluate_trivial_pb_constraint(comparator, rhs))
+            Ok(self.constant(evaluate_trivial_pb_constraint(comparator, rhs)))
         } else if is_lit_cc(comparator, rhs, &l, &c) {
-            self.construct_cc_unsafe(comparator, rhs, l.iter().map(|&lit| lit.variable()).collect())
+            Ok(self.construct_cc_unsafe(comparator, rhs, l.iter().map(|&lit| lit.variable()).collect()))
         } else {
-            EncodedFormula::from(self.pbcs.get_or_insert(PbConstraint::new(l, c, comparator, rhs), FormulaType::Pbc))
+            Ok(EncodedFormula::from(self.pbcs.get_or_insert(PbConstraint::new(l, c, comparator, rhs), FormulaType::Pbc)))
         }
     }
 
@@ -998,6 +1021,11 @@ impl FormulaFactory {
     /// treatment here.  For other conversions, use the according formula
     /// functions.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the configured CNF transformation fails, for example
+    /// because a handler cancels the computation.
+    ///
     /// [`CnfAlgorithm::Bdd`]: crate::operations::transformations::CnfAlgorithm::Bdd
     /// [`CnfAlgorithm::Factorization`]: crate::operations::transformations::CnfAlgorithm::Factorization
     ///
@@ -1011,16 +1039,20 @@ impl FormulaFactory {
     /// let f = FormulaFactory::new();
     ///
     /// let formula1 = "(a & b) | c".to_formula(&f);
-    /// let cnf = f.cnf_of(formula1);
+    /// let cnf = f.cnf_of(formula1).unwrap();
     ///
     /// assert_eq!(cnf.to_string(&f), "(a | c) & (b | c)");
     /// ```
     #[must_use]
-    pub fn cnf_of(&self, formula: EncodedFormula) -> EncodedFormula {
+    pub fn cnf_of(&self, formula: EncodedFormula) -> LngResult<EncodedFormula> {
         CnfEncoder::stateless(self.config.cnf_config.clone()).transform(formula, self)
     }
 
     /// Returns the _NNF_ form of `formula`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the NNF transformation cannot be completed.
     ///
     /// # Examples
     ///
@@ -1032,12 +1064,12 @@ impl FormulaFactory {
     /// let f = FormulaFactory::new();
     ///
     /// let formula1 = "a => b".to_formula(&f);
-    /// let nnf = f.nnf_of(formula1);
+    /// let nnf = f.nnf_of(formula1).unwrap();
     ///
     /// assert_eq!(nnf.to_string(&f), "~a | b");
     /// ```
     #[must_use]
-    pub fn nnf_of(&self, formula: EncodedFormula) -> EncodedFormula {
+    pub fn nnf_of(&self, formula: EncodedFormula) -> LngResult<EncodedFormula> {
         transformations::nnf(formula, self)
     }
 
@@ -1124,6 +1156,10 @@ impl FormulaFactory {
 
     /// Substitutes variables of the given formulas with specified formulas.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the substitution transformation cannot be completed.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -1139,15 +1175,19 @@ impl FormulaFactory {
     /// let mut substitutions = HashMap::new();
     /// substitutions.insert(f.var("a"), "c => d".to_formula(&f));
     ///
-    /// let substituted = f.substitute(formula, &substitutions);
+    /// let substituted = f.substitute(formula, &substitutions).unwrap();
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute(&self, formula: EncodedFormula, substitution: &Substitution) -> EncodedFormula {
+    pub fn substitute(&self, formula: EncodedFormula, substitution: &Substitution) -> LngResult<EncodedFormula> {
         transformations::substitute(formula, substitution, self)
     }
 
     /// Substitutes single variable of the given formulas with specified formulas.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the substitution transformation cannot be completed.
     ///
     /// # Examples
     ///
@@ -1163,11 +1203,11 @@ impl FormulaFactory {
     /// let variable = f.var("a");
     /// let substitute = "c => d".to_formula(&f);
     ///
-    /// let substituted = f.substitute_var(formula, variable, substitute);
+    /// let substituted = f.substitute_var(formula, variable, substitute).unwrap();
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute_var(&self, formula: EncodedFormula, variable: Variable, substitute: EncodedFormula) -> EncodedFormula {
+    pub fn substitute_var(&self, formula: EncodedFormula, variable: Variable, substitute: EncodedFormula) -> LngResult<EncodedFormula> {
         let mut substitution = HashMap::new();
         substitution.insert(variable, substitute);
         self.substitute(formula, &substitution)
@@ -1332,7 +1372,8 @@ impl FormulaFactory {
     fn prepare_nary<E, Ops>(&self, ops: Ops, op_type: FormulaType) -> Option<FilterResult>
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut filter_result = FilterResult {
             reduced32: Vec::new(),
             reduced_set32: HashSet::default(),
@@ -1346,7 +1387,8 @@ impl FormulaFactory {
     fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
     where
         E: Borrow<EncodedFormula>,
-        Ops: IntoIterator<Item = E>, {
+        Ops: IntoIterator<Item = E>,
+    {
         let mut is_large = false;
         for op in ops {
             let owned = *op.borrow();

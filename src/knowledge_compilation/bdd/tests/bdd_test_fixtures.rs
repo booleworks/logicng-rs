@@ -31,7 +31,7 @@ pub struct B {
 impl B {
     pub(crate) fn new() -> Self {
         let f = FormulaFactory::new();
-        let mut kernel = BddKernel::new_with_num_vars(3, 100, 1000);
+        let mut kernel = BddKernel::new_with_num_vars(3, 100, 1000).unwrap();
 
         let verum = f.verum();
         let falsum = f.falsum();
@@ -44,16 +44,16 @@ impl B {
         let formula = f.parse("(A => ~C) | (B & ~C)").unwrap();
         let cc = f.parse("A + B + C = 1").unwrap();
 
-        let bdd_true = Bdd::from_formula(verum, &f, &mut kernel);
-        let bdd_false = Bdd::from_formula(falsum, &f, &mut kernel);
-        let bdd_var = Bdd::from_formula(var, &f, &mut kernel);
-        let bdd_lit = Bdd::from_formula(lit, &f, &mut kernel);
-        let bdd_impl = Bdd::from_formula(impli, &f, &mut kernel);
-        let bdd_equiv = Bdd::from_formula(equiv, &f, &mut kernel);
-        let bdd_or = Bdd::from_formula(or, &f, &mut kernel);
-        let bdd_and = Bdd::from_formula(and, &f, &mut kernel);
-        let bdd_formula = Bdd::from_formula(formula, &f, &mut kernel);
-        let bdd_cc = Bdd::from_formula(cc, &f, &mut kernel);
+        let bdd_true = Bdd::from_formula(verum, &f, &mut kernel).unwrap();
+        let bdd_false = Bdd::from_formula(falsum, &f, &mut kernel).unwrap();
+        let bdd_var = Bdd::from_formula(var, &f, &mut kernel).unwrap();
+        let bdd_lit = Bdd::from_formula(lit, &f, &mut kernel).unwrap();
+        let bdd_impl = Bdd::from_formula(impli, &f, &mut kernel).unwrap();
+        let bdd_equiv = Bdd::from_formula(equiv, &f, &mut kernel).unwrap();
+        let bdd_or = Bdd::from_formula(or, &f, &mut kernel).unwrap();
+        let bdd_and = Bdd::from_formula(and, &f, &mut kernel).unwrap();
+        let bdd_formula = Bdd::from_formula(formula, &f, &mut kernel).unwrap();
+        let bdd_cc = Bdd::from_formula(cc, &f, &mut kernel).unwrap();
 
         Self {
             F: f,

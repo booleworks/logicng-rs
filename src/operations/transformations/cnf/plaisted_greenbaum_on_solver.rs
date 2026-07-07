@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use Literal::{Neg, Pos};
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
@@ -45,14 +46,15 @@ pub fn add_cnf_to_solver<B>(
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
-) {
-    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula) } else { formula };
+) -> LngResult<()> {
+    let working_formula = if config.perform_nnf || contains_pbc(formula, f) { f.nnf_of(formula)? } else { formula };
     if working_formula.is_cnf(f) {
         add_cnf(solver, working_formula, proposition, f, config);
     } else if let Some(top_level_vars) = compute_transformation(working_formula, proposition.clone(), solver, f, cache, config, true, true)
     {
         add_clause(solver, &top_level_vars, proposition, config);
     }
+    Ok(())
 }
 
 fn add_cnf<B>(
@@ -261,7 +263,9 @@ fn handle_nary<B>(
 }
 
 fn add_clause<'a, B, L>(solver: &mut MiniSat2Solver<B>, clause: L, proposition: Option<Proposition<B>>, config: PgOnSolverConfig)
-where L: IntoIterator<Item = &'a Literal> {
+where
+    L: IntoIterator<Item = &'a Literal>,
+{
     let clause_vec = clause
         .into_iter()
         .map(|lit| {
@@ -328,6 +332,7 @@ impl VarCacheEntry {
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
+    use crate::errors::LngResult;
     use crate::formulas::{ToFormula, Variable};
     use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
     use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverCnfMethod};
@@ -336,16 +341,16 @@ mod tests {
 
     use super::*;
 
-    fn pg_on_solver(formula: EncodedFormula, f: &FormulaFactory, method: SolverCnfMethod) -> EncodedFormula {
+    fn pg_on_solver(formula: EncodedFormula, f: &FormulaFactory, method: SolverCnfMethod) -> LngResult<EncodedFormula> {
         let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(method));
-        solver.add(formula, f);
+        solver.add(formula, f)?;
         let clauses = solver.formula_on_solver(f);
-        f.and(clauses.iter())
+        Ok(f.and(clauses.iter()))
     }
 
-    fn test_formula(f: &FormulaFactory, formula: EncodedFormula) {
-        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver);
-        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver);
+    fn test_formula(f: &FormulaFactory, formula: EncodedFormula) -> LngResult<()> {
+        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver)?;
+        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver)?;
         assert!(pg.is_cnf(f));
         assert!(full_pg.is_cnf(f));
         println!("formula: {}", formula.to_string(f));
@@ -353,15 +358,16 @@ mod tests {
         println!("full_pg: {}", full_pg.to_string(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
         let config = ModelEnumerationConfig::default().variables(vars.clone());
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config);
-        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config);
-        let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config);
+        let original_models = enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
+        let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
+        let full_pg_models = enumerate_models_for_formula_with_config(full_pg, f, &config).unwrap();
         let pg_vars = pg.variables(f);
         let full_pg_vars = full_pg.variables(f);
         let pg_missed_vars = missed_vars(&vars, &pg_vars);
         let full_pg_missed_vars = missed_vars(&vars, &full_pg_vars);
         assert_eq!(original_models.len(), pg_models.len() * 2_usize.pow(pg_missed_vars));
         assert_eq!(original_models.len(), full_pg_models.len() * 2_usize.pow(full_pg_missed_vars));
+        Ok(())
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -369,58 +375,67 @@ mod tests {
         (original_vars.len() - pg_vars.iter().filter(|v| matches!(v, Variable::FF(_))).count()) as u32
     }
 
-    fn test_formula_eq(f: &FormulaFactory, formula: EncodedFormula, expected: EncodedFormula) {
-        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver);
-        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver);
+    fn test_formula_eq(f: &FormulaFactory, formula: EncodedFormula, expected: EncodedFormula) -> LngResult<()> {
+        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver)?;
+        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver)?;
         assert_eq!(pg, expected);
         assert_eq!(full_pg, expected);
+        Ok(())
     }
 
     #[test]
-    fn test_constants() {
+    fn test_constants() -> LngResult<()> {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.TRUE, F.TRUE);
-        test_formula_eq(f, F.FALSE, F.FALSE);
+        test_formula_eq(f, F.TRUE, F.TRUE)?;
+        test_formula_eq(f, F.FALSE, F.FALSE)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_literals() {
+    fn test_literals() -> LngResult<()> {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.A, F.A);
-        test_formula_eq(f, F.NA, F.NA);
+        test_formula_eq(f, F.A, F.A)?;
+        test_formula_eq(f, F.NA, F.NA)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_binary_operators() {
+    fn test_binary_operators() -> LngResult<()> {
         let F = F::new();
         let f = &F.f;
-        test_formula(f, F.IMP1);
-        test_formula(f, F.IMP2);
-        test_formula(f, F.IMP3);
-        test_formula(f, F.EQ1);
-        test_formula(f, F.EQ2);
-        test_formula(f, F.EQ3);
-        test_formula(f, F.EQ4);
+        test_formula(f, F.IMP1)?;
+        test_formula(f, F.IMP2)?;
+        test_formula(f, F.IMP3)?;
+        test_formula(f, F.EQ1)?;
+        test_formula(f, F.EQ2)?;
+        test_formula(f, F.EQ3)?;
+        test_formula(f, F.EQ4)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_nary_operators() {
+    fn test_nary_operators() -> LngResult<()> {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.AND1, F.AND1);
-        test_formula_eq(f, F.OR1, F.OR1);
+        test_formula_eq(f, F.AND1, F.AND1)?;
+        test_formula_eq(f, F.OR1, F.OR1)?;
         let f1 = "(a & b & x) | (c & d & ~y)".to_formula(f);
         let f2 = "(a & b & x) | (c & d & ~y) | (~z | (c & d & ~y)) ".to_formula(f);
         let f3 = "a | b | (~x & ~y)".to_formula(f);
-        test_formula(f, f1);
-        test_formula(f, f2);
-        test_formula(f, f3);
+        test_formula(f, f1)?;
+        test_formula(f, f2)?;
+        test_formula(f, f3)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_not_nary() {
+    fn test_not_nary() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let f1 = "~(~a | b)".to_formula(f);
         let f2 = "~((a | b) | ~(x | y))".to_formula(f);
@@ -429,49 +444,57 @@ mod tests {
         let f5 = "~(a & b & ~x & ~y)".to_formula(f);
         let f6 = "~(a | b | ~x | ~y)".to_formula(f);
         let f7 = "~(a & b) & (c | (a & b))".to_formula(f);
-        test_formula(f, f1);
-        test_formula(f, f2);
-        test_formula(f, f3);
-        test_formula(f, f4);
-        test_formula(f, f5);
-        test_formula(f, f6);
-        test_formula(f, f7);
+        test_formula(f, f1)?;
+        test_formula(f, f2)?;
+        test_formula(f, f3)?;
+        test_formula(f, f4)?;
+        test_formula(f, f5)?;
+        test_formula(f, f6)?;
+        test_formula(f, f7)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_not_binary() {
+    fn test_not_binary() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let f1 = "~(~(a | b) => ~(x | y))".to_formula(f);
         let f2 = "~(a <=> b)".to_formula(f);
         let f3 = "~(~(a | b) <=> ~(x | y))".to_formula(f);
-        test_formula(f, f1);
-        test_formula(f, f2);
-        test_formula(f, f3);
+        test_formula(f, f1)?;
+        test_formula(f, f2)?;
+        test_formula(f, f3)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_cc() {
+    fn test_cc() -> LngResult<()> {
         let f = &FormulaFactory::with_id("");
         let f1 = "a <=> (1 * b <= 1)".to_formula(f);
         let f2 = "~(1 * b <= 1)".to_formula(f);
         let f3 = "(1 * b + 1 * c + 1 * d <= 1)".to_formula(f);
         let f4 = "~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f);
-        test_formula(f, f1);
-        test_formula(f, f2);
-        test_formula(f, f3);
-        test_formula(f, f4);
+        test_formula(f, f1)?;
+        test_formula(f, f2)?;
+        test_formula(f, f3)?;
+        test_formula(f, f4)?;
+
+        Ok(())
     }
 
     #[test]
-    fn test_formulas() {
+    fn test_formulas() -> LngResult<()> {
         let f = &FormulaFactory::with_id("");
         let f1 = "(a | b) => c".to_formula(f);
         let f2 = "~x & ~y".to_formula(f);
         let f3 = "d & ((a | b) => c)".to_formula(f);
         let f4 = "d & ((a | b) => c) | ~x & ~y".to_formula(f);
-        test_formula(f, f1);
-        test_formula(f, f2);
-        test_formula(f, f3);
-        test_formula(f, f4);
+        test_formula(f, f1)?;
+        test_formula(f, f2)?;
+        test_formula(f, f3)?;
+        test_formula(f, f4)?;
+
+        Ok(())
     }
 }

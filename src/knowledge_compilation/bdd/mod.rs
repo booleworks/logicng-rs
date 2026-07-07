@@ -7,12 +7,14 @@ mod bdd_model_enumeration;
 mod bdd_normalform;
 mod bdd_operations;
 mod bdd_prime;
+mod error;
 /// Ordering strategies for BDDs.
 pub mod orderings;
 
 pub use bdd_handler::*;
 pub use bdd_kernel::*;
 pub use bdd_main::*;
+pub use error::BddError;
 
 /// We deviate from the convention of putting unit tests in the source file in this case,
 /// s.t. the file doesn't become too large

@@ -1,6 +1,12 @@
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory};
 
 /// Constructs the _NNF_ form of `formula`.
+///
+/// # Errors
+///
+/// Returns an error if a cardinality or pseudo-Boolean constraint in the
+/// formula cannot be encoded.
 ///
 /// # Examples
 ///
@@ -13,25 +19,25 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory};
 /// let f = FormulaFactory::new();
 ///
 /// let formula1 = "a => b".to_formula(&f);
-/// let nnf = nnf(formula1, &f);
+/// let nnf = nnf(formula1, &f).unwrap();
 ///
 /// assert_eq!(nnf.to_string(&f), "~a | b");
 /// ```
-pub fn nnf(formula: EncodedFormula, f: &FormulaFactory) -> EncodedFormula {
+pub fn nnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
     nnf_rec(formula, f, true)
 }
 
-fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> EncodedFormula {
+fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> LngResult<EncodedFormula> {
     if polarity {
         if f.caches.is_nnf.get(formula) == Some(true)
             || f.caches.is_cnf.get(formula).is_some()
             || f.caches.is_dnf.get(formula) == Some(true)
         {
-            return formula;
+            return Ok(formula);
         }
 
         if let Some(nnf) = f.caches.nnf.get(formula) {
-            return nnf;
+            return Ok(nnf);
         }
     }
 
@@ -43,20 +49,20 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
                 f.negate(formula)
             }
         }
-        Formula::Not(op) => nnf_rec(op, f, !polarity),
+        Formula::Not(op) => nnf_rec(op, f, !polarity)?,
         Formula::Or(ops) => {
-            let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
+            let new_ops = ops.map(|op| nnf_rec(op, f, polarity)).collect::<Result<Vec<_>, _>>()?;
             if polarity { f.or(new_ops) } else { f.and(new_ops) }
         }
         Formula::And(ops) => {
-            let new_ops = ops.map(|op| nnf_rec(op, f, polarity));
+            let new_ops = ops.map(|op| nnf_rec(op, f, polarity)).collect::<Result<Vec<_>, _>>()?;
             if polarity { f.and(new_ops) } else { f.or(new_ops) }
         }
         Formula::Equiv((left, right)) => {
-            let left_false = nnf_rec(left, f, false);
-            let right_true = nnf_rec(right, f, true);
-            let left_true = nnf_rec(left, f, true);
-            let right_false = nnf_rec(right, f, false);
+            let left_false = nnf_rec(left, f, false)?;
+            let right_true = nnf_rec(right, f, true)?;
+            let left_true = nnf_rec(left, f, true)?;
+            let right_false = nnf_rec(right, f, false)?;
             if polarity {
                 let op1 = f.or([left_false, right_true]);
                 let op2 = f.or([left_true, right_false]);
@@ -69,31 +75,31 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
         }
         Formula::Impl((left, right)) => {
             if polarity {
-                let left_false = nnf_rec(left, f, false);
-                let right_true = nnf_rec(right, f, true);
+                let left_false = nnf_rec(left, f, false)?;
+                let right_true = nnf_rec(right, f, true)?;
                 f.or([left_false, right_true])
             } else {
-                let left_true = nnf_rec(left, f, true);
-                let right_false = nnf_rec(right, f, false);
+                let left_true = nnf_rec(left, f, true)?;
+                let right_false = nnf_rec(right, f, false)?;
                 f.and([left_true, right_false])
             }
         }
         Formula::Cc(c) => {
             if polarity {
-                let encoded = c.encode(f);
-                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true));
+                let encoded = c.encode(f)?;
+                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true)).collect::<Result<Vec<_>, _>>()?;
                 f.and(new_ops)
             } else {
-                nnf_rec(c.negate(f), f, true)
+                nnf_rec(c.negate(f), f, true)?
             }
         }
         Formula::Pbc(p) => {
             if polarity {
-                let encoded = p.encode(f);
-                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true));
+                let encoded = p.encode(f)?;
+                let new_ops = encoded.iter().map(|&op| nnf_rec(op, f, true)).collect::<Result<Vec<_>, _>>()?;
                 f.and(new_ops)
             } else {
-                nnf_rec(p.negate(f), f, true)
+                nnf_rec(p.negate(f), f, true)?
             }
         }
     };
@@ -107,7 +113,7 @@ fn nnf_rec(formula: EncodedFormula, f: &FormulaFactory, polarity: bool) -> Encod
             f.caches.is_nnf.insert(nnf, true);
         }
     }
-    nnf
+    Ok(nnf)
 }
 
 #[cfg(test)]
@@ -120,29 +126,29 @@ mod tests {
     fn test_constants() {
         let F = F::new();
         let f = &F.f;
-        assert_eq!(f.nnf_of(F.TRUE), F.TRUE);
-        assert_eq!(f.nnf_of(F.FALSE), F.FALSE);
+        assert_eq!(f.nnf_of(F.TRUE).unwrap(), F.TRUE);
+        assert_eq!(f.nnf_of(F.FALSE).unwrap(), F.FALSE);
     }
 
     #[test]
     fn test_literals() {
         let F = F::new();
         let f = &F.f;
-        assert_eq!(f.nnf_of(F.A), F.A);
-        assert_eq!(f.nnf_of(F.NA), F.NA);
+        assert_eq!(f.nnf_of(F.A).unwrap(), F.A);
+        assert_eq!(f.nnf_of(F.NA).unwrap(), F.NA);
     }
 
     #[test]
     fn test_binary_operators() {
         let F = F::new();
         let f = &F.f;
-        assert_eq!(f.nnf_of(F.IMP1), "~a | b".to_formula(f));
-        assert_eq!(f.nnf_of(F.IMP2), "a | ~b".to_formula(f));
-        assert_eq!(f.nnf_of(F.IMP3), "~a | ~b | x | y".to_formula(f));
-        assert_eq!(f.nnf_of(F.IMP4), "(~a | ~b) & (a | b) | (x | ~y) & (y | ~x)".to_formula(f));
-        assert_eq!(f.nnf_of(F.EQ1), "(~a | b) & (~b | a)".to_formula(f));
-        assert_eq!(f.nnf_of(F.EQ2), "(a | ~b) & (b | ~a)".to_formula(f));
-        assert_eq!(f.nnf_of(F.EQ3), "(~a | ~b | x | y) & (~x & ~y | a & b)".to_formula(f));
+        assert_eq!(f.nnf_of(F.IMP1).unwrap(), "~a | b".to_formula(f));
+        assert_eq!(f.nnf_of(F.IMP2).unwrap(), "a | ~b".to_formula(f));
+        assert_eq!(f.nnf_of(F.IMP3).unwrap(), "~a | ~b | x | y".to_formula(f));
+        assert_eq!(f.nnf_of(F.IMP4).unwrap(), "(~a | ~b) & (a | b) | (x | ~y) & (y | ~x)".to_formula(f));
+        assert_eq!(f.nnf_of(F.EQ1).unwrap(), "(~a | b) & (~b | a)".to_formula(f));
+        assert_eq!(f.nnf_of(F.EQ2).unwrap(), "(a | ~b) & (b | ~a)".to_formula(f));
+        assert_eq!(f.nnf_of(F.EQ3).unwrap(), "(~a | ~b | x | y) & (~x & ~y | a & b)".to_formula(f));
     }
 
     #[test]
@@ -151,10 +157,10 @@ mod tests {
         let f = &F.f;
         let formula1 = "~(a | b) & c & ~(x & ~y) & (w => z)".to_formula(f);
         let formula2 = "~(a & b) | c | ~(x | ~y) | (w => z)".to_formula(f);
-        assert_eq!(f.nnf_of(F.AND1), F.AND1);
-        assert_eq!(f.nnf_of(F.OR1), F.OR1);
-        assert_eq!(f.nnf_of(formula1), "~a & ~b & c & (~x | y) & (~w | z)".to_formula(f));
-        assert_eq!(f.nnf_of(formula2), "~a  | ~b | c | (~x & y) | (~w | z)".to_formula(f));
+        assert_eq!(f.nnf_of(F.AND1).unwrap(), F.AND1);
+        assert_eq!(f.nnf_of(F.OR1).unwrap(), F.OR1);
+        assert_eq!(f.nnf_of(formula1).unwrap(), "~a & ~b & c & (~x | y) & (~w | z)".to_formula(f));
+        assert_eq!(f.nnf_of(formula2).unwrap(), "~a  | ~b | c | (~x & y) | (~w | z)".to_formula(f));
     }
 
     #[test]
@@ -170,14 +176,14 @@ mod tests {
         let formula7 = "~(a & b & ~x & ~y)".to_formula(f);
         let formula8 = "~(a | b | ~x | ~y)".to_formula(f);
         let formula9 = "~(a | b | ~x | ~y)".to_formula(f);
-        assert_eq!(f.nnf_of(formula1), "~a".to_formula(f));
-        assert_eq!(f.nnf_of(formula2), "a".to_formula(f));
-        assert_eq!(f.nnf_of(formula3), "a & ~b".to_formula(f));
-        assert_eq!(f.nnf_of(formula4), "~a & ~b & (x | y)".to_formula(f));
-        assert_eq!(f.nnf_of(formula5), "(~a | ~b) & (a | b)".to_formula(f));
-        assert_eq!(f.nnf_of(formula6), "((a | b) | (x | y)) & ((~a & ~b) | (~x & ~y))".to_formula(f));
-        assert_eq!(f.nnf_of(formula7), "~a | ~b | x | y".to_formula(f));
-        assert_eq!(f.nnf_of(formula8), "~a & ~b & x & y".to_formula(f));
-        assert_eq!(f.nnf_of(formula9), "~a & ~b & x & y".to_formula(f));
+        assert_eq!(f.nnf_of(formula1).unwrap(), "~a".to_formula(f));
+        assert_eq!(f.nnf_of(formula2).unwrap(), "a".to_formula(f));
+        assert_eq!(f.nnf_of(formula3).unwrap(), "a & ~b".to_formula(f));
+        assert_eq!(f.nnf_of(formula4).unwrap(), "~a & ~b & (x | y)".to_formula(f));
+        assert_eq!(f.nnf_of(formula5).unwrap(), "(~a | ~b) & (a | b)".to_formula(f));
+        assert_eq!(f.nnf_of(formula6).unwrap(), "((a | b) | (x | y)) & ((~a & ~b) | (~x & ~y))".to_formula(f));
+        assert_eq!(f.nnf_of(formula7).unwrap(), "~a | ~b | x | y".to_formula(f));
+        assert_eq!(f.nnf_of(formula8).unwrap(), "~a & ~b & x & y".to_formula(f));
+        assert_eq!(f.nnf_of(formula9).unwrap(), "~a & ~b & x & y".to_formula(f));
     }
 }

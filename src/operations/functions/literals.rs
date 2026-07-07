@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+use crate::errors::{LngError, LngResult};
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, StringLiteral, Variable};
-use crate::util::exceptions::panic_unexpected_formula_type;
+use crate::operations::OperationError;
 
 /// Returns a set with all names of the variables in this formula.
 ///
@@ -35,12 +36,11 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 /// Assuming this formula is a clause or term, it returns all literals in
 /// this formula.
 ///
-/// # Panic
+/// # Errors
 ///
-/// This function panics, if the passed formula is not a clause or a term. A
+/// Returns an error if the passed formula is not a clause or a term. A
 /// formula is a clause/term if all operands of the `n-ary` operators are
-/// literals or the formula is a literal or a constant. Otherwise, it will
-/// panic!
+/// literals or the formula is a literal or a constant.
 ///
 /// # Example
 ///
@@ -60,36 +60,37 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 /// let formula3 = "~a & b & c".to_formula(&f);
 /// let formula4 = "~a | b | c".to_formula(&f);
 ///
-/// assert_eq!(literals_for_clause_or_term(formula1, &f), vec![]);
-/// assert_eq!(literals_for_clause_or_term(formula2, &f), vec![a]);
-/// assert_eq!(literals_for_clause_or_term(formula3, &f), vec![a, b, c]);
-/// assert_eq!(literals_for_clause_or_term(formula4, &f), vec![a, b, c]);
+/// assert_eq!(literals_for_clause_or_term(formula1, &f).unwrap(), vec![]);
+/// assert_eq!(literals_for_clause_or_term(formula2, &f).unwrap(), vec![a]);
+/// assert_eq!(literals_for_clause_or_term(formula3, &f).unwrap(), vec![a, b, c]);
+/// assert_eq!(literals_for_clause_or_term(formula4, &f).unwrap(), vec![a, b, c]);
 /// ```
 ///
-/// Panic behavior:
+/// Error behavior:
 ///
-/// The `literals_for_clause_or_term` panics if the passed formula isn't a
-/// clause/term.
+/// The `literals_for_clause_or_term` function returns an error if the passed
+/// formula isn't a clause/term.
 /// ```
 /// # use logicng::formulas::FormulaFactory;
 /// # use logicng::formulas::ToFormula;
+/// # use logicng::operations::functions::literals_for_clause_or_term;
 /// let f = FormulaFactory::new();
 ///
 /// let formula1 = "a => b".to_formula(&f);
 /// let formula2 = "a & b & (c => d)".to_formula(&f);
 ///
-/// //literals_for_clause_or_term(formula1, &f); //PANIC!
-/// //literals_for_clause_or_term(formula2, &f); //PANIC!
+/// assert!(literals_for_clause_or_term(formula1, &f).is_err());
+/// assert!(literals_for_clause_or_term(formula2, &f).is_err());
 /// ```
-pub fn literals_for_clause_or_term(formula: EncodedFormula, f: &FormulaFactory) -> Vec<Literal> {
+pub fn literals_for_clause_or_term(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Literal>> {
     use Formula::{And, False, Lit, Or, True};
     match formula.unpack(f) {
-        Or(ops) | And(ops) => ops
-            .map(|l| l.as_literal().map_or_else(|| panic!("Expected {} to be a clause or a term", formula.to_string(f)), |lit| lit))
-            .collect(),
-        Lit(l) => vec![l],
-        True | False => vec![],
-        _ => panic_unexpected_formula_type(formula, Some(f)),
+        Or(ops) | And(ops) => {
+            Ok(ops.map(|l| l.as_literal().ok_or(LngError::Operation(OperationError::NotClauseOrTerm))).collect::<Result<_, _>>()?)
+        }
+        Lit(l) => Ok(vec![l]),
+        True | False => Ok(vec![]),
+        _ => return Err(OperationError::NotClauseOrTerm.into()),
     }
 }
 

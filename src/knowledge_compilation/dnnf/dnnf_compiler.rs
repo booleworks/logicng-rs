@@ -6,6 +6,7 @@ use bitvec::bitvec;
 use bitvec::vec::BitVec;
 use itertools::Itertools;
 
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
 use crate::knowledge_compilation::dnnf::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::{DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation};
@@ -27,12 +28,18 @@ pub struct DnnfFormula {
 }
 
 /// Compiles the given formula to a DNNF instance.
-pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> DnnfFormula {
+///
+/// # Errors
+///
+/// Returns an error if CNF conversion, simplification, subsumption, or dtree
+/// generation fails.
+pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<DnnfFormula> {
     let original_variables = formula.variables(f);
-    let cnf = f.cnf_of(formula);
-    let simplified = backbone_simplification(cnf, f);
-    let subsumption = cnf_subsumption(simplified, f);
-    DnnfFormula { formula: DnnfCompiler::new(subsumption, f).compile(), original_variables }
+    let cnf = f.cnf_of(formula)?;
+    let simplified = backbone_simplification(cnf, f)?;
+    let subsumption = cnf_subsumption(simplified, f)?;
+    let dnnf = DnnfCompiler::new(subsumption, f).compile()?;
+    Ok(DnnfFormula { formula: dnnf, original_variables })
 }
 
 struct DnnfCompiler<'a> {
@@ -51,7 +58,7 @@ impl<'a> DnnfCompiler<'a> {
         let (unit_clauses, non_unit_clauses) = initialize_clauses(cnf, f);
         let number_of_variables = cnf.variables(f).len();
         let mut solver = DnnfSatSolver::new(MiniSat2Solver::new(), number_of_variables);
-        solver.add(cnf, f);
+        solver.add(cnf, f).expect("formula is in CNF");
         DnnfCompiler {
             cnf,
             unit_clauses,
@@ -64,15 +71,15 @@ impl<'a> DnnfCompiler<'a> {
         }
     }
 
-    fn compile(&mut self) -> EncodedFormula {
+    fn compile(&mut self) -> LngResult<EncodedFormula> {
         if self.non_unit_clauses.is_atomic() {
-            self.cnf
-        } else if !is_sat(self.cnf, self.f) || !self.solver.start() {
-            self.f.falsum()
+            Ok(self.cnf)
+        } else if !is_sat(self.cnf, self.f)? || !self.solver.start() {
+            Ok(self.f.falsum())
         } else {
-            let tree = min_fill_dtree_generation(self.cnf, self.f, &mut self.df);
-            self.df.finish(tree, &self.solver);
-            self.compile_tree(tree)
+            let tree = min_fill_dtree_generation(self.cnf, self.f, &mut self.df)?;
+            self.df.finish(tree, &self.solver)?;
+            Ok(self.compile_tree(tree))
         }
     }
 
@@ -276,14 +283,14 @@ mod tests {
     }
 
     fn test_formula(formula: EncodedFormula, f: &FormulaFactory, with_equivalence: bool) {
-        let dnnf = compile_dnnf(formula, f);
+        let dnnf = compile_dnnf(formula, f).unwrap();
 
         let dnnf_count = count(&dnnf, f);
         let bdd_count = count_with_bdd(formula, f);
         assert_eq!(bdd_count, dnnf_count);
         if with_equivalence {
             let equivalence = f.equivalence(formula, dnnf.formula);
-            assert!(is_tautology(equivalence, f));
+            assert!(is_tautology(equivalence, f).unwrap());
         }
     }
 
@@ -292,8 +299,8 @@ mod tests {
             FormulaType::True => 1.to_biguint().unwrap(),
             FormulaType::False => 0.to_biguint().unwrap(),
             _ => {
-                let kernel = &mut BddKernel::new_with_var_ordering(&force_ordering(formula, f), 10000, 10000);
-                Bdd::from_formula(formula, f, kernel).model_count(kernel)
+                let kernel = &mut BddKernel::new_with_var_ordering(&force_ordering(formula, f).unwrap(), 10000, 10000).unwrap();
+                Bdd::from_formula(formula, f, kernel).unwrap().model_count(kernel)
             }
         }
     }

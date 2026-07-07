@@ -5,6 +5,7 @@ use std::num::Wrapping;
 
 use itertools::Itertools;
 
+use crate::errors::{LngError, LngResult};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, StringLiteral, Variable};
 
 use super::model::Model;
@@ -208,6 +209,11 @@ impl Assignment {
     /// assignment. If a name has no existing variable in the formula factory, the
     /// function will return an error.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if any given name is not known as a variable in the
+    /// formula factory.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -215,7 +221,8 @@ impl Assignment {
     /// ```
     /// # use logicng::datastructures::Assignment;
     /// # use logicng::formulas::FormulaFactory;
-    /// # fn main() -> Result<(), String> {
+    /// # use logicng::errors::LngResult;
+    /// # fn main() -> LngResult<()> {
     /// let f = FormulaFactory::new();
     ///
     /// let a = f.var("a");
@@ -228,7 +235,7 @@ impl Assignment {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_names(pos: &[&str], neg: &[&str], f: &FormulaFactory) -> Result<Self, String> {
+    pub fn from_names(pos: &[&str], neg: &[&str], f: &FormulaFactory) -> LngResult<Self> {
         let pos = names_to_indices(pos, f)?;
         let neg = names_to_indices(neg, f)?;
         Ok(Self { pos, neg })
@@ -673,13 +680,13 @@ fn var_hash(var: Variable) -> Wrapping<u64> {
     Wrapping(hasher.finish())
 }
 
-fn names_to_indices(names: &[&str], f: &FormulaFactory) -> Result<HashSet<Variable>, String> {
+fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<HashSet<Variable>> {
     let mut result = HashSet::with_capacity(names.len());
     for name in names {
         let index = match f.variables.lookup(name) {
             Some(i) => Variable::FF(i),
             None => {
-                return Err(format!("Variable {} is not known in the given FormulaFactory", *name));
+                return Err(LngError::UnknownVariable { var: name.to_string() });
             }
         };
         result.insert(index);

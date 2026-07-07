@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 use std::num::Wrapping;
 
+use crate::errors::LngResult;
 use crate::formulas::Variable;
+use crate::handlers::{ComputationHandler, LngEvent};
+use crate::knowledge_compilation::bdd::error::BddError;
 
 use super::bdd_cache::BddCache;
-use super::bdd_handler::{BddError, BddHandler};
 use super::bdd_prime::{prime_gte, prime_lte};
 
 pub(super) const BDD_TRUE: usize = 1;
@@ -107,9 +109,16 @@ pub struct BddKernel {
 }
 
 impl BddKernel {
-    /// Constructs a new BDD kernel with a given number of variables
-    pub fn new_with_num_vars(num_vars: usize, node_size: usize, cache_size: usize) -> Self {
-        assert!(num_vars <= MAXVAR, "Invalid variable number {num_vars}");
+    /// Constructs a new BDD kernel with a given number of variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the requested number of variables exceeds the BDD
+    /// kernel limit.
+    pub fn new_with_num_vars(num_vars: usize, node_size: usize, cache_size: usize) -> LngResult<Self> {
+        if num_vars > MAXVAR {
+            return Err(BddError::InvalidNumberOfVars { num_vars }.into());
+        }
         let computed_node_size = prime_gte(usize::max(node_size, 3));
         let computed_cache_size = usize::max(cache_size, 3);
         let mut kernel = Self {
@@ -168,27 +177,34 @@ impl BddKernel {
         kernel.set_level(1, num_vars);
         kernel.level2var[num_vars] = num_vars;
         kernel.var2level[num_vars] = num_vars;
-        kernel
+        Ok(kernel)
     }
 
-    /// Constructs a new BDD kernel with the given variable ordering
-    pub fn new_with_var_ordering(ordering: &[Variable], node_size: usize, cache_size: usize) -> Self {
-        let mut kernel = Self::new_with_num_vars(ordering.len(), node_size, cache_size);
+    /// Constructs a new BDD kernel with the given variable ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the ordering contains more variables than the BDD
+    /// kernel supports.
+    pub fn new_with_var_ordering(ordering: &[Variable], node_size: usize, cache_size: usize) -> LngResult<Self> {
+        let mut kernel = Self::new_with_num_vars(ordering.len(), node_size, cache_size)?;
         for &var in ordering {
-            kernel.get_or_add_var_index(var);
+            kernel.get_or_add_var_index(var)?;
         }
-        kernel
+        Ok(kernel)
     }
 
-    pub(super) fn get_or_add_var_index(&mut self, variable: Variable) -> usize {
+    pub(super) fn get_or_add_var_index(&mut self, variable: Variable) -> LngResult<usize> {
         if self.var2idx.contains_key(&variable) {
-            return self.var2idx[&variable];
+            return Ok(self.var2idx[&variable]);
         }
-        assert!(self.var2idx.len() < self.varnum, "No free variables left! You did not set the number of variables high enough.");
+        if self.var2idx.len() >= self.varnum {
+            return Err(BddError::NoFreeVars.into());
+        }
         let index = self.var2idx.len();
         self.var2idx.insert(variable, index);
         self.idx2var.insert(index, variable);
-        index
+        Ok(index)
     }
 
     pub(super) fn get_variable_for_index(&self, idx: usize) -> Option<Variable> {
@@ -200,9 +216,9 @@ impl BddKernel {
         self.apply_rec(l, r, op)
     }
 
-    pub(super) fn add_ref(&mut self, root: usize, handler: &mut dyn BddHandler) -> Result<usize, BddError> {
-        if let Some(error) = handler.new_ref_added() {
-            return Err(error);
+    pub(super) fn add_ref(&mut self, root: usize, handler: &mut dyn ComputationHandler) -> Result<usize, LngEvent> {
+        if !handler.should_resume(LngEvent::BddNewRefAdded) {
+            return Err(LngEvent::BddNewRefAdded);
         }
         if root < 2 {
             return Ok(root);
@@ -594,7 +610,7 @@ mod tests {
 
     #[test]
     fn create_kernel() {
-        let kernel = BddKernel::new_with_num_vars(5, 50, 500);
+        let kernel = BddKernel::new_with_num_vars(5, 50, 500).unwrap();
         let statistics = kernel.statistics();
         assert_eq!(statistics.produced, 10);
         assert_eq!(statistics.nodesize, 53);

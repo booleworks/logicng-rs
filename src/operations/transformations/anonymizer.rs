@@ -37,7 +37,7 @@ impl<'a> Anonymizer<'a> {
                 self.factory.variable(format!("{}{}", self.prefix, c))
             });
         }
-        self.factory.substitute(formula, &self.substitution)
+        self.factory.substitute(formula, &self.substitution).expect("error cannot occur since we do not substitute formulas")
     }
 
     /// Returns the substitution used by this anonymizer.
