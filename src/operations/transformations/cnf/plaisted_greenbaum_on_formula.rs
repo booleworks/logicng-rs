@@ -24,14 +24,21 @@ pub(super) fn pg_on_formula(
     }
 }
 
-fn compute_transformation(formula: EncodedFormula, f: &FormulaFactory, state: &mut PGState) -> EncodedFormula {
+fn compute_transformation(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+    state: &mut PGState,
+) -> EncodedFormula {
     use FormulaType::{And, Lit, Or};
     match formula.formula_type() {
         Or | And => {
             #[allow(clippy::cast_possible_truncation)]
             let mut nops = Vec::with_capacity(formula.number_of_atoms(f) as usize + 1);
             nops.push(compute_pos_polarity(formula, f, state));
-            formula.operands(f).iter().for_each(|&op| nops.push(compute_transformation(op, f, state)));
+            formula
+                .operands(f)
+                .iter()
+                .for_each(|&op| nops.push(compute_transformation(op, f, state)));
             f.and(&nops)
         }
         Lit(_) => f.verum(),
@@ -39,7 +46,11 @@ fn compute_transformation(formula: EncodedFormula, f: &FormulaFactory, state: &m
     }
 }
 
-fn compute_pos_polarity(formula: EncodedFormula, f: &FormulaFactory, state: &mut PGState) -> EncodedFormula {
+fn compute_pos_polarity(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+    state: &mut PGState,
+) -> EncodedFormula {
     let cached = state.formula.get(&formula).copied();
     if let Some(result) = cached {
         return result;
@@ -85,7 +96,9 @@ mod tests {
     use crate::operations::transformations::CnfEncoder;
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::PlaistedGreenbaum;
-    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
+    use crate::solver::functions::{
+        ModelEnumerationConfig, enumerate_models_for_formula_with_config,
+    };
     use crate::util::test_util::F;
 
     use super::*;
@@ -100,7 +113,8 @@ mod tests {
         assert!(pg.is_cnf(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
         let config = ModelEnumerationConfig::default().variables(vars);
-        let original_models = enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
+        let original_models =
+            enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
         let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
         assert_eq!(original_models.len(), pg_models.len());
     }
@@ -185,10 +199,17 @@ mod tests {
     fn test_cc() {
         let f = &FormulaFactory::with_id("");
         let mut pg = pg_transformer();
-        assert_eq!(pg.transform("a <=> (1 * b <= 1)".to_formula(f), f).unwrap(), "a".to_formula(f));
-        assert_eq!(pg.transform("~(1 * b <= 1)".to_formula(f), f).unwrap(), "$false".to_formula(f));
         assert_eq!(
-            pg.transform("(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),
+            pg.transform("a <=> (1 * b <= 1)".to_formula(f), f).unwrap(),
+            "a".to_formula(f)
+        );
+        assert_eq!(
+            pg.transform("~(1 * b <= 1)".to_formula(f), f).unwrap(),
+            "$false".to_formula(f)
+        );
+        assert_eq!(
+            pg.transform("(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f)
+                .unwrap(),
             "(~b | ~c) & (~b | ~d) & (~c | ~d)".to_formula(f)
         );
         assert_eq!(pg.transform("~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f), f).unwrap(),"(d | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | @RESERVED__CC_1 | @RESERVED__CC_4) & (~@RESERVED__CC_3 | d | @RESERVED__CC_4) & (~@RESERVED__CC_4 | @RESERVED__CC_0) & (~@RESERVED__CC_2 | @RESERVED__CC_0) & (~@RESERVED__CC_4 | ~@RESERVED__CC_2) & (c | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | @RESERVED__CC_3 | @RESERVED__CC_5) & (b | c | @RESERVED__CC_5) & (~@RESERVED__CC_5 | @RESERVED__CC_2) & ~@RESERVED__CC_0".to_formula(f));
@@ -206,7 +227,9 @@ mod tests {
         let pg2 = pg.transform(f2, f).unwrap().to_string(f);
         let pg3 = pg.transform(f3, f).unwrap().to_string(f);
         let pg4 = pg.transform(f4, f).unwrap().to_string(f);
-        let expected1 = "(@RESERVED__CNF_1 | c) & (~@RESERVED__CNF_1 | ~a) & (~@RESERVED__CNF_1 | ~b)".to_formula(f);
+        let expected1 =
+            "(@RESERVED__CNF_1 | c) & (~@RESERVED__CNF_1 | ~a) & (~@RESERVED__CNF_1 | ~b)"
+                .to_formula(f);
         let expected2 = "~x & ~y".to_formula(f);
         let expected3 =
             "d & @RESERVED__CNF_0 & (~@RESERVED__CNF_0 | @RESERVED__CNF_1 | c) & (~@RESERVED__CNF_1 | ~a) & (~@RESERVED__CNF_1 | ~b)"
@@ -230,12 +253,19 @@ mod tests {
         let f3 = "d & ((a | b) => c)".to_formula(f);
         let f4 = "d & ((a | b) => c) | ~x & ~y".to_formula(f);
         let mut cnf_transformator = CnfEncoder::new(PlaistedGreenbaum);
-        assert_eq!(cnf_transformator.transform(f1, f).unwrap(), "(~a | c) & (~b | c)".to_formula(f));
+        assert_eq!(
+            cnf_transformator.transform(f1, f).unwrap(),
+            "(~a | c) & (~b | c)".to_formula(f)
+        );
         assert_eq!(cnf_transformator.transform(f2, f).unwrap(), f2);
-        assert_eq!(cnf_transformator.transform(f3, f).unwrap(), "d & (~a | c) & (~b | c)".to_formula(f));
+        assert_eq!(
+            cnf_transformator.transform(f3, f).unwrap(),
+            "d & (~a | c) & (~b | c)".to_formula(f)
+        );
         assert_eq!(
             cnf_transformator.transform(f4, f).unwrap(),
-            "(d | ~x) & (~a | c | ~x) & (~b | c | ~x) & (d | ~y) & (~a | c | ~y) & (~b | c | ~y)".to_formula(f)
+            "(d | ~x) & (~a | c | ~x) & (~b | c | ~x) & (d | ~y) & (~a | c | ~y) & (~b | c | ~y)"
+                .to_formula(f)
         );
     }
 }

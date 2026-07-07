@@ -8,9 +8,21 @@ use crate::solver::minisat::sat::Tristate::{False, True};
 
 const fn encoders() -> [CcEncoder; 3] {
     [
-        CcEncoder::new(CcConfig::new().amk_encoder(AmkEncoder::Totalizer).alk_encoder(AlkEncoder::Totalizer)),
-        CcEncoder::new(CcConfig::new().amk_encoder(AmkEncoder::CardinalityNetwork).alk_encoder(AlkEncoder::CardinalityNetwork)),
-        CcEncoder::new(CcConfig::new().amk_encoder(AmkEncoder::ModularTotalizer).alk_encoder(AlkEncoder::ModularTotalizer)),
+        CcEncoder::new(
+            CcConfig::new()
+                .amk_encoder(AmkEncoder::Totalizer)
+                .alk_encoder(AlkEncoder::Totalizer),
+        ),
+        CcEncoder::new(
+            CcConfig::new()
+                .amk_encoder(AmkEncoder::CardinalityNetwork)
+                .alk_encoder(AlkEncoder::CardinalityNetwork),
+        ),
+        CcEncoder::new(
+            CcConfig::new()
+                .amk_encoder(AmkEncoder::ModularTotalizer)
+                .alk_encoder(AlkEncoder::ModularTotalizer),
+        ),
     ]
 }
 
@@ -21,29 +33,67 @@ fn test_incremental_data() {
         let num_lits = 10;
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
 
-        let inc_data = encoder.encode_incremental(&f.cc(LT, num_lits, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap().1.unwrap();
+        let inc_data = encoder
+            .encode_incremental(
+                &f.cc(LT, num_lits, vars.clone()).unwrap().as_cc(f).unwrap(),
+                f,
+            )
+            .unwrap()
+            .1
+            .unwrap();
         assert_eq!(inc_data.current_rhs, 9);
 
-        let inc_data = encoder.encode_incremental(&f.cc(GT, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap().1.unwrap();
+        let inc_data = encoder
+            .encode_incremental(&f.cc(GT, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f)
+            .unwrap()
+            .1
+            .unwrap();
         assert_eq!(inc_data.current_rhs, 2);
 
-        let (formulas, inc_data) = encoder.encode_incremental(&f.cc(LT, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (formulas, inc_data) = encoder
+            .encode_incremental(&f.cc(LT, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         assert!(inc_data.is_none());
         assert!(formulas.contains(&vars[0].negate().into()));
 
-        let (_, inc_data) = encoder.encode_incremental(&f.cc(LE, num_lits + 1, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (_, inc_data) = encoder
+            .encode_incremental(
+                &f.cc(LE, num_lits + 1, vars.clone())
+                    .unwrap()
+                    .as_cc(f)
+                    .unwrap(),
+                f,
+            )
+            .unwrap();
         assert!(inc_data.is_none());
 
-        let (_, inc_data) = encoder.encode_incremental(&f.cc(GE, num_lits + 1, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (_, inc_data) = encoder
+            .encode_incremental(
+                &f.cc(GE, num_lits + 1, vars.clone())
+                    .unwrap()
+                    .as_cc(f)
+                    .unwrap(),
+                f,
+            )
+            .unwrap();
         assert!(inc_data.is_none());
 
-        let (_, inc_data) = encoder.encode_incremental(&f.cc(GE, num_lits, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (_, inc_data) = encoder
+            .encode_incremental(
+                &f.cc(GE, num_lits, vars.clone()).unwrap().as_cc(f).unwrap(),
+                f,
+            )
+            .unwrap();
         assert!(inc_data.is_none());
 
-        let (_, inc_data) = encoder.encode_incremental(&f.cc(GE, 0, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (_, inc_data) = encoder
+            .encode_incremental(&f.cc(GE, 0, vars.clone()).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         assert!(inc_data.is_none());
 
-        let (_, inc_data) = encoder.encode_incremental(&f.cc(GE, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (_, inc_data) = encoder
+            .encode_incremental(&f.cc(GE, 1, vars.clone()).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         assert!(inc_data.is_none());
     }
 }
@@ -54,10 +104,28 @@ fn test_simple_incremental_amk() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
-        solver.add_all(&f.cc(LE, 7, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
+        solver.add_all(
+            &f.cc(GE, 4, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
+        solver.add_all(
+            &f.cc(LE, 7, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
 
-        let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, 9, vars).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (cc, inc_data_option) = encoder
+            .encode_incremental(&f.cc(LE, 9, vars).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
         solver.add_all(&cc, f)?;
@@ -91,10 +159,28 @@ fn test_simple_incremental_alk() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 4, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
-        solver.add_all(&f.cc(LE, 7, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
+        solver.add_all(
+            &f.cc(GE, 4, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
+        solver.add_all(
+            &f.cc(LE, 7, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
 
-        let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, 2, vars).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (cc, inc_data_option) = encoder
+            .encode_incremental(&f.cc(GE, 2, vars).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
         solver.add_all(&cc, f)?;
@@ -133,9 +219,19 @@ fn test_large_upper_bound_amk() -> LngResult<()> {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = num_lits - 1;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(GE, 42, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
+        solver.add_all(
+            &f.cc(GE, 42, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
 
-        let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (cc, inc_data_option) = encoder
+            .encode_incremental(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
         solver.add_all(&cc, f)?;
@@ -158,9 +254,19 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = 2;
         let mut solver = MiniSat::new();
-        solver.add_all(&f.cc(LE, 87, vars.clone()).unwrap().as_cc(f).unwrap().encode(f).unwrap(), f)?;
+        solver.add_all(
+            &f.cc(LE, 87, vars.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .encode(f)
+                .unwrap(),
+            f,
+        )?;
 
-        let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(GE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap();
+        let (cc, inc_data_option) = encoder
+            .encode_incremental(&f.cc(GE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
+            .unwrap();
         let mut inc_data = inc_data_option.unwrap();
 
         solver.add_all(&cc, f)?;
@@ -185,7 +291,9 @@ fn test_very_large_modular_totalizer_amk() -> LngResult<()> {
     let mut solver = MiniSat::new();
     solver.add(f.cc(GE, 234, vars.clone()).unwrap(), f)?;
 
-    let (cc, inc_data_option) = encoder.encode_incremental(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f).unwrap();
+    let (cc, inc_data_option) = encoder
+        .encode_incremental(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
+        .unwrap();
     let mut inc_data = inc_data_option.unwrap();
 
     solver.add_all(&cc, f)?;

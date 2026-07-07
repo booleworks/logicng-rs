@@ -3,7 +3,9 @@ use num_bigint::{BigUint, ToBigUint};
 
 use crate::handlers::NopHandler;
 
-use super::bdd_kernel::{BDD_FALSE, BDD_TRUE, BddKernel, MARKOFF, MARKON, is_const, is_one, is_zero};
+use super::bdd_kernel::{
+    BDD_FALSE, BDD_TRUE, BddKernel, MARKOFF, MARKON, is_const, is_one, is_zero,
+};
 
 const CACHEID_SATCOU: usize = 0x2;
 const CACHEID_PATHCOU_ONE: usize = 0x4;
@@ -24,7 +26,10 @@ pub fn sat_one_set(r: usize, var: usize, default: usize, kernel: &mut BddKernel)
     if is_zero(r) {
         return r;
     }
-    assert!(is_const(default), "Polarity for satOneSet must be a constant");
+    assert!(
+        is_const(default),
+        "Polarity for satOneSet must be a constant"
+    );
     kernel.init_ref();
     sat_one_set_rec(r, var, default, kernel)
 }
@@ -40,7 +45,12 @@ pub fn all_nodes(r: usize, kernel: &mut BddKernel) -> Vec<[usize; 4]> {
     for n in 0..kernel.nodesize {
         if kernel.level(n) & MARKON != 0 {
             kernel.set_level(n, kernel.level(n) & MARKOFF);
-            result.push([n, kernel.level2var[kernel.level(n)], kernel.low(n).unwrap(), kernel.high(n)]);
+            result.push([
+                n,
+                kernel.level2var[kernel.level(n)],
+                kernel.low(n).unwrap(),
+                kernel.high(n),
+            ]);
         }
     }
     result
@@ -126,7 +136,9 @@ pub fn support(r: usize, kernel: &mut BddKernel) -> usize {
 
     let mut res = 1;
     for n in support {
-        kernel.add_ref(res, &mut NopHandler::new()).expect("Nop Handler never aborts.");
+        kernel
+            .add_ref(res, &mut NopHandler::new())
+            .expect("Nop Handler never aborts.");
         let node = kernel.make_node(n, 0, res);
         kernel.del_ref(res);
         res = node;
@@ -176,7 +188,8 @@ fn sat_one_set_rec(r: usize, var: usize, default: usize, kernel: &mut BddKernel)
                 let res = sat_one_set_rec(kernel.high(r), kernel.high(var), default, kernel);
                 kernel.make_node(kernel.level(r), BDD_FALSE, res)
             } else {
-                let res = sat_one_set_rec(kernel.low(r).unwrap(), kernel.high(var), default, kernel);
+                let res =
+                    sat_one_set_rec(kernel.low(r).unwrap(), kernel.high(var), default, kernel);
                 kernel.make_node(kernel.level(r), res, BDD_FALSE)
             }
         }
@@ -210,7 +223,12 @@ fn full_sat_one_rec(r: usize, kernel: &mut BddKernel) -> usize {
     kernel.push_ref(node)
 }
 
-fn all_sat_rec(r: usize, models: &mut Vec<Vec<i8>>, allsat_profile: &mut Vec<i8>, kernel: &mut BddKernel) {
+fn all_sat_rec(
+    r: usize,
+    models: &mut Vec<Vec<i8>>,
+    allsat_profile: &mut Vec<i8>,
+    kernel: &mut BddKernel,
+) {
     if is_one(r) {
         models.push(allsat_profile.clone());
         return;
@@ -238,7 +256,12 @@ fn all_sat_rec(r: usize, models: &mut Vec<Vec<i8>>, allsat_profile: &mut Vec<i8>
     }
 }
 
-fn all_unsat_rec(r: usize, models: &mut Vec<Vec<i8>>, allunsat_profile: &mut Vec<i8>, kernel: &mut BddKernel) {
+fn all_unsat_rec(
+    r: usize,
+    models: &mut Vec<Vec<i8>>,
+    allunsat_profile: &mut Vec<i8>,
+    kernel: &mut BddKernel,
+) {
     if is_zero(r) {
         models.push(allunsat_profile.clone());
         return;
@@ -275,15 +298,29 @@ fn sat_count_rec(root: usize, miscid: usize, kernel: &mut BddKernel) -> BigUint 
         return kernel.misccache.lookup_bdres(root);
     }
     let mut size = 0.to_biguint().unwrap();
-    let s = 2.to_biguint().unwrap().pow((kernel.level(kernel.low(root).unwrap()) - kernel.level(root) - 1) as u32);
+    let s = 2
+        .to_biguint()
+        .unwrap()
+        .pow((kernel.level(kernel.low(root).unwrap()) - kernel.level(root) - 1) as u32);
     size += s * sat_count_rec(kernel.low(root).unwrap(), miscid, kernel);
-    let s = 2.to_biguint().unwrap().pow((kernel.level(kernel.high(root)) - kernel.level(root) - 1) as u32);
+    let s = 2
+        .to_biguint()
+        .unwrap()
+        .pow((kernel.level(kernel.high(root)) - kernel.level(root) - 1) as u32);
     size += s * sat_count_rec(kernel.high(root), miscid, kernel);
-    kernel.misccache.set_with_bdres(root, (root, 0, miscid), size.clone());
+    kernel
+        .misccache
+        .set_with_bdres(root, (root, 0, miscid), size.clone());
     size
 }
 
-fn path_count_rec(r: usize, miscid: usize, count_true: usize, count_false: usize, kernel: &mut BddKernel) -> BigUint {
+fn path_count_rec(
+    r: usize,
+    miscid: usize,
+    count_true: usize,
+    count_false: usize,
+    kernel: &mut BddKernel,
+) -> BigUint {
     if is_zero(r) {
         return count_false.to_biguint().unwrap();
     }
@@ -294,9 +331,16 @@ fn path_count_rec(r: usize, miscid: usize, count_true: usize, count_false: usize
     if cache_abc.0 == Some(r) && cache_abc.2 == miscid {
         return kernel.misccache.lookup_bdres(r);
     }
-    let size = path_count_rec(kernel.low(r).unwrap(), miscid, count_true, count_false, kernel)
-        + path_count_rec(kernel.high(r), miscid, count_true, count_false, kernel);
-    kernel.misccache.set_with_bdres(r, (r, 0, miscid), size.clone());
+    let size = path_count_rec(
+        kernel.low(r).unwrap(),
+        miscid,
+        count_true,
+        count_false,
+        kernel,
+    ) + path_count_rec(kernel.high(r), miscid, count_true, count_false, kernel);
+    kernel
+        .misccache
+        .set_with_bdres(r, (r, 0, miscid), size.clone());
     size
 }
 

@@ -30,7 +30,11 @@ use crate::operations::OperationError;
 /// assert_eq!(string_literals(formula, &f), expected)
 /// ```
 pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<StringLiteral<'_>> {
-    formula.literals(f).iter().map(|lit| lit.to_string_lit(f)).collect()
+    formula
+        .literals(f)
+        .iter()
+        .map(|lit| lit.to_string_lit(f))
+        .collect()
 }
 
 /// Assuming this formula is a clause or term, it returns all literals in
@@ -82,12 +86,18 @@ pub fn string_literals(formula: EncodedFormula, f: &FormulaFactory) -> BTreeSet<
 /// assert!(literals_for_clause_or_term(formula1, &f).is_err());
 /// assert!(literals_for_clause_or_term(formula2, &f).is_err());
 /// ```
-pub fn literals_for_clause_or_term(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Vec<Literal>> {
+pub fn literals_for_clause_or_term(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+) -> LngResult<Vec<Literal>> {
     use Formula::{And, False, Lit, Or, True};
     match formula.unpack(f) {
-        Or(ops) | And(ops) => {
-            Ok(ops.map(|l| l.as_literal().ok_or(LngError::Operation(OperationError::NotClauseOrTerm))).collect::<Result<_, _>>()?)
-        }
+        Or(ops) | And(ops) => Ok(ops
+            .map(|l| {
+                l.as_literal()
+                    .ok_or(LngError::Operation(OperationError::NotClauseOrTerm))
+            })
+            .collect::<Result<_, _>>()?),
         Lit(l) => Ok(vec![l]),
         True | False => Ok(vec![]),
         _ => return Err(OperationError::NotClauseOrTerm.into()),
@@ -195,7 +205,10 @@ pub fn literals(formula: EncodedFormula, f: &FormulaFactory) -> Arc<BTreeSet<Lit
                 result.insert(l);
             }
             Equiv(_) | Impl(_) | Or(_) | And(_) | Not(_) => {
-                formula.operands(f).iter().for_each(|&op| result.extend((*literals(op, f)).clone()));
+                formula
+                    .operands(f)
+                    .iter()
+                    .for_each(|&op| result.extend((*literals(op, f)).clone()));
             }
             Cc(cc) => cc.variables.iter().for_each(|v| {
                 result.insert(v.pos_lit());

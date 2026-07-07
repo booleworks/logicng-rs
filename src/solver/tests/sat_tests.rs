@@ -9,7 +9,9 @@ use crate::formulas::CType::{EQ, GE};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_cnf;
 use crate::solver::SolverError;
-use crate::solver::functions::{ModelEnumerationConfig, enumerate_models, enumerate_models_with_config};
+use crate::solver::functions::{
+    ModelEnumerationConfig, enumerate_models, enumerate_models_with_config,
+};
 use crate::solver::minisat::SolverCnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
 use crate::solver::minisat::sat::ClauseMinimization;
 use crate::solver::minisat::sat::Tristate::{False, True};
@@ -19,11 +21,27 @@ use crate::util::test_util::{lits, lits_list, vars_list};
 
 fn solvers() -> [MiniSat; 5] {
     [
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(true)),
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf).incremental(false)),
+        MiniSat::from_config(
+            MiniSatConfig::default()
+                .cnf_method(FactoryCnf)
+                .incremental(true),
+        ),
+        MiniSat::from_config(
+            MiniSatConfig::default()
+                .cnf_method(FactoryCnf)
+                .incremental(false),
+        ),
         MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver).auxiliary_variables_in_models(false)),
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver).auxiliary_variables_in_models(false)),
+        MiniSat::from_config(
+            MiniSatConfig::default()
+                .cnf_method(PgOnSolver)
+                .auxiliary_variables_in_models(false),
+        ),
+        MiniSat::from_config(
+            MiniSatConfig::default()
+                .cnf_method(FullPgOnSolver)
+                .auxiliary_variables_in_models(false),
+        ),
     ]
 }
 
@@ -57,13 +75,19 @@ fn test_literals() -> LngResult<()> {
     for mut solver in solvers() {
         solver.add("a".to_formula(f), f)?;
         assert_eq!(solver.sat(), True);
-        assert_eq!(solver.model(None).unwrap().unwrap().literals(), Model::from_names(&["a"], &[], f).unwrap().literals());
+        assert_eq!(
+            solver.model(None).unwrap().unwrap().literals(),
+            Model::from_names(&["a"], &[], f).unwrap().literals()
+        );
         solver.add("~a".to_formula(f), f)?;
         assert_eq!(solver.sat(), False);
         solver.reset();
         solver.add("~a".to_formula(f), f)?;
         assert_eq!(solver.sat(), True);
-        assert_eq!(solver.model(None).unwrap().unwrap().literals(), Model::from_names(&[], &["a"], f).unwrap().literals());
+        assert_eq!(
+            solver.model(None).unwrap().unwrap().literals(),
+            Model::from_names(&[], &["a"], f).unwrap().literals()
+        );
     }
 
     Ok(())
@@ -115,7 +139,15 @@ fn test_and3() -> LngResult<()> {
         assert_eq!(solver.sat(), False);
         solver.reset();
         assert_eq!(solver.sat(), True);
-        solver.add_all(&["a".to_formula(f), "~b".to_formula(f), "~a".to_formula(f), "d".to_formula(f)], f)?;
+        solver.add_all(
+            &[
+                "a".to_formula(f),
+                "~b".to_formula(f),
+                "~a".to_formula(f),
+                "d".to_formula(f),
+            ],
+            f,
+        )?;
         assert_eq!(solver.sat(), False);
     }
 
@@ -126,7 +158,10 @@ fn test_and3() -> LngResult<()> {
 fn test_formula1() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        solver.add("(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f), f)?;
+        solver.add(
+            "(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f),
+            f,
+        )?;
         assert_eq!(solver.sat(), True);
         let model = Assignment::from(solver.model(None).unwrap().unwrap());
         assert_eq!(model.len(), 3);
@@ -145,7 +180,10 @@ fn test_formula2() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
         if solver.config.incremental {
-            solver.add("(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f), f)?;
+            solver.add(
+                "(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f),
+                f,
+            )?;
             let models = enumerate_models(&mut solver).unwrap();
             assert_eq!(models.len(), 1);
             let model = Assignment::from(&models[0]);
@@ -182,7 +220,9 @@ fn test_cc1() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
         if solver.config.incremental {
-            let vars = (0..100).map(|i| f.var(format!("x{i}"))).collect::<Box<[_]>>();
+            let vars = (0..100)
+                .map(|i| f.var(format!("x{i}")))
+                .collect::<Box<[_]>>();
             solver.add(f.exo(vars), f)?;
             let models = enumerate_models(&mut solver).unwrap();
             assert_eq!(models.len(), 100);
@@ -237,7 +277,17 @@ fn test_variables_removed_by_simplification_occurs_in_models() -> LngResult<()> 
     solver.add(formula, f)?;
     assert_eq!(True, solver.sat());
     assert_eq!(vec![a, b], solver.known_variables());
-    assert_eq!(vec![a, b], solver.model(None).unwrap().unwrap().literals().iter().map(Literal::variable).collect::<Vec<Variable>>());
+    assert_eq!(
+        vec![a, b],
+        solver
+            .model(None)
+            .unwrap()
+            .unwrap()
+            .literals()
+            .iter()
+            .map(Literal::variable)
+            .collect::<Vec<Variable>>()
+    );
 
     Ok(())
 }
@@ -251,7 +301,14 @@ fn test_unknown_variable_not_occurring_in_model() -> LngResult<()> {
     assert_eq!(True, solver.sat());
     assert_eq!(
         vec![f.var("A")],
-        solver.model(Some(&[f.var("A"), f.var("B")])).unwrap().unwrap().literals().iter().map(Literal::variable).collect::<Vec<Variable>>()
+        solver
+            .model(Some(&[f.var("A"), f.var("B")]))
+            .unwrap()
+            .unwrap()
+            .literals()
+            .iter()
+            .map(Literal::variable)
+            .collect::<Vec<Variable>>()
     );
 
     Ok(())
@@ -318,13 +375,18 @@ fn test_different_clause_minimizations() -> LngResult<()> {
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let expected_results: HashMap<String, bool> = BufReader::new(File::open("resources/sat/results.txt").unwrap())
-        .lines()
-        .map(|l| {
-            let tokens: Vec<String> = l.unwrap().split(';').map(std::string::ToString::to_string).collect();
-            (tokens[0].clone(), tokens[1].parse().unwrap())
-        })
-        .collect();
+    let expected_results: HashMap<String, bool> =
+        BufReader::new(File::open("resources/sat/results.txt").unwrap())
+            .lines()
+            .map(|l| {
+                let tokens: Vec<String> = l
+                    .unwrap()
+                    .split(';')
+                    .map(std::string::ToString::to_string)
+                    .collect();
+                (tokens[0].clone(), tokens[1].parse().unwrap())
+            })
+            .collect();
     for file in fs::read_dir("resources/sat").unwrap() {
         let file = file.unwrap();
         let file_name = file.file_name().to_str().unwrap().to_string();
@@ -334,7 +396,10 @@ fn test_dimacs_files() -> LngResult<()> {
                 for &clause in &cnf {
                     solver.add(clause, f)?;
                 }
-                assert_eq!(solver.sat() == True, *expected_results.get(&file_name).unwrap());
+                assert_eq!(
+                    solver.sat() == True,
+                    *expected_results.get(&file_name).unwrap()
+                );
             }
         }
     }
@@ -352,7 +417,9 @@ fn test_model_enumeration() -> LngResult<()> {
             solver.add(f.cc(GE, 1, vars.clone()).unwrap(), f)?;
             let models = enumerate_models_with_config(
                 &mut solver,
-                &ModelEnumerationConfig::default().variables(first_five).additional_variables(vars.clone()),
+                &ModelEnumerationConfig::default()
+                    .variables(first_five)
+                    .additional_variables(vars.clone()),
             )
             .unwrap();
             assert_eq!(models.len(), 32);
@@ -387,33 +454,49 @@ fn test_number_of_models_handler() -> LngResult<()> {
     for mut solver in solvers() {
         if solver.config.incremental {
             solver.add(f.exo(vars.clone()), f)?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars.clone()).max_models(100))
-                    .unwrap();
+            let models = enumerate_models_with_config(
+                &mut solver,
+                &ModelEnumerationConfig::default()
+                    .variables(vars.clone())
+                    .max_models(100),
+            )
+            .unwrap();
             assert_eq!(models.len(), 100);
             assert!(models.iter().all(|m| m.pos().len() == 1));
             solver.reset();
 
             solver.add(f.exo(vars.clone()), f)?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars.clone()).max_models(200))
-                    .unwrap();
+            let models = enumerate_models_with_config(
+                &mut solver,
+                &ModelEnumerationConfig::default()
+                    .variables(vars.clone())
+                    .max_models(200),
+            )
+            .unwrap();
             assert_eq!(models.len(), 100);
             assert!(models.iter().all(|m| m.pos().len() == 1));
             solver.reset();
 
             solver.add(f.exo(vars.clone()), f)?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars.clone()).max_models(50))
-                    .unwrap();
+            let models = enumerate_models_with_config(
+                &mut solver,
+                &ModelEnumerationConfig::default()
+                    .variables(vars.clone())
+                    .max_models(50),
+            )
+            .unwrap();
             assert_eq!(models.len(), 50);
             assert!(models.iter().all(|m| m.pos().len() == 1));
             solver.reset();
 
             solver.add(f.exo(vars.clone()), f)?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars.clone()).max_models(1))
-                    .unwrap();
+            let models = enumerate_models_with_config(
+                &mut solver,
+                &ModelEnumerationConfig::default()
+                    .variables(vars.clone())
+                    .max_models(1),
+            )
+            .unwrap();
             assert_eq!(models.len(), 1);
         }
     }
@@ -512,7 +595,9 @@ fn test_up_zero_literals_dimacs_files() -> LngResult<()> {
                 }
                 if solver.sat() == True {
                     let up_zero_literals = solver.up_zero_literals().unwrap().unwrap();
-                    let negations = up_zero_literals.iter().map(|lit| EncodedFormula::from(lit.negate()));
+                    let negations = up_zero_literals
+                        .iter()
+                        .map(|lit| EncodedFormula::from(lit.negate()));
                     solver.add(f.or(negations), f)?;
                     assert_eq!(solver.sat(), False);
                 }
@@ -530,7 +615,10 @@ fn test_selection_order_simple01() -> LngResult<()> {
         let formula = "~(x <=> y)".to_formula(f);
         solver.add(formula, f)?;
         let selection_order = lits_list("x y", f);
-        assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order)));
+        assert_eq!(
+            True,
+            solver.sat_with(&SatBuilder::new().selection_order(&selection_order))
+        );
         let model = solver.model(None).unwrap().unwrap();
         assert!(Model::from_literals(&lits_list("x ~y", f)).compare(&model));
         test_local_minimum(&mut solver, &model, &selection_order);
@@ -538,7 +626,10 @@ fn test_selection_order_simple01() -> LngResult<()> {
 
         solver.set_solver_to_undef();
         let selection_order = lits_list("y x", f);
-        assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order)));
+        assert_eq!(
+            True,
+            solver.sat_with(&SatBuilder::new().selection_order(&selection_order))
+        );
         let model = solver.model(None).unwrap().unwrap();
         assert!(Model::from_literals(&lits_list("y ~x", f)).compare(&model));
         test_local_minimum(&mut solver, &model, &selection_order);
@@ -546,7 +637,10 @@ fn test_selection_order_simple01() -> LngResult<()> {
 
         solver.set_solver_to_undef();
         let selection_order = lits_list("~x", f);
-        assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order)));
+        assert_eq!(
+            True,
+            solver.sat_with(&SatBuilder::new().selection_order(&selection_order))
+        );
         let model = solver.model(None).unwrap().unwrap();
         assert!(Model::from_literals(&lits_list("y ~x", f)).compare(&model));
         test_local_minimum(&mut solver, &model, &selection_order);
@@ -554,7 +648,10 @@ fn test_selection_order_simple01() -> LngResult<()> {
 
         solver.set_solver_to_undef();
         let selection_order = lits_list("~y ~x", f);
-        assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order)));
+        assert_eq!(
+            True,
+            solver.sat_with(&SatBuilder::new().selection_order(&selection_order))
+        );
         let model = solver.model(None).unwrap().unwrap();
         assert!(Model::from_literals(&lits_list("x ~y", f)).compare(&model));
         test_local_minimum(&mut solver, &model, &selection_order);
@@ -574,7 +671,10 @@ fn test_selection_order_simple02() -> LngResult<()> {
         solver.add(cc, f)?;
 
         for _ in 0..10 {
-            assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order)));
+            assert_eq!(
+                True,
+                solver.sat_with(&SatBuilder::new().selection_order(&selection_order))
+            );
             let model = solver.model(None).unwrap().unwrap();
             test_local_minimum(&mut solver, &model, &selection_order);
             test_highest_lexicographical_assignment(&mut solver, &model, &selection_order);
@@ -585,7 +685,10 @@ fn test_selection_order_simple02() -> LngResult<()> {
         solver.add(cc, f)?;
         let selection_order2 = lits_list("x4 ~x0 x1 x2 x3", f);
         for _ in 0..10 {
-            assert_eq!(True, solver.sat_with(&SatBuilder::new().selection_order(&selection_order2)));
+            assert_eq!(
+                True,
+                solver.sat_with(&SatBuilder::new().selection_order(&selection_order2))
+            );
             let model = solver.model(None).unwrap().unwrap();
             test_local_minimum(&mut solver, &model, &selection_order2);
             test_highest_lexicographical_assignment(&mut solver, &model, &selection_order2);
@@ -601,13 +704,18 @@ fn test_selection_order_simple02() -> LngResult<()> {
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files_with_selection_order() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let expected_results: HashMap<String, bool> = BufReader::new(File::open("resources/sat/results.txt").unwrap())
-        .lines()
-        .map(|l| {
-            let tokens: Vec<String> = l.unwrap().split(';').map(std::string::ToString::to_string).collect();
-            (tokens[0].clone(), tokens[1].parse().unwrap())
-        })
-        .collect();
+    let expected_results: HashMap<String, bool> =
+        BufReader::new(File::open("resources/sat/results.txt").unwrap())
+            .lines()
+            .map(|l| {
+                let tokens: Vec<String> = l
+                    .unwrap()
+                    .split(';')
+                    .map(std::string::ToString::to_string)
+                    .collect();
+                (tokens[0].clone(), tokens[1].parse().unwrap())
+            })
+            .collect();
     for file in fs::read_dir("resources/sat").unwrap() {
         let file = file.unwrap();
         let file_name = file.file_name().to_str().unwrap().to_string();
@@ -617,9 +725,16 @@ fn test_dimacs_files_with_selection_order() -> LngResult<()> {
                 for &clause in &cnf {
                     solver.add(clause, f)?;
                 }
-                let selection_order = (*f.and(&cnf).variables(f)).iter().take(10).map(Variable::pos_lit).collect::<Vec<Literal>>();
+                let selection_order = (*f.and(&cnf).variables(f))
+                    .iter()
+                    .take(10)
+                    .map(Variable::pos_lit)
+                    .collect::<Vec<Literal>>();
                 let expected = *expected_results.get(&file_name).unwrap();
-                assert_eq!(solver.sat_with(&SatBuilder::new().selection_order(&selection_order)) == True, expected);
+                assert_eq!(
+                    solver.sat_with(&SatBuilder::new().selection_order(&selection_order)) == True,
+                    expected
+                );
                 if expected {
                     let model = solver.model(None).unwrap().unwrap();
                     test_local_minimum(&mut solver, &model, &selection_order);
@@ -640,7 +755,9 @@ fn test_model_enumeration_with_additional_variables() -> LngResult<()> {
             solver.add("A | B | C | D | E".to_formula(f), f)?;
             let models = enumerate_models_with_config(
                 &mut solver,
-                &ModelEnumerationConfig::default().variables(vars_list("a b", f)).additional_variables(vars_list("b c", f)),
+                &ModelEnumerationConfig::default()
+                    .variables(vars_list("a b", f))
+                    .additional_variables(vars_list("b c", f)),
             )
             .unwrap();
             for model in models {
@@ -662,24 +779,41 @@ fn test_local_minimum(solver: &mut MiniSat, model: &Model, selection_order: &[Li
             let mut model_with_flip = model_lits.clone();
             model_with_flip.remove(&lit.negate());
             model_with_flip.insert(lit);
-            assert_eq!(False, solver.sat_with(&SatBuilder::new().assumptions(&model_with_flip.into_iter().collect::<Vec<Literal>>())));
+            assert_eq!(
+                False,
+                solver.sat_with(
+                    &SatBuilder::new()
+                        .assumptions(&model_with_flip.into_iter().collect::<Vec<Literal>>())
+                )
+            );
         }
     }
 }
 
-fn test_highest_lexicographical_assignment(solver: &mut MiniSat, model: &Model, selection_order: &[Literal]) {
+fn test_highest_lexicographical_assignment(
+    solver: &mut MiniSat,
+    model: &Model,
+    selection_order: &[Literal],
+) {
     let model_lits: HashSet<Literal> = model.literals().iter().copied().collect();
     let mut order_sublist = vec![];
     for &lit in selection_order {
         if model_lits.contains(&lit) {
             order_sublist.push(lit);
         } else {
-            let mut order_sublist_with_flip: BTreeSet<Literal> = order_sublist.iter().copied().collect();
+            let mut order_sublist_with_flip: BTreeSet<Literal> =
+                order_sublist.iter().copied().collect();
             order_sublist_with_flip.remove(&lit.negate());
             order_sublist_with_flip.insert(lit);
             assert_eq!(
                 False,
-                solver.sat_with(&SatBuilder::new().assumptions(&order_sublist_with_flip.into_iter().collect::<Vec<Literal>>()))
+                solver.sat_with(
+                    &SatBuilder::new().assumptions(
+                        &order_sublist_with_flip
+                            .into_iter()
+                            .collect::<Vec<Literal>>()
+                    )
+                )
             );
             order_sublist.push(lit.negate());
         }

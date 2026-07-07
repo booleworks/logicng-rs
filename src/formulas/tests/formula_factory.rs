@@ -1,7 +1,9 @@
 mod formula_factory_tests {
     use crate::formulas::FormulaType::{And, Equiv, False, Impl, Lit, Not, Or, True};
     use crate::formulas::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
-    use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType};
+    use crate::formulas::{
+        EncodedFormula, FormulaFactory, FormulaType, LitType, ToFormula, VarType,
+    };
     use crate::util::test_util::string_vars;
     use std::collections::BTreeSet;
 
@@ -38,8 +40,14 @@ mod formula_factory_tests {
         let ab_eq_d_e2 = f.equivalence(ab, d_e);
         let de = f.and([d, ab_eq_d_e]);
         let de2 = f.and([d, ab_eq_d_e]);
-        assert_eq!(f.verum(), EncodedFormula::from(FormulaEncoding::encode_type(FormulaType::True)));
-        assert_eq!(f.falsum(), EncodedFormula::from(FormulaEncoding::encode_type(False)));
+        assert_eq!(
+            f.verum(),
+            EncodedFormula::from(FormulaEncoding::encode_type(FormulaType::True))
+        );
+        assert_eq!(
+            f.falsum(),
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
         assert_eq!(a, ff_lit(0, true));
         assert_eq!(b, ff_lit(1, true));
         assert_eq!(c, ff_lit(2, true));
@@ -92,7 +100,10 @@ mod formula_factory_tests {
         assert_eq!(na.operands(&f), vec![]);
         assert_eq!(nh.operands(&f), vec![]);
         assert_eq!(ab.operands(&f), vec![ff_lit(0, true), ff_lit(1, true)]);
-        assert_eq!(ab_c_d.operands(&f), vec![df(0, And), ff_lit(2, true), ff_lit(3, true)]);
+        assert_eq!(
+            ab_c_d.operands(&f),
+            vec![df(0, And), ff_lit(2, true), ff_lit(3, true)]
+        );
         assert_eq!(nab.operands(&f), vec![df(0, And)]);
         assert_eq!(ab_z_ab_c_d.operands(&f), vec![df(0, And), df(0, Or)]);
         assert_eq!(d_e.operands(&f), vec![ff_lit(3, true), ff_lit(4, true)]);
@@ -133,8 +144,14 @@ mod formula_factory_tests {
         let nab_c_d = f.not(ab_c_d);
         let equiv6 = f.equivalence(ab_c_d, nab_c_d);
         let equiv7 = f.equivalence(a, na);
-        assert_eq!(f.verum(), EncodedFormula::from(FormulaEncoding::encode_type(True)));
-        assert_eq!(f.falsum(), EncodedFormula::from(FormulaEncoding::encode_type(False)));
+        assert_eq!(
+            f.verum(),
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
+        assert_eq!(
+            f.falsum(),
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
         assert_eq!(a, ff_lit(0, true));
         assert_eq!(b, ff_lit(1, true));
         assert_eq!(c, ff_lit(2, true));
@@ -144,25 +161,55 @@ mod formula_factory_tests {
         assert_eq!(na, ff_lit(0, false));
         assert_eq!(a2, ff_lit(0, true));
         assert_eq!(ab, df(0, And));
-        assert_eq!(ab2, EncodedFormula::from(FormulaEncoding::encode_type(False)));
+        assert_eq!(
+            ab2,
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
         assert_eq!(and3, ff_lit(0, true));
         assert_eq!(ab_c_d, df(0, Or));
-        assert_eq!(ab_c_d2, EncodedFormula::from(FormulaEncoding::encode_type(True)));
+        assert_eq!(
+            ab_c_d2,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
         assert_eq!(or3, df(0, And));
-        assert_eq!(nverum, EncodedFormula::from(FormulaEncoding::encode_type(False)));
-        assert_eq!(nfalsum, EncodedFormula::from(FormulaEncoding::encode_type(True)));
+        assert_eq!(
+            nverum,
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
+        assert_eq!(
+            nfalsum,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
         assert_eq!(impl1, df(0, Or));
-        assert_eq!(impl2, EncodedFormula::from(FormulaEncoding::encode_type(True)));
-        assert_eq!(impl3, EncodedFormula::from(FormulaEncoding::encode_type(True)));
+        assert_eq!(
+            impl2,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
+        assert_eq!(
+            impl3,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
         assert_eq!(impl4, df(0, Not));
-        assert_eq!(impl5, EncodedFormula::from(FormulaEncoding::encode_type(True)));
+        assert_eq!(
+            impl5,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
         assert_eq!(equiv1, ab_c_d);
         assert_eq!(equiv2, f.not(ab_c_d));
         assert_eq!(equiv3, ab_c_d);
         assert_eq!(equiv4, f.not(ab_c_d));
-        assert_eq!(equiv5, EncodedFormula::from(FormulaEncoding::encode_type(True)));
-        assert_eq!(equiv6, EncodedFormula::from(FormulaEncoding::encode_type(False)));
-        assert_eq!(equiv7, EncodedFormula::from(FormulaEncoding::encode_type(False)));
+        assert_eq!(
+            equiv5,
+            EncodedFormula::from(FormulaEncoding::encode_type(True))
+        );
+        assert_eq!(
+            equiv6,
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
+        assert_eq!(
+            equiv7,
+            EncodedFormula::from(FormulaEncoding::encode_type(False))
+        );
     }
 
     #[test]
@@ -273,9 +320,17 @@ mod formula_factory_tests {
 
     fn ff_lit(n: u64, phase: bool) -> EncodedFormula {
         if phase {
-            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Pos(VarType::FF)), true))
+            EncodedFormula::from(FormulaEncoding::encode(
+                n,
+                Lit(LitType::Pos(VarType::FF)),
+                true,
+            ))
         } else {
-            EncodedFormula::from(FormulaEncoding::encode(n, Lit(LitType::Neg(VarType::FF)), true))
+            EncodedFormula::from(FormulaEncoding::encode(
+                n,
+                Lit(LitType::Neg(VarType::FF)),
+                true,
+            ))
         }
     }
 

@@ -34,8 +34,13 @@ pub fn pure_expansion(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<
         }
         Formula::Equiv((l, r)) => Ok(f.equivalence(pure_expansion(l, f)?, pure_expansion(r, f)?)),
         Formula::Impl((l, r)) => Ok(f.implication(pure_expansion(l, f)?, pure_expansion(r, f)?)),
-        Formula::Or(ops) => Ok(f.or(ops.map(|op| pure_expansion(op, f)).collect::<Result<Vec<_>, _>>()?)),
-        Formula::And(ops) => Ok(f.and(ops.map(|op| pure_expansion(op, f)).collect::<Result<Vec<_>, _>>()?)),
+        Formula::Or(ops) => Ok(f.or(ops
+            .map(|op| pure_expansion(op, f))
+            .collect::<Result<Vec<_>, _>>()?)),
+        Formula::And(ops) => Ok(f.and(
+            ops.map(|op| pure_expansion(op, f))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
         Formula::Not(op) => Ok(f.not(pure_expansion(op, f)?)),
         Formula::True | Formula::False | Formula::Lit(_) => Ok(formula),
     }

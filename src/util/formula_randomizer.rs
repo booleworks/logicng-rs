@@ -113,12 +113,24 @@ impl FormulaRandomizerConfig {
     /// ```
     pub fn default_with_num_vars(num_vars: usize) -> Self {
         match num_vars {
-            0..=9 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:01}")).collect()),
-            10..=99 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:02}")).collect()),
-            100..=999 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:03}")).collect()),
-            1000..=9999 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:04}")).collect()),
-            10000..=99999 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:05}")).collect()),
-            100_000..=999_999 => Self::default_with_variables((0..num_vars).map(|n| format!("v{n:06}")).collect()),
+            0..=9 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:01}")).collect())
+            }
+            10..=99 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:02}")).collect())
+            }
+            100..=999 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:03}")).collect())
+            }
+            1000..=9999 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:04}")).collect())
+            }
+            10000..=99999 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:05}")).collect())
+            }
+            100_000..=999_999 => {
+                Self::default_with_variables((0..num_vars).map(|n| format!("v{n:06}")).collect())
+            }
             _ => Self::default_with_variables((0..num_vars).map(|n| format!("v{n}")).collect()),
         }
     }
@@ -636,7 +648,11 @@ impl FormulaRandomizerConfig {
 
     fn validate(&self) -> LngResult<()> {
         if self.variables.is_empty() {
-            return Err(UtilError::InvalidRandomizerConfig { param: "variables", reason: "at least one variable is required" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "variables",
+                reason: "at least one variable is required",
+            }
+            .into());
         }
         self.validate_weight("weight_constant", self.weight_constant)?;
         self.validate_weight("weight_variable", self.weight_variable)?;
@@ -659,7 +675,11 @@ impl FormulaRandomizerConfig {
         self.validate_weight("weight_exo", self.weight_exo)?;
 
         if self.formula_weight_sum() <= 0.0 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "formula weights", reason: "sum must be greater than zero" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "formula weights",
+                reason: "sum must be greater than zero",
+            }
+            .into());
         }
         if self.weight_variable + self.weight_negative_literal <= 0.0 {
             return Err(UtilError::InvalidRandomizerConfig {
@@ -669,37 +689,71 @@ impl FormulaRandomizerConfig {
             .into());
         }
         if self.pbc_type_weight_sum() <= 0.0 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "pbc type weights", reason: "sum must be greater than zero" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "pbc type weights",
+                reason: "sum must be greater than zero",
+            }
+            .into());
         }
         if self.weight_pbc_coeff_positive + self.weight_pbc_coeff_negative <= 0.0 {
-            return Err(
-                UtilError::InvalidRandomizerConfig { param: "pbc coefficient weights", reason: "sum must be greater than zero" }.into()
-            );
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "pbc coefficient weights",
+                reason: "sum must be greater than zero",
+            }
+            .into());
         }
         if self.maximum_operands_and <= 2 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "maximum_operands_and", reason: "must be greater than 2" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "maximum_operands_and",
+                reason: "must be greater than 2",
+            }
+            .into());
         }
         if self.maximum_operands_or <= 2 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "maximum_operands_or", reason: "must be greater than 2" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "maximum_operands_or",
+                reason: "must be greater than 2",
+            }
+            .into());
         }
         if self.maximum_operands_pbc <= 1 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "maximum_operands_pbc", reason: "must be greater than 1" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "maximum_operands_pbc",
+                reason: "must be greater than 1",
+            }
+            .into());
         }
         if self.maximum_coefficient_pbc == 0 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "maximum_coefficient_pbc", reason: "must be greater than zero" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "maximum_coefficient_pbc",
+                reason: "must be greater than zero",
+            }
+            .into());
         }
         if self.maximum_operands_cc <= 1 {
-            return Err(UtilError::InvalidRandomizerConfig { param: "maximum_operands_cc", reason: "must be greater than 1" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param: "maximum_operands_cc",
+                reason: "must be greater than 1",
+            }
+            .into());
         }
         Ok(())
     }
 
     fn validate_weight(&self, param: &'static str, value: f32) -> LngResult<()> {
         if !value.is_finite() {
-            return Err(UtilError::InvalidRandomizerConfig { param, reason: "must be finite" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param,
+                reason: "must be finite",
+            }
+            .into());
         }
         if value < 0.0 {
-            return Err(UtilError::InvalidRandomizerConfig { param, reason: "must not be negative" }.into());
+            return Err(UtilError::InvalidRandomizerConfig {
+                param,
+                reason: "must not be negative",
+            }
+            .into());
         }
         Ok(())
     }
@@ -718,7 +772,20 @@ impl FormulaRandomizerConfig {
         let implication = not + self.weight_impl / total;
         let equivalence = implication + self.weight_equiv / total;
         let phase = self.weight_variable / (self.weight_variable + self.weight_negative_literal);
-        FormulaTypeProbabilities { constant, literal, pbc, cc, amo, exo, or, and, not, implication, _equivalence: equivalence, phase }
+        FormulaTypeProbabilities {
+            constant,
+            literal,
+            pbc,
+            cc,
+            amo,
+            exo,
+            or,
+            and,
+            not,
+            implication,
+            _equivalence: equivalence,
+            phase,
+        }
     }
 
     fn compute_c_type_probabilities(&self) -> CTypeProbabilities {
@@ -728,7 +795,13 @@ impl FormulaRandomizerConfig {
         let ge = lt + self.weight_pbc_type_ge / total;
         let gt = ge + self.weight_pbc_type_gt / total;
         let eq = gt + self.weight_pbc_type_eq / total;
-        CTypeProbabilities { le, lt, ge, gt, _eq: eq }
+        CTypeProbabilities {
+            le,
+            lt,
+            ge,
+            gt,
+            _eq: eq,
+        }
     }
 
     fn formula_weight_sum(&self) -> f32 {
@@ -747,7 +820,11 @@ impl FormulaRandomizerConfig {
     }
 
     fn pbc_type_weight_sum(&self) -> f32 {
-        self.weight_pbc_type_le + self.weight_pbc_type_lt + self.weight_pbc_type_ge + self.weight_pbc_type_gt + self.weight_pbc_type_eq
+        self.weight_pbc_type_le
+            + self.weight_pbc_type_lt
+            + self.weight_pbc_type_ge
+            + self.weight_pbc_type_gt
+            + self.weight_pbc_type_eq
     }
 }
 
@@ -811,9 +888,15 @@ impl FormulaRandomizer {
         let seed = config.seed;
         let formula_probs = config.compute_formula_type_probabilities();
         let c_type_probs = config.compute_c_type_probabilities();
-        let coefficient_negative_probability =
-            config.weight_pbc_coeff_negative / (config.weight_pbc_coeff_positive + config.weight_pbc_coeff_negative);
-        Ok(Self { config, random: Rng::with_seed(seed), formula_probs, c_type_probs, coefficient_negative_probability })
+        let coefficient_negative_probability = config.weight_pbc_coeff_negative
+            / (config.weight_pbc_coeff_positive + config.weight_pbc_coeff_negative);
+        Ok(Self {
+            config,
+            random: Rng::with_seed(seed),
+            formula_probs,
+            c_type_probs,
+            coefficient_negative_probability,
+        })
     }
 
     /// Returns a random constant.
@@ -942,7 +1025,11 @@ impl FormulaRandomizer {
         } else {
             let inner = self.formula(f, max_depth - 1);
             let result = f.not(inner);
-            if max_depth >= 2 && !result.is_not() { self.not(f, max_depth) } else { result }
+            if max_depth >= 2 && !result.is_not() {
+                self.not(f, max_depth)
+            } else {
+                result
+            }
         }
     }
 
@@ -966,7 +1053,11 @@ impl FormulaRandomizer {
             let left = self.formula(f, max_depth - 1);
             let right = self.formula(f, max_depth - 1);
             let result = f.implication(left, right);
-            if result.is_impl() { result } else { self.implication(f, max_depth) }
+            if result.is_impl() {
+                result
+            } else {
+                self.implication(f, max_depth)
+            }
         }
     }
 
@@ -990,7 +1081,11 @@ impl FormulaRandomizer {
             let left = self.formula(f, max_depth - 1);
             let right = self.formula(f, max_depth - 1);
             let result = f.equivalence(left, right);
-            if result.is_equiv() { result } else { self.equivalence(f, max_depth) }
+            if result.is_equiv() {
+                result
+            } else {
+                self.equivalence(f, max_depth)
+            }
         }
     }
 
@@ -1014,7 +1109,11 @@ impl FormulaRandomizer {
             let num_operands = self.random.u32(2..self.config.maximum_operands_and);
             let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
             let result = f.and(operands);
-            if result.is_and() { result } else { self.and(f, max_depth) }
+            if result.is_and() {
+                result
+            } else {
+                self.and(f, max_depth)
+            }
         }
     }
 
@@ -1038,7 +1137,11 @@ impl FormulaRandomizer {
             let num_operands = self.random.u32(2..self.config.maximum_operands_or);
             let operands = (0..num_operands).map(|_| self.formula(f, max_depth - 1));
             let result = f.or(operands);
-            if result.is_or() { result } else { self.or(f, max_depth) }
+            if result.is_or() {
+                result
+            } else {
+                self.or(f, max_depth)
+            }
         }
     }
 
@@ -1058,9 +1161,13 @@ impl FormulaRandomizer {
     pub fn cc(&mut self, f: &FormulaFactory) -> EncodedFormula {
         let variables = self.cc_variables(f);
         let c_type = self.c_type();
-        let rhs_bound = if c_type == GT || c_type == LT { variables.len() + 1 } else { variables.len() }
-            .try_into()
-            .expect("too many variables for a cardinality constraint");
+        let rhs_bound = if c_type == GT || c_type == LT {
+            variables.len() + 1
+        } else {
+            variables.len()
+        }
+        .try_into()
+        .expect("too many variables for a cardinality constraint");
         let rhs_offset = u32::from(c_type == LT);
         let rhs = rhs_offset + self.random.u32(0..rhs_bound);
         let cc = f.cc(c_type, rhs, variables).expect("valid cc");
@@ -1125,7 +1232,12 @@ impl FormulaRandomizer {
         for i in 0..num_ops {
             literals.push(self.literal(f).as_literal().unwrap());
             #[allow(clippy::cast_possible_wrap)]
-            coefficients.push((self.random.u64(0..u64::from(self.config.maximum_coefficient_pbc)) + 1) as i64);
+            coefficients.push(
+                (self
+                    .random
+                    .u64(0..u64::from(self.config.maximum_coefficient_pbc))
+                    + 1) as i64,
+            );
             if self.random.f32() < self.coefficient_negative_probability {
                 min_sum += coefficients[i];
                 coefficients[i] = -coefficients[i];
@@ -1135,7 +1247,9 @@ impl FormulaRandomizer {
         }
         let c_type = self.c_type();
         let rhs = self.random.i64(0..=(max_sum + min_sum)) - min_sum;
-        let pbc = f.pbc(c_type, rhs, literals, coefficients).expect("valid pbc");
+        let pbc = f
+            .pbc(c_type, rhs, literals, coefficients)
+            .expect("valid pbc");
         if pbc.is_constant() { self.pbc(f) } else { pbc }
     }
 
@@ -1197,12 +1311,21 @@ impl FormulaRandomizer {
     /// # let mut randomizer = FormulaRandomizer::new(config).unwrap();
     /// let formulas = randomizer.constraint_set(&f, 5, 2);
     /// ```
-    pub fn constraint_set(&mut self, f: &FormulaFactory, num_constraints: u32, max_depth: u32) -> Arc<[EncodedFormula]> {
-        (0..num_constraints).map(|_| self.formula(f, max_depth)).collect()
+    pub fn constraint_set(
+        &mut self,
+        f: &FormulaFactory,
+        num_constraints: u32,
+        max_depth: u32,
+    ) -> Arc<[EncodedFormula]> {
+        (0..num_constraints)
+            .map(|_| self.formula(f, max_depth))
+            .collect()
     }
 
     fn cc_variables(&mut self, f: &FormulaFactory) -> Box<[Variable]> {
-        (0..self.random.u32(1..self.config.maximum_operands_cc)).map(|_| self.variable(f).as_variable().unwrap()).collect()
+        (0..self.random.u32(1..self.config.maximum_operands_cc))
+            .map(|_| self.variable(f).as_variable().unwrap())
+            .collect()
     }
 
     fn c_type(&mut self) -> CType {
@@ -1228,7 +1351,9 @@ mod tests {
     use CType::{GE, GT, LT};
 
     use crate::formulas::CType::{EQ, LE};
-    use crate::formulas::{CType, EncodedFormula, FormulaFactory, FormulaType, LitType, Literal, Variable};
+    use crate::formulas::{
+        CType, EncodedFormula, FormulaFactory, FormulaType, LitType, Literal, Variable,
+    };
     use crate::operations::functions::formula_depth;
     use crate::util::formula_randomizer::{FormulaRandomizer, FormulaRandomizerConfig};
 
@@ -1239,21 +1364,64 @@ mod tests {
     #[test]
     fn test_invalid_config() {
         assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(0)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).weight_variable(-1.0)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_and(2)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_or(2)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_pbc(1)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).maximum_coefficient_pbc(0)).is_err());
-        assert!(FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_cc(1)).is_err());
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).weight_variable(-1.0)
+            )
+            .is_err()
+        );
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_and(2)
+            )
+            .is_err()
+        );
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_or(2)
+            )
+            .is_err()
+        );
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_pbc(1)
+            )
+            .is_err()
+        );
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).maximum_coefficient_pbc(0)
+            )
+            .is_err()
+        );
+        assert!(
+            FormulaRandomizer::new(
+                FormulaRandomizerConfig::default_with_num_vars(1).maximum_operands_cc(1)
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn test_determinism() {
         let f = &FormulaFactory::new();
         let expected = FormulaRandomizer::new(config()).unwrap().formula(f, 3);
-        assert_eq!(expected, FormulaRandomizer::new(config()).unwrap().formula(f, 3));
-        assert_ne!(expected, FormulaRandomizer::new(config().seed(43)).unwrap().formula(f, 3));
-        assert_ne!(expected, FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(25)).unwrap().formula(f, 3));
+        assert_eq!(
+            expected,
+            FormulaRandomizer::new(config()).unwrap().formula(f, 3)
+        );
+        assert_ne!(
+            expected,
+            FormulaRandomizer::new(config().seed(43))
+                .unwrap()
+                .formula(f, 3)
+        );
+        assert_ne!(
+            expected,
+            FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(25))
+                .unwrap()
+                .formula(f, 3)
+        );
         let expected = random_formulas(f);
         for _ in 0..10 {
             assert_eq!(expected, random_formulas(f));
@@ -1279,10 +1447,18 @@ mod tests {
     fn test_variable() {
         let f = &FormulaFactory::new();
         let vars: Vec<String> = ["A", "B", "C"].iter().map(|&s| s.into()).collect();
-        let mut random = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_variables(vars.clone())).unwrap();
+        let mut random = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_variables(
+            vars.clone(),
+        ))
+        .unwrap();
         let (mut num_a, mut num_b, mut num_c) = (0, 0, 0);
         for _ in 0..100 {
-            let var = random.variable(f).as_variable().unwrap().name(f).to_string();
+            let var = random
+                .variable(f)
+                .as_variable()
+                .unwrap()
+                .name(f)
+                .to_string();
             assert!(vars.contains(&var));
             match var.as_str() {
                 "A" => num_a += 1,
@@ -1297,7 +1473,11 @@ mod tests {
         assert!(2 < num_c && num_c < 100);
         let vars2: Vec<String> = (0..20).map(|i| format!("TEST_VAR_{i}")).collect();
         let mut random = FormulaRandomizer::new(
-            FormulaRandomizerConfig::default_with_variables(vars2.clone()).weight_pbc(1.0).weight_cc(1.0).weight_amo(1.0).weight_exo(1.0),
+            FormulaRandomizerConfig::default_with_variables(vars2.clone())
+                .weight_pbc(1.0)
+                .weight_cc(1.0)
+                .weight_amo(1.0)
+                .weight_exo(1.0),
         )
         .unwrap();
         let vars2set: BTreeSet<Variable> = vars2.iter().map(|v| f.var(v)).collect();
@@ -1309,10 +1489,16 @@ mod tests {
     #[test]
     fn test_literal() {
         let f = &FormulaFactory::new();
-        let mut random =
-            FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(25).weight_variable(40.0).weight_negative_literal(60.0))
-                .unwrap();
-        let num_pos = (0..100).map(|_| random.literal(f).as_literal().unwrap()).filter(Literal::phase).count();
+        let mut random = FormulaRandomizer::new(
+            FormulaRandomizerConfig::default_with_num_vars(25)
+                .weight_variable(40.0)
+                .weight_negative_literal(60.0),
+        )
+        .unwrap();
+        let num_pos = (0..100)
+            .map(|_| random.literal(f).as_literal().unwrap())
+            .filter(Literal::phase)
+            .count();
         assert!(30 < num_pos && num_pos < 50);
     }
 
@@ -1330,8 +1516,15 @@ mod tests {
                 .weight_exo(7.0),
         )
         .unwrap();
-        let (mut num_const, mut num_pos, mut num_neg, mut num_pbc, mut num_cc, mut num_amo, mut num_exo) =
-            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let (
+            mut num_const,
+            mut num_pos,
+            mut num_neg,
+            mut num_pbc,
+            mut num_cc,
+            mut num_amo,
+            mut num_exo,
+        ) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         for _ in 0..10000 {
             let formula = random.atom(f);
             assert!(formula.is_atomic());
@@ -1363,7 +1556,10 @@ mod tests {
         assert!(0.8 * 2.0 / 1.0 * num_const < num_pos && num_pos < 1.2 * 2.0 / 1.0 * num_const);
 
         let mut random_only_literals = FormulaRandomizer::new(
-            FormulaRandomizerConfig::default_with_num_vars(25).weight_constant(0.0).weight_variable(3.0).weight_negative_literal(6.0),
+            FormulaRandomizerConfig::default_with_num_vars(25)
+                .weight_constant(0.0)
+                .weight_variable(3.0)
+                .weight_negative_literal(6.0),
         )
         .unwrap();
         (0..100).for_each(|_| assert!(random_only_literals.atom(f).is_literal()));
@@ -1460,8 +1656,17 @@ mod tests {
                 .maximum_coefficient_pbc(10),
         )
         .unwrap();
-        let (mut pos_coeff, mut neg_coeff, mut pos_lit, mut neg_lit, mut le, mut lt, mut ge, mut gt, mut eq) =
-            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let (
+            mut pos_coeff,
+            mut neg_coeff,
+            mut pos_lit,
+            mut neg_lit,
+            mut le,
+            mut lt,
+            mut ge,
+            mut gt,
+            mut eq,
+        ) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         for _ in 0..5000 {
             let formula = random.pbc(f);
             assert!(formula.is_pbc() || formula.is_cc());
@@ -1470,7 +1675,12 @@ mod tests {
                 (pbc.coefficients, pbc.literals, pbc.rhs, pbc.comparator)
             } else {
                 let cc = formula.as_cc(f).unwrap();
-                (Box::from(vec![1; cc.variables.len()]), cc.variables.iter().map(Variable::pos_lit).collect(), cc.rhs.into(), cc.comparator)
+                (
+                    Box::from(vec![1; cc.variables.len()]),
+                    cc.variables.iter().map(Variable::pos_lit).collect(),
+                    cc.rhs.into(),
+                    cc.comparator,
+                )
             };
             let (mut pos_sum, mut neg_sum) = (0, 0);
             assert!(coeffs.len() <= 10);
@@ -1545,7 +1755,10 @@ mod tests {
     #[test]
     fn test_amo() {
         let f = &FormulaFactory::new();
-        let mut random = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(25).maximum_coefficient_pbc(10)).unwrap();
+        let mut random = FormulaRandomizer::new(
+            FormulaRandomizerConfig::default_with_num_vars(25).maximum_coefficient_pbc(10),
+        )
+        .unwrap();
         for _ in 0..1000 {
             let formula = random.amo(f);
             assert!(formula.is_cc());
@@ -1559,7 +1772,10 @@ mod tests {
     #[test]
     fn test_exo() {
         let f = &FormulaFactory::new();
-        let mut random = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(25).maximum_coefficient_pbc(10)).unwrap();
+        let mut random = FormulaRandomizer::new(
+            FormulaRandomizerConfig::default_with_num_vars(25).maximum_coefficient_pbc(10),
+        )
+        .unwrap();
         for _ in 0..1000 {
             let formula = random.exo(f);
             assert!(formula.is_cc());
@@ -1591,14 +1807,27 @@ mod tests {
             count_occurrences(&mut occurrences, formula, f);
             assert!(formula_depth(formula, f) <= 3);
         }
-        let total_occurrences = occurrences["and"] + occurrences["or"] + occurrences["impl"] + occurrences["equiv"];
+        let total_occurrences =
+            occurrences["and"] + occurrences["or"] + occurrences["impl"] + occurrences["equiv"];
         // Considering constants does not make sense (they are always removed)
         // Considering literals does not make sense (they must be at the leafs, so their effective weight will be considerably higher)
         // Not is also a special case (it will be reduced to a literal if it's operand is itself a literal)
-        assert!(4 * total_occurrences / 30 / 2 < occurrences["and"] && occurrences["and"] < 4 * total_occurrences / 30 * 2);
-        assert!(5 * total_occurrences / 30 / 2 < occurrences["or"] && occurrences["or"] < 5 * total_occurrences / 30 * 2);
-        assert!(7 * total_occurrences / 30 / 2 < occurrences["impl"] && occurrences["impl"] < 7 * total_occurrences / 30 * 2);
-        assert!(8 * total_occurrences / 30 / 2 < occurrences["equiv"] && occurrences["equiv"] < 8 * total_occurrences / 30 * 2);
+        assert!(
+            4 * total_occurrences / 30 / 2 < occurrences["and"]
+                && occurrences["and"] < 4 * total_occurrences / 30 * 2
+        );
+        assert!(
+            5 * total_occurrences / 30 / 2 < occurrences["or"]
+                && occurrences["or"] < 5 * total_occurrences / 30 * 2
+        );
+        assert!(
+            7 * total_occurrences / 30 / 2 < occurrences["impl"]
+                && occurrences["impl"] < 7 * total_occurrences / 30 * 2
+        );
+        assert!(
+            8 * total_occurrences / 30 / 2 < occurrences["equiv"]
+                && occurrences["equiv"] < 8 * total_occurrences / 30 * 2
+        );
         assert!(!occurrences.contains_key("pbc"));
         assert!(!occurrences.contains_key("cc"));
         assert!(!occurrences.contains_key("amo"));
@@ -1675,7 +1904,11 @@ mod tests {
         ]
     }
 
-    fn count_occurrences(occurrences: &mut HashMap<&str, i32>, formula: EncodedFormula, f: &FormulaFactory) {
+    fn count_occurrences(
+        occurrences: &mut HashMap<&str, i32>,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) {
         use FormulaType::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
         match formula.formula_type() {
             True | False => *occurrences.entry("constant").or_insert(0) += 1,
@@ -1698,6 +1931,9 @@ mod tests {
             }
             Pbc => *occurrences.entry("pbc").or_insert(0) += 1,
         }
-        formula.operands(f).iter().for_each(|&op| count_occurrences(occurrences, op, f));
+        formula
+            .operands(f)
+            .iter()
+            .for_each(|&op| count_occurrences(occurrences, op, f));
     }
 }

@@ -45,8 +45,10 @@ fn sat() {
 
 fn parse() {
     let f = FormulaFactory::new();
-    let paths =
-        fs::read_dir("./resources/formula_suite_1/").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec();
+    let paths = fs::read_dir("./resources/formula_suite_1/")
+        .unwrap()
+        .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+        .collect_vec();
 
     let start = std::time::Instant::now();
 
@@ -67,7 +69,10 @@ fn model_counting() {
     for formula in formulas {
         let _ = count_models(formula, ModelCountAlgorithm::Dnnf, &f);
     }
-    println!("Rust Model Counting (Dnnf): {}s", start.elapsed().as_secs_f32());
+    println!(
+        "Rust Model Counting (Dnnf): {}s",
+        start.elapsed().as_secs_f32()
+    );
 }
 
 #[cfg(feature = "sharp_sat")]
@@ -82,7 +87,10 @@ fn model_counting_sharpsat() {
     for formula in formulas {
         count_models(formula, ModelCountAlgorithm::SharpSat, &f);
     }
-    println!("Rust Model Counting (SharpSAT): {}s", start.elapsed().as_secs_f32());
+    println!(
+        "Rust Model Counting (SharpSAT): {}s",
+        start.elapsed().as_secs_f32()
+    );
 }
 
 #[cfg(feature = "open_wbo")]
@@ -99,7 +107,9 @@ fn maximize_maxsat() {
         let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
         solver.add_hard_formula(formula, &f).unwrap();
         for var in &*variables {
-            solver.add_soft_formula(1, var.pos_lit().into(), &f).unwrap();
+            solver
+                .add_soft_formula(1, var.pos_lit().into(), &f)
+                .unwrap();
         }
         let _res = solver.solve().unwrap();
     }

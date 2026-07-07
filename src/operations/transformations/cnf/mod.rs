@@ -40,9 +40,17 @@ pub enum CnfAlgorithm {
 
 impl CnfAlgorithm {
     /// Transform the given formula into a _CNF_ formula.
-    fn transform(&self, formula: EncodedFormula, f: &FormulaFactory, state: &mut CnfEncoder) -> LngResult<EncodedFormula> {
+    fn transform(
+        &self,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+        state: &mut CnfEncoder,
+    ) -> LngResult<EncodedFormula> {
         self.transform_with_handler(formula, f, state, &mut NopHandler::new())
-            .map(|r| r.result().expect("without handler a result is always present"))
+            .map(|r| {
+                r.result()
+                    .expect("without handler a result is always present")
+            })
     }
 
     fn transform_with_handler(
@@ -61,22 +69,39 @@ impl CnfAlgorithm {
                 formula,
                 f,
                 DEFAULT_BOUNDARY_FOR_FACTORIZATION,
-                state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()),
+                state
+                    .tseitin_state
+                    .as_mut()
+                    .unwrap_or(&mut TseitinState::default()),
             )
             .map(|r| CancelableResult::Ok(r)),
-            Self::TseitinWithBoundary(boundary) => {
-                tseitin_cnf_with_boundary(formula, f, *boundary, state.tseitin_state.as_mut().unwrap_or(&mut TseitinState::default()))
-                    .map(|r| CancelableResult::Ok(r))
+            Self::TseitinWithBoundary(boundary) => tseitin_cnf_with_boundary(
+                formula,
+                f,
+                *boundary,
+                state
+                    .tseitin_state
+                    .as_mut()
+                    .unwrap_or(&mut TseitinState::default()),
+            )
+            .map(|r| CancelableResult::Ok(r)),
+            Self::PlaistedGreenbaum => pg_on_formula(
+                formula,
+                f,
+                DEFAULT_BOUNDARY_FOR_FACTORIZATION,
+                state.pg_state.as_mut().unwrap_or(&mut PGState::default()),
+            )
+            .map(|r| CancelableResult::Ok(r)),
+            Self::PlaistedGreenbaumWithBoundary(boundary) => pg_on_formula(
+                formula,
+                f,
+                *boundary,
+                state.pg_state.as_mut().unwrap_or(&mut PGState::default()),
+            )
+            .map(|r| CancelableResult::Ok(r)),
+            Self::Advanced(config) => {
+                advanced_cnf_encoding(formula, f, config, state).map(|r| CancelableResult::Ok(r))
             }
-            Self::PlaistedGreenbaum => {
-                pg_on_formula(formula, f, DEFAULT_BOUNDARY_FOR_FACTORIZATION, state.pg_state.as_mut().unwrap_or(&mut PGState::default()))
-                    .map(|r| CancelableResult::Ok(r))
-            }
-            Self::PlaistedGreenbaumWithBoundary(boundary) => {
-                pg_on_formula(formula, f, *boundary, state.pg_state.as_mut().unwrap_or(&mut PGState::default()))
-                    .map(|r| CancelableResult::Ok(r))
-            }
-            Self::Advanced(config) => advanced_cnf_encoding(formula, f, config, state).map(|r| CancelableResult::Ok(r)),
             Self::Bdd => bdd_cnf_with_handler(formula, f, handler),
         }
     }
@@ -102,7 +127,11 @@ impl CnfEncoder {
     /// [`transform`](`Self::transform`) calls. If this behavior is unwanted, you should use
     /// [`CnfEncoder::stateless`], which will not keep this kind of state.
     pub fn new(algorithm: CnfAlgorithm) -> Self {
-        Self { algorithm, tseitin_state: Some(TseitinState::default()), pg_state: Some(PGState::default()) }
+        Self {
+            algorithm,
+            tseitin_state: Some(TseitinState::default()),
+            pg_state: Some(PGState::default()),
+        }
     }
 
     /// Returns a new stateless encoder.
@@ -111,7 +140,11 @@ impl CnfEncoder {
     /// multiple calculations. This might be handy, if you want to encode a
     /// couple of independent formulas, which should not influence each other.
     pub const fn stateless(algorithm: CnfAlgorithm) -> Self {
-        Self { algorithm, tseitin_state: None, pg_state: None }
+        Self {
+            algorithm,
+            tseitin_state: None,
+            pg_state: None,
+        }
     }
 
     /// Transform a formula with the algorithm of this encoder.
@@ -121,7 +154,11 @@ impl CnfEncoder {
     /// Returns an error if the selected CNF algorithm cannot encode the
     /// formula or if the advanced encoder is configured with factorization as
     /// its fallback algorithm.
-    pub fn transform(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+    pub fn transform(
+        &mut self,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> LngResult<EncodedFormula> {
         self.algorithm.clone().transform(formula, f, self)
     }
 
@@ -140,7 +177,9 @@ impl CnfEncoder {
         f: &FormulaFactory,
         handler: &mut dyn ComputationHandler,
     ) -> LngResult<CancelableResult<EncodedFormula>> {
-        self.algorithm.clone().transform_with_handler(formula, f, self, handler)
+        self.algorithm
+            .clone()
+            .transform_with_handler(formula, f, self, handler)
     }
 }
 
@@ -169,7 +208,9 @@ mod tests {
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
     use crate::operations::transformations::cnf::advanced::AdvancedFactorizationConfig;
     use crate::operations::transformations::{AdvancedFactorizationHandler, CnfEncoder};
-    use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
+    use crate::solver::functions::{
+        ModelEnumerationConfig, enumerate_models_for_formula_with_config,
+    };
 
     const P1: &str = "(x1 | x2) & x3 & x4 & ((x1 & x5 & ~(x6 | x7) | x8) | x9)";
     const P2: &str = "(y1 | y2) & y3 & y4 & ((y1 & y5 & ~(y6 | y7) | y8) | y9)";
@@ -249,7 +290,10 @@ mod tests {
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = Advanced(
-            AdvancedFactorizationConfig::default().created_clause_boundary(5).atom_boundary(3).fallback_algorithm(TseitinWithBoundary(3)),
+            AdvancedFactorizationConfig::default()
+                .created_clause_boundary(5)
+                .atom_boundary(3)
+                .fallback_algorithm(TseitinWithBoundary(3)),
         );
         let formula = f.cnf_of(phi2).unwrap();
         assert_eq!(formula, "(y1 | y2) & y3 & y4 & (~@RESERVED_FF42_CNF_0 | y1) & (~@RESERVED_FF42_CNF_0 | y5) & (~@RESERVED_FF42_CNF_0 | ~y6) & (~@RESERVED_FF42_CNF_0 | ~y7) & (@RESERVED_FF42_CNF_0 | ~y1 | ~y5 | y6 | y7) & (@RESERVED_FF42_CNF_0 | y8 | y9)".to_formula(f));
@@ -274,7 +318,10 @@ mod tests {
             "(x1 | x2) & x3 & x4 & (x1 | x8 | x9) & (x5 | x8 | x9) & (~x6 | x8 | x9) & (~x7 | x8 | x9)".to_formula(f)
         );
         f.config.cnf_config = Advanced(
-            AdvancedFactorizationConfig::default().created_clause_boundary(5).atom_boundary(3).fallback_algorithm(TseitinWithBoundary(3)),
+            AdvancedFactorizationConfig::default()
+                .created_clause_boundary(5)
+                .atom_boundary(3)
+                .fallback_algorithm(TseitinWithBoundary(3)),
         );
         let formula = f.cnf_of(phi2).unwrap();
         assert_eq!(formula, "(y1 | y2) & y3 & y4 & (~@RESERVED_FF42_CNF_0 | y1) & (~@RESERVED_FF42_CNF_0 | y5) & (~@RESERVED_FF42_CNF_0 | ~y6) & (~@RESERVED_FF42_CNF_0 | ~y7) & (@RESERVED_FF42_CNF_0 | ~y1 | ~y5 | y6 | y7) & (@RESERVED_FF42_CNF_0 | y8 | y9)".to_formula(f));
@@ -298,9 +345,24 @@ mod tests {
         let phi2_vars = phi2.variables(f).iter().copied().collect();
         let phi3_vars = phi3.variables(f).iter().copied().collect();
         f.config.cnf_config = Bdd;
-        assert!(equivalent_models(phi1, f.cnf_of(phi1).unwrap(), phi1_vars, f));
-        assert!(equivalent_models(phi2, f.cnf_of(phi2).unwrap(), phi2_vars, f));
-        assert!(equivalent_models(phi3, f.cnf_of(phi3).unwrap(), phi3_vars, f));
+        assert!(equivalent_models(
+            phi1,
+            f.cnf_of(phi1).unwrap(),
+            phi1_vars,
+            f
+        ));
+        assert!(equivalent_models(
+            phi2,
+            f.cnf_of(phi2).unwrap(),
+            phi2_vars,
+            f
+        ));
+        assert!(equivalent_models(
+            phi3,
+            f.cnf_of(phi3).unwrap(),
+            phi3_vars,
+            f
+        ));
     }
 
     #[test]
@@ -308,30 +370,66 @@ mod tests {
         let f = &FormulaFactory::with_id("FF42");
         let phi1 = P1.to_formula(f);
         let cnf1 = CnfEncoder::new(Factorization)
-            .transform_with_handler(phi1, f, &mut AdvancedFactorizationHandler::new(Some(5), Some(10000)))
+            .transform_with_handler(
+                phi1,
+                f,
+                &mut AdvancedFactorizationHandler::new(Some(5), Some(10000)),
+            )
             .unwrap();
         let cnf2 = CnfEncoder::new(Factorization)
-            .transform_with_handler(phi1, f, &mut AdvancedFactorizationHandler::new(Some(10000), Some(5)))
+            .transform_with_handler(
+                phi1,
+                f,
+                &mut AdvancedFactorizationHandler::new(Some(10000), Some(5)),
+            )
             .unwrap();
         let cnf3 = CnfEncoder::new(Factorization)
-            .transform_with_handler(phi1, f, &mut AdvancedFactorizationHandler::new(Some(10000), Some(10000)))
+            .transform_with_handler(
+                phi1,
+                f,
+                &mut AdvancedFactorizationHandler::new(Some(10000), Some(10000)),
+            )
             .unwrap();
-        assert!(matches!(cnf1, CancelableResult::Canceled(LngEvent::DistributionPerformed)));
-        assert!(matches!(cnf2, CancelableResult::Canceled(LngEvent::FactorizationCreatedClause(_))));
+        assert!(matches!(
+            cnf1,
+            CancelableResult::Canceled(LngEvent::DistributionPerformed)
+        ));
+        assert!(matches!(
+            cnf2,
+            CancelableResult::Canceled(LngEvent::FactorizationCreatedClause(_))
+        ));
         assert!(cnf3.is_success());
 
-        let cnf1 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(10)).unwrap();
-        let cnf2 = CnfEncoder::new(Bdd).transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(1000)).unwrap();
-        assert!(matches!(cnf1, CancelableResult::Canceled(LngEvent::BddNewRefAdded)));
+        let cnf1 = CnfEncoder::new(Bdd)
+            .transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(10))
+            .unwrap();
+        let cnf2 = CnfEncoder::new(Bdd)
+            .transform_with_handler(phi1, f, &mut NumberOfNodesBddHandler::new(1000))
+            .unwrap();
+        assert!(matches!(
+            cnf1,
+            CancelableResult::Canceled(LngEvent::BddNewRefAdded)
+        ));
         assert!(cnf2.is_success());
     }
 
-    fn equivalent_models(f1: EncodedFormula, f2: EncodedFormula, vars: Box<[Variable]>, f: &FormulaFactory) -> bool {
+    fn equivalent_models(
+        f1: EncodedFormula,
+        f2: EncodedFormula,
+        vars: Box<[Variable]>,
+        f: &FormulaFactory,
+    ) -> bool {
         let config = ModelEnumerationConfig::default().variables(vars);
-        let models1: HashSet<Assignment> =
-            enumerate_models_for_formula_with_config(f1, f, &config).unwrap().iter().map(Assignment::from).collect();
-        let models2: HashSet<Assignment> =
-            enumerate_models_for_formula_with_config(f2, f, &config).unwrap().iter().map(Assignment::from).collect();
+        let models1: HashSet<Assignment> = enumerate_models_for_formula_with_config(f1, f, &config)
+            .unwrap()
+            .iter()
+            .map(Assignment::from)
+            .collect();
+        let models2: HashSet<Assignment> = enumerate_models_for_formula_with_config(f2, f, &config)
+            .unwrap()
+            .iter()
+            .map(Assignment::from)
+            .collect();
         models1 == models2
     }
 }

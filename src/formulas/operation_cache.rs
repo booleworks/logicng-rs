@@ -12,7 +12,9 @@ pub struct OperationCache<V> {
 
 impl<V> OperationCache<V> {
     pub fn new() -> Self {
-        Self { cache: DashMap::new() }
+        Self {
+            cache: DashMap::new(),
+        }
     }
 
     pub fn insert(&self, formula: EncodedFormula, value: V) {
@@ -31,7 +33,14 @@ impl<V: Clone> OperationCache<V> {
     }
 
     #[allow(dead_code)]
-    pub fn get_or_insert<F: FnOnce() -> V>(&mut self, formula: EncodedFormula, computation: F) -> V {
-        self.cache.entry(formula.encoding).or_insert_with(computation).clone()
+    pub fn get_or_insert<F: FnOnce() -> V>(
+        &mut self,
+        formula: EncodedFormula,
+        computation: F,
+    ) -> V {
+        self.cache
+            .entry(formula.encoding)
+            .or_insert_with(computation)
+            .clone()
     }
 }

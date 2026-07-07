@@ -21,8 +21,11 @@ pub fn advanced_cnf_encoding(
     state: &mut CnfEncoder,
 ) -> LngResult<EncodedFormula> {
     if formula.is_and() {
-        let new_ops =
-            formula.operands(f).into_iter().map(|op| single_advanced_encoding(op, f, config, state)).collect::<Result<Vec<_>, _>>()?;
+        let new_ops = formula
+            .operands(f)
+            .into_iter()
+            .map(|op| single_advanced_encoding(op, f, config, state))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(f.and(new_ops))
     } else {
         single_advanced_encoding(formula, f, config, state)
@@ -35,7 +38,12 @@ fn single_advanced_encoding(
     config: &AdvancedFactorizationConfig,
     state: &mut CnfEncoder,
 ) -> LngResult<EncodedFormula> {
-    let fac = CnfAlgorithm::Factorization.transform_with_handler(formula, f, state, &mut config.handler())?;
+    let fac = CnfAlgorithm::Factorization.transform_with_handler(
+        formula,
+        f,
+        state,
+        &mut config.handler(),
+    )?;
     match fac {
         CancelableResult::Ok(res) => Ok(res),
         CancelableResult::Canceled(_) | CancelableResult::Partial(_, _) => {
@@ -58,7 +66,12 @@ pub struct AdvancedFactorizationConfig {
 
 impl Default for AdvancedFactorizationConfig {
     fn default() -> Self {
-        Self { distribution_boundary: u64::MAX, created_clause_boundary: 1000, atom_boundary: 12, fallback_algorithm: Box::new(Tseitin) }
+        Self {
+            distribution_boundary: u64::MAX,
+            created_clause_boundary: 1000,
+            atom_boundary: 12,
+            fallback_algorithm: Box::new(Tseitin),
+        }
     }
 }
 
@@ -102,7 +115,10 @@ impl AdvancedFactorizationConfig {
 
     /// Creates an new handler based on this configuration.
     pub fn handler(&self) -> AdvancedFactorizationHandler {
-        AdvancedFactorizationHandler::new(Some(self.distribution_boundary), Some(self.created_clause_boundary))
+        AdvancedFactorizationHandler::new(
+            Some(self.distribution_boundary),
+            Some(self.created_clause_boundary),
+        )
     }
 }
 
@@ -134,7 +150,13 @@ impl AdvancedFactorizationHandler {
     /// If a boundary is `None`, the corresponding event count is unbounded. If
     /// it is `Some(bound)`, the handler cancels after more than `bound` events.
     pub fn new(distribution_boundary: Option<u64>, created_clause_boundary: Option<u64>) -> Self {
-        Self { distribution_boundary, created_clause_boundary, canceled: false, current_distribution: 0, current_clause: 0 }
+        Self {
+            distribution_boundary,
+            created_clause_boundary,
+            canceled: false,
+            current_distribution: 0,
+            current_clause: 0,
+        }
     }
 
     #[cfg(test)]
@@ -166,11 +188,15 @@ impl ComputationHandler for AdvancedFactorizationHandler {
             }
             LngEvent::DistributionPerformed => {
                 self.current_distribution += 1;
-                self.canceled = self.distribution_boundary.is_some_and(|bound| self.current_distribution > bound as usize);
+                self.canceled = self
+                    .distribution_boundary
+                    .is_some_and(|bound| self.current_distribution > bound as usize);
             }
             LngEvent::FactorizationCreatedClause(_) => {
                 self.current_clause += 1;
-                self.canceled = self.created_clause_boundary.is_some_and(|bound| self.current_clause > bound as usize);
+                self.canceled = self
+                    .created_clause_boundary
+                    .is_some_and(|bound| self.current_clause > bound as usize);
             }
             _ => {}
         }

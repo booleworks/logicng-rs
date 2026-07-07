@@ -1,4 +1,8 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
 
 use std::collections::HashSet;
 use std::iter::repeat_n;
@@ -14,7 +18,9 @@ use crate::formulas::{Literal, Variable};
 use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf, Node};
-use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{DTree, DTreeEncoding, DTreeIndex};
+use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{
+    DTree, DTreeEncoding, DTreeIndex,
+};
 use crate::solver::minisat::sat::Tristate::{True, Undef};
 use crate::solver::minisat::sat::{MsLit, mk_lit, var};
 
@@ -62,7 +68,12 @@ impl DTreeFactory {
         if self.finished {
             return Err(DnnfError::DTreeFinished.into());
         }
-        self.leafs_static_variable_set.push(literals.iter().map(Literal::variable).collect::<HashSet<_>>());
+        self.leafs_static_variable_set.push(
+            literals
+                .iter()
+                .map(Literal::variable)
+                .collect::<HashSet<_>>(),
+        );
         self.leafs.push(literals);
         Ok(Leaf(self.leafs.len() as DTreeIndex - 1))
     }
@@ -73,7 +84,8 @@ impl DTreeFactory {
         }
         let left_encoding = Self::encode(left);
         let right_encoding = Self::encode(right);
-        let mut var_set: HashSet<Variable> = left.static_variable_set(self).iter().copied().collect();
+        let mut var_set: HashSet<Variable> =
+            left.static_variable_set(self).iter().copied().collect();
         var_set.extend(right.static_variable_set(self));
         self.nodes_static_variable_set.push(var_set);
         self.nodes.push((left_encoding, right_encoding));
@@ -94,7 +106,12 @@ impl DTreeFactory {
 
     pub(crate) fn finish(&mut self, root: DTree, solver: &DnnfSatSolver) -> LngResult<()> {
         self.leaf_literals = self.generate_leaf_literals(solver);
-        self.max_var = *self.leaf_literals.iter().filter_map(|leaf| leaf.iter().max()).max().ok_or(DnnfError::EmptyDTreeLeaf)?;
+        self.max_var = *self
+            .leaf_literals
+            .iter()
+            .filter_map(|leaf| leaf.iter().max())
+            .max()
+            .ok_or(DnnfError::EmptyDTreeLeaf)?;
         let (clause_contents, clause_content_ranges) = self.generate_clause_contents(root);
         self.clause_contents = clause_contents;
         self.clause_content_ranges = clause_content_ranges;
@@ -123,7 +140,13 @@ impl DTreeFactory {
         self.static_var_sets[Self::encode(tree) as usize].clone()
     }
 
-    pub(crate) fn cache_key(&self, tree: DTree, solver: &DnnfSatSolver, key: &mut BitVec, number_of_variables: usize) {
+    pub(crate) fn cache_key(
+        &self,
+        tree: DTree,
+        solver: &DnnfSatSolver,
+        key: &mut BitVec,
+        number_of_variables: usize,
+    ) {
         let (from, to) = self.clause_content_ranges[Self::encode(tree) as usize];
         let mut i = from;
         while i < to {
@@ -148,7 +171,12 @@ impl DTreeFactory {
         }
     }
 
-    pub(crate) fn count_unsubsumed_occurrences(&self, node: DTree, occurrences: &mut [isize], solver: &DnnfSatSolver) {
+    pub(crate) fn count_unsubsumed_occurrences(
+        &self,
+        node: DTree,
+        occurrences: &mut [isize],
+        solver: &DnnfSatSolver,
+    ) {
         for leaf_index in node.leaf_indices(self) {
             let literals = &self.leaf_literals[leaf_index as usize];
             let is_subsumed = literals.iter().any(|lit| solver.value_of(*lit) == True);
@@ -165,7 +193,14 @@ impl DTreeFactory {
     }
 
     fn generate_leaf_literals(&self, solver: &DnnfSatSolver) -> Vec<Vec<MsLit>> {
-        self.leafs.iter().map(|leaf| leaf.iter().map(|&lit| mk_lit(solver.variable_index(lit), !lit.phase())).collect()).collect()
+        self.leafs
+            .iter()
+            .map(|leaf| {
+                leaf.iter()
+                    .map(|&lit| mk_lit(solver.variable_index(lit), !lit.phase()))
+                    .collect()
+            })
+            .collect()
     }
 
     fn generate_clause_contents(&mut self, root: DTree) -> (Vec<isize>, Vec<(usize, usize)>) {
@@ -175,11 +210,17 @@ impl DTreeFactory {
         (clause_contents, clause_content_ranges)
     }
 
-    fn generate_clause_contents_rec(&self, tree: DTree, clause_contents: &mut Vec<isize>, clause_content_ranges: &mut Vec<(usize, usize)>) {
+    fn generate_clause_contents_rec(
+        &self,
+        tree: DTree,
+        clause_contents: &mut Vec<isize>,
+        clause_content_ranges: &mut Vec<(usize, usize)>,
+    ) {
         let range_start = clause_contents.len();
         match tree {
             Leaf(n) => {
-                clause_contents.extend(self.leaf_literals[n as usize].iter().map(|&i| i.0 as isize));
+                clause_contents
+                    .extend(self.leaf_literals[n as usize].iter().map(|&i| i.0 as isize));
                 clause_contents.push(-(n as isize) - 1);
             }
             Node(n) => {
@@ -195,7 +236,9 @@ impl DTreeFactory {
         let var_set = match tree {
             Leaf(n) => {
                 let mut bit_vec = bitvec![0; self.max_var.0];
-                self.leaf_literals[n as usize].iter().for_each(|n| bit_vec.set(var(*n).0, true));
+                self.leaf_literals[n as usize]
+                    .iter()
+                    .for_each(|n| bit_vec.set(var(*n).0, true));
                 bit_vec
             }
             Node(n) => {
@@ -204,13 +247,22 @@ impl DTreeFactory {
                 self.compute_static_var_sets(right);
                 let left_var_set = &self.static_var_sets[Self::encode(left) as usize];
                 let right_var_set = &self.static_var_sets[Self::encode(right) as usize];
-                (left_var_set.as_ref().clone().bitor(right_var_set.as_ref().clone())).to_bitvec()
+                (left_var_set
+                    .as_ref()
+                    .clone()
+                    .bitor(right_var_set.as_ref().clone()))
+                .to_bitvec()
             }
         };
         self.static_var_sets[Self::encode(tree) as usize] = Arc::new(var_set);
     }
 
-    fn var_set(&mut self, encoding: DTreeIndex, solver: &DnnfSatSolver, local_var_set: &mut BitVec) {
+    fn var_set(
+        &mut self,
+        encoding: DTreeIndex,
+        solver: &DnnfSatSolver,
+        local_var_set: &mut BitVec,
+    ) {
         let (from, to) = self.clause_content_ranges[encoding as usize];
         let mut i = from;
         while i < to {
@@ -242,7 +294,11 @@ impl DTreeFactory {
     }
 
     const fn decode(encoded: u32) -> DTree {
-        if encoded & 1 > 0 { Leaf((encoded - 1) >> 1) } else { Node(encoded >> 1) }
+        if encoded & 1 > 0 {
+            Leaf((encoded - 1) >> 1)
+        } else {
+            Node(encoded >> 1)
+        }
     }
 }
 

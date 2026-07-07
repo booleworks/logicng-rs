@@ -9,8 +9,12 @@ use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::{EncodingResultSatSolver, Model};
 use crate::errors::LngResult;
 use crate::explanations::UnsatCore;
-use crate::formulas::{CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable};
-use crate::operations::transformations::{CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver};
+use crate::formulas::{
+    CardinalityConstraint, EncodedFormula, Formula, FormulaFactory, FormulaType, Literal, Variable,
+};
+use crate::operations::transformations::{
+    CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver,
+};
 use crate::propositions::Proposition;
 use crate::solver::SolverError;
 use crate::solver::functions::compute_unsat_core;
@@ -106,7 +110,8 @@ impl<B: Clone> MiniSat<B> {
         self.result = Undef;
         if formula.formula_type() == FormulaType::Cc {
             let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
-            CcEncoder::new(f.config.cc_config.clone()).encode_on(&mut encoding_result, &formula.as_cc(f).unwrap())?;
+            CcEncoder::new(f.config.cc_config.clone())
+                .encode_on(&mut encoding_result, &formula.as_cc(f).unwrap())?;
         } else {
             match self.config.cnf_method {
                 SolverCnfMethod::FactoryCnf => {
@@ -120,7 +125,9 @@ impl<B: Clone> MiniSat<B> {
                         None,
                         f,
                         &mut self.pg_variable_cache,
-                        PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
+                        PgOnSolverConfig::default()
+                            .perform_nnf(true)
+                            .initial_phase(self.config.initial_phase),
                     )?;
                 }
                 SolverCnfMethod::FullPgOnSolver => {
@@ -130,7 +137,9 @@ impl<B: Clone> MiniSat<B> {
                         None,
                         f,
                         &mut self.full_pg_variable_cache,
-                        PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
+                        PgOnSolverConfig::default()
+                            .perform_nnf(false)
+                            .initial_phase(self.config.initial_phase),
                     )?;
                 }
             }
@@ -150,7 +159,9 @@ impl<B: Clone> MiniSat<B> {
         propositions: Props,
         f: &FormulaFactory,
     ) -> LngResult<()> {
-        propositions.into_iter().try_for_each(|proposition| self.add_proposition(proposition, f))?;
+        propositions
+            .into_iter()
+            .try_for_each(|proposition| self.add_proposition(proposition, f))?;
         Ok(())
     }
 
@@ -160,11 +171,16 @@ impl<B: Clone> MiniSat<B> {
     ///
     /// Returns an error if the proposition formula cannot be encoded or added
     /// to the solver.
-    pub fn add_proposition(&mut self, proposition: Proposition<B>, f: &FormulaFactory) -> LngResult<()> {
+    pub fn add_proposition(
+        &mut self,
+        proposition: Proposition<B>,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
         self.result = Undef;
         match self.config.cnf_method {
             SolverCnfMethod::FactoryCnf => {
-                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(proposition.formula, f)?;
+                let cnf = CnfEncoder::new(CnfAlgorithm::Factorization)
+                    .transform(proposition.formula, f)?;
                 self.add_clause_set(cnf, Some(proposition), f)?;
             }
             SolverCnfMethod::PgOnSolver => {
@@ -174,7 +190,9 @@ impl<B: Clone> MiniSat<B> {
                     Some(proposition),
                     f,
                     &mut self.pg_variable_cache,
-                    PgOnSolverConfig::default().perform_nnf(true).initial_phase(self.config.initial_phase),
+                    PgOnSolverConfig::default()
+                        .perform_nnf(true)
+                        .initial_phase(self.config.initial_phase),
                 )?;
             }
             SolverCnfMethod::FullPgOnSolver => {
@@ -184,7 +202,9 @@ impl<B: Clone> MiniSat<B> {
                     Some(proposition),
                     f,
                     &mut self.full_pg_variable_cache,
-                    PgOnSolverConfig::default().perform_nnf(false).initial_phase(self.config.initial_phase),
+                    PgOnSolverConfig::default()
+                        .perform_nnf(false)
+                        .initial_phase(self.config.initial_phase),
                 )?;
             }
         }
@@ -204,7 +224,9 @@ impl<B: Clone> MiniSat<B> {
         if let Some(selection_order) = sat_builder.selection_order {
             self.underlying_solver.set_selection_order(selection_order);
         }
-        let assumptions: Option<Vec<MsLit>> = sat_builder.assumptions.map(|ass| self.generate_clause_vec(ass));
+        let assumptions: Option<Vec<MsLit>> = sat_builder
+            .assumptions
+            .map(|ass| self.generate_clause_vec(ass));
         self.result = if let Some(assumptions) = assumptions {
             let result = self.underlying_solver.solve_with_assumptions(assumptions);
             self.last_computation_with_assumptions = true;
@@ -251,7 +273,10 @@ impl<B: Clone> MiniSat<B> {
                     }
                     result
                 });
-                Ok(Some(self.create_assignment(&self.underlying_solver.model, &relevant_indices)))
+                Ok(Some(self.create_assignment(
+                    &self.underlying_solver.model,
+                    &relevant_indices,
+                )))
             }
         }
     }
@@ -281,7 +306,12 @@ impl<B: Clone> MiniSat<B> {
         if !self.config.incremental {
             return Err(SolverError::StateRequiresIncrementalMode.into());
         }
-        let found = self.valid_states.iter().enumerate().rev().find(|(_index, id)| **id == state.id);
+        let found = self
+            .valid_states
+            .iter()
+            .enumerate()
+            .rev()
+            .find(|(_index, id)| **id == state.id);
         let index = match found {
             Some(i) => i.0,
             None => return Err(SolverError::InvalidSolverState.into()),
@@ -297,7 +327,12 @@ impl<B: Clone> MiniSat<B> {
     /// Returns all known variables on the solver.
     pub fn known_variables(&self) -> Vec<Variable> {
         let n_vars = self.underlying_solver.vars.len();
-        self.underlying_solver.name2idx.iter().filter(|&(_, &idx)| idx.0 < n_vars).map(|(&var, _)| var).collect()
+        self.underlying_solver
+            .name2idx
+            .iter()
+            .filter(|&(_, &idx)| idx.0 < n_vars)
+            .map(|(&var, _)| var)
+            .collect()
     }
 
     /// Adds a cardinality constraint and returns its incremental data in order
@@ -319,7 +354,11 @@ impl<B: Clone> MiniSat<B> {
     ///
     /// Returns an error if the cardinality constraint cannot be encoded
     /// incrementally for the current encoder configuration.
-    pub fn add_incremental_cc(&mut self, cc: &CardinalityConstraint, f: &FormulaFactory) -> LngResult<Option<CcIncrementalData>> {
+    pub fn add_incremental_cc(
+        &mut self,
+        cc: &CardinalityConstraint,
+        f: &FormulaFactory,
+    ) -> LngResult<Option<CcIncrementalData>> {
         let mut encoding_result = EncodingResultSatSolver::new(self, None, f);
         CcEncoder::new(f.config.cc_config.clone()).encode_incremental_on(&mut encoding_result, cc)
     }
@@ -339,7 +378,12 @@ impl<B: Clone> MiniSat<B> {
                 self.underlying_solver
                     .up_zero_literals()
                     .iter()
-                    .map(|&lit| Literal::new(*self.underlying_solver.idx2name.get(&var(lit)).unwrap(), !sign(lit)))
+                    .map(|&lit| {
+                        Literal::new(
+                            *self.underlying_solver.idx2name.get(&var(lit)).unwrap(),
+                            !sign(lit),
+                        )
+                    })
                     .collect(),
             )),
         }
@@ -354,7 +398,11 @@ impl<B: Clone> MiniSat<B> {
     /// Returns an error if optimization constraints cannot be encoded or added,
     /// if an incremental solver state cannot be saved/restored, or if an
     /// optimization bound cannot be represented.
-    pub fn optimize(&mut self, f: &FormulaFactory, optimization_function: &OptimizationFunction) -> LngResult<Option<Model>> {
+    pub fn optimize(
+        &mut self,
+        f: &FormulaFactory,
+        optimization_function: &OptimizationFunction,
+    ) -> LngResult<Option<Model>> {
         optimization_function.optimize(self, f)
     }
 
@@ -374,7 +422,12 @@ impl<B: Clone> MiniSat<B> {
                 .deref()
                 .data
                 .iter()
-                .map(|&lit| Literal::new(self.underlying_solver.variable_for_idx(var(lit)).unwrap(), !sign(lit)))
+                .map(|&lit| {
+                    Literal::new(
+                        self.underlying_solver.variable_for_idx(var(lit)).unwrap(),
+                        !sign(lit),
+                    )
+                })
                 .collect();
             formulas.push(f.clause(&lits));
         }
@@ -383,7 +436,12 @@ impl<B: Clone> MiniSat<B> {
             .iter()
             .enumerate()
             .filter(|(_, var)| var.level == Some(0))
-            .map(|(i, var)| Literal::new(self.underlying_solver.variable_for_idx(MsVar(i)).unwrap(), var.assignment == True))
+            .map(|(i, var)| {
+                Literal::new(
+                    self.underlying_solver.variable_for_idx(MsVar(i)).unwrap(),
+                    var.assignment == True,
+                )
+            })
             .for_each(|lit| formulas.push(lit.into()));
         if !self.underlying_solver.ok {
             formulas.push(f.falsum());
@@ -397,11 +455,20 @@ impl<B: Clone> MiniSat<B> {
         });
     }
 
-    fn add_clause_set(&mut self, cnf: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) -> LngResult<()> {
+    fn add_clause_set(
+        &mut self,
+        cnf: EncodedFormula,
+        proposition: Option<Proposition<B>>,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
         match cnf.unpack(f) {
             Formula::True => {}
-            Formula::False | Formula::Or(_) | Formula::Lit(_) => self.add_clause(cnf, proposition, f)?,
-            Formula::And(mut ops) => ops.try_for_each(|op| self.add_clause(op, proposition.clone(), f))?,
+            Formula::False | Formula::Or(_) | Formula::Lit(_) => {
+                self.add_clause(cnf, proposition, f)?
+            }
+            Formula::And(mut ops) => {
+                ops.try_for_each(|op| self.add_clause(op, proposition.clone(), f))?
+            }
             _ => {
                 return Err(SolverError::NotInCnf { formula: cnf }.into());
             }
@@ -409,7 +476,12 @@ impl<B: Clone> MiniSat<B> {
         Ok(())
     }
 
-    fn add_clause(&mut self, clause: EncodedFormula, proposition: Option<Proposition<B>>, f: &FormulaFactory) -> LngResult<()> {
+    fn add_clause(
+        &mut self,
+        clause: EncodedFormula,
+        proposition: Option<Proposition<B>>,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
         self.result = Undef;
         let clause_vec = self.generate_clause_vec(&clause.literals_for_clause_or_term(f)?);
         self.underlying_solver.add_clause(clause_vec, proposition);
@@ -417,21 +489,33 @@ impl<B: Clone> MiniSat<B> {
     }
 
     fn generate_clause_vec(&mut self, literals: &[Literal]) -> Vec<MsLit> {
-        literals.iter().map(|lit| self.generate_literal(*lit)).collect()
+        literals
+            .iter()
+            .map(|lit| self.generate_literal(*lit))
+            .collect()
     }
 
     fn generate_literal(&mut self, literal: Literal) -> MsLit {
         let variable = literal.variable();
-        let index = self.underlying_solver.idx_for_variable(variable).unwrap_or_else(|| {
-            let new_index = self.underlying_solver.new_var(!self.config.initial_phase, true);
-            self.underlying_solver.add_variable(variable, new_index);
-            new_index
-        });
+        let index = self
+            .underlying_solver
+            .idx_for_variable(variable)
+            .unwrap_or_else(|| {
+                let new_index = self
+                    .underlying_solver
+                    .new_var(!self.config.initial_phase, true);
+                self.underlying_solver.add_variable(variable, new_index);
+                new_index
+            });
         mk_lit(index, !literal.phase())
     }
 
     #[allow(clippy::ref_option)]
-    pub(crate) fn create_assignment(&self, model: &[bool], relevant_indices: &Option<Vec<MsVar>>) -> Model {
+    pub(crate) fn create_assignment(
+        &self,
+        model: &[bool],
+        relevant_indices: &Option<Vec<MsVar>>,
+    ) -> Model {
         let capacity = relevant_indices.as_ref().map_or(model.len(), Vec::len);
         let mut pos = Vec::with_capacity(capacity);
         let mut neg = Vec::with_capacity(capacity);
@@ -472,11 +556,17 @@ impl<B: Clone> MiniSat<B> {
     }
 
     pub(crate) fn add_literal(&mut self, lit: &Literal) -> MsLit {
-        let index = self.underlying_solver.idx_for_variable(lit.variable()).unwrap_or_else(|| {
-            let new_index = self.underlying_solver.new_var(!self.config.initial_phase, true);
-            self.underlying_solver.add_variable(lit.variable(), new_index);
-            new_index
-        });
+        let index = self
+            .underlying_solver
+            .idx_for_variable(lit.variable())
+            .unwrap_or_else(|| {
+                let new_index = self
+                    .underlying_solver
+                    .new_var(!self.config.initial_phase, true);
+                self.underlying_solver
+                    .add_variable(lit.variable(), new_index);
+                new_index
+            });
         mk_lit(index, !lit.phase())
     }
 }
@@ -505,7 +595,10 @@ pub struct SatBuilder<'a, 'o> {
 impl<'a, 'o> SatBuilder<'a, 'o> {
     /// Creates an empty instance.
     pub const fn new() -> Self {
-        Self { assumptions: None, selection_order: None }
+        Self {
+            assumptions: None,
+            selection_order: None,
+        }
     }
 
     /// Stores a list of assumptions.

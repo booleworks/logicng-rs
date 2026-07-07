@@ -48,7 +48,9 @@ mod tests {
         let variables = generate_variables(15, &f);
         let constraint = f.cc(CType::EQ, 8, variables).unwrap();
         let constraint = f.nnf_of(constraint).unwrap();
-        let mut kernel = BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000).unwrap();
+        let mut kernel =
+            BddKernel::new_with_num_vars(constraint.variables(&f).len(), 100_000, 1_000_000)
+                .unwrap();
         let bdd = Bdd::from_formula(constraint, &f, &mut kernel).unwrap();
         assert_eq!(bdd.model_count(&mut kernel), 6435.to_biguint().unwrap());
         assert_eq!(bdd.enumerate_all_models(&mut kernel).unwrap().len(), 6435);
@@ -70,7 +72,8 @@ mod tests {
             let orderings = vec![dfs, bfs, min2max, max2min, force];
 
             for ordering in orderings {
-                let mut kernel = BddKernel::new_with_var_ordering(&ordering, 10_000, 10_000).unwrap();
+                let mut kernel =
+                    BddKernel::new_with_var_ordering(&ordering, 10_000, 10_000).unwrap();
 
                 let start = Instant::now();
                 let bdd = Bdd::from_formula(n_queens, &f, &mut kernel).unwrap();
@@ -78,7 +81,10 @@ mod tests {
                 println!("Constructed BDD for {n} queens in {duration:?}");
 
                 let start = Instant::now();
-                assert_eq!(bdd.model_count(&mut kernel), expected_count[n - 3].to_biguint().unwrap());
+                assert_eq!(
+                    bdd.model_count(&mut kernel),
+                    expected_count[n - 3].to_biguint().unwrap()
+                );
                 let duration = start.elapsed();
                 println!("Computed model count for {n} queens in {duration:?}");
 
@@ -108,7 +114,11 @@ mod tests {
         Ok(())
     }
 
-    fn check_equiv(original: EncodedFormula, cnf: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
+    fn check_equiv(
+        original: EncodedFormula,
+        cnf: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
         let mut solver = MiniSat::new();
         let formula = f.equivalence(original, cnf);
         solver.add(f.negate(formula), f)?;

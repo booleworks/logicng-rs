@@ -4,7 +4,11 @@ use crate::formulas::{AuxVarType, Literal, Variable};
 /// An encoding of at-most-one cardinality constraints using the nested
 /// encoding.
 pub fn build_amo_nested<R: EncodingResult>(group_size: usize, result: &mut R, vars: &[Variable]) {
-    encode_intern(group_size, result, vars.iter().map(|var| Literal::new(*var, true)).collect());
+    encode_intern(
+        group_size,
+        result,
+        vars.iter().map(|var| Literal::new(*var, true)).collect(),
+    );
 }
 
 fn encode_intern<R: EncodingResult>(group_size: usize, result: &mut R, vars: Vec<Literal>) {

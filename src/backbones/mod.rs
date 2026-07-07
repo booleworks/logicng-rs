@@ -53,7 +53,12 @@ impl Backbone {
         negative_backbone: Option<BTreeSet<Variable>>,
         optional_variables: Option<BTreeSet<Variable>>,
     ) -> Self {
-        Self { sat: true, positive_backbone, negative_backbone, optional_variables }
+        Self {
+            sat: true,
+            positive_backbone,
+            negative_backbone,
+            optional_variables,
+        }
     }
 
     /// Constructs a new empty backbone for an unsatisfiable formula.
@@ -66,7 +71,12 @@ impl Backbone {
     /// let backbone = Backbone::new_unsat();
     /// ```
     pub const fn new_unsat() -> Self {
-        Self { sat: false, positive_backbone: None, negative_backbone: None, optional_variables: None }
+        Self {
+            sat: false,
+            positive_backbone: None,
+            negative_backbone: None,
+            optional_variables: None,
+        }
     }
 
     /// Returns `true` if the backbone is empty.
@@ -92,7 +102,8 @@ impl Backbone {
     /// assert!(Backbone::new_unsat().is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.positive_backbone.as_ref().is_none_or(|b| b.is_empty()) && self.negative_backbone.as_ref().is_none_or(|b| b.is_empty())
+        self.positive_backbone.as_ref().is_none_or(|b| b.is_empty())
+            && self.negative_backbone.as_ref().is_none_or(|b| b.is_empty())
     }
 
     /// Returns all literals of the backbone. Positive backbone variables have
@@ -140,7 +151,15 @@ impl Backbone {
 
 impl ToFormula for Backbone {
     fn to_formula(&self, f: &FormulaFactory) -> EncodedFormula {
-        if self.sat { f.and(self.complete_backbone().iter().map(|&lit| EncodedFormula::from(lit))) } else { f.falsum() }
+        if self.sat {
+            f.and(
+                self.complete_backbone()
+                    .iter()
+                    .map(|&lit| EncodedFormula::from(lit)),
+            )
+        } else {
+            f.falsum()
+        }
     }
 }
 
@@ -160,7 +179,11 @@ mod tests {
     }
 
     fn var(index: u64) -> Variable {
-        Variable::FF(FormulaEncoding::encode(index, FormulaType::Lit(LitType::Pos(VarType::FF)), true))
+        Variable::FF(FormulaEncoding::encode(
+            index,
+            FormulaType::Lit(LitType::Pos(VarType::FF)),
+            true,
+        ))
     }
     #[test]
     fn test_is_empty() {
@@ -174,19 +197,49 @@ mod tests {
         assert!(Backbone::new_sat(Some(BTreeSet::new()), Some(BTreeSet::new()), None).is_empty());
         assert!(!Backbone::new_sat(Some(BTreeSet::from([v1, v2, v3])), None, None).is_empty());
         assert!(!Backbone::new_sat(None, Some(BTreeSet::from([v1, v2, v3])), None).is_empty());
-        assert!(!Backbone::new_sat(Some(BTreeSet::from([v4, v5])), Some(BTreeSet::from([v1, v2, v3])), None).is_empty());
-        assert!(!Backbone::new_sat(Some(BTreeSet::from([v4])), Some(BTreeSet::from([v1, v2, v3])), Some(BTreeSet::from([v5]))).is_empty());
+        assert!(
+            !Backbone::new_sat(
+                Some(BTreeSet::from([v4, v5])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                None
+            )
+            .is_empty()
+        );
+        assert!(
+            !Backbone::new_sat(
+                Some(BTreeSet::from([v4])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                Some(BTreeSet::from([v5]))
+            )
+            .is_empty()
+        );
     }
 
     #[test]
     fn test_complete_backbone() {
         let (v1, v2, v3, v4, v5) = (var(1), var(2), var(3), var(4), var(5));
         assert_eq!(BTreeSet::new(), Backbone::new_unsat().complete_backbone());
-        assert_eq!(BTreeSet::new(), Backbone::new_sat(None, None, None).complete_backbone());
-        assert_eq!(BTreeSet::new(), Backbone::new_sat(None, None, Some(BTreeSet::from([v1, v2, v3]))).complete_backbone());
-        assert_eq!(BTreeSet::new(), Backbone::new_sat(Some(BTreeSet::new()), None, None).complete_backbone());
-        assert_eq!(BTreeSet::new(), Backbone::new_sat(None, Some(BTreeSet::new()), None).complete_backbone());
-        assert_eq!(BTreeSet::new(), Backbone::new_sat(Some(BTreeSet::new()), Some(BTreeSet::new()), None).complete_backbone());
+        assert_eq!(
+            BTreeSet::new(),
+            Backbone::new_sat(None, None, None).complete_backbone()
+        );
+        assert_eq!(
+            BTreeSet::new(),
+            Backbone::new_sat(None, None, Some(BTreeSet::from([v1, v2, v3]))).complete_backbone()
+        );
+        assert_eq!(
+            BTreeSet::new(),
+            Backbone::new_sat(Some(BTreeSet::new()), None, None).complete_backbone()
+        );
+        assert_eq!(
+            BTreeSet::new(),
+            Backbone::new_sat(None, Some(BTreeSet::new()), None).complete_backbone()
+        );
+        assert_eq!(
+            BTreeSet::new(),
+            Backbone::new_sat(Some(BTreeSet::new()), Some(BTreeSet::new()), None)
+                .complete_backbone()
+        );
         assert_eq!(
             BTreeSet::from([v1.pos_lit(), v2.pos_lit(), v3.pos_lit()]),
             Backbone::new_sat(Some(BTreeSet::from([v1, v2, v3])), None, None).complete_backbone()
@@ -196,13 +249,28 @@ mod tests {
             Backbone::new_sat(None, Some(BTreeSet::from([v1, v2, v3])), None).complete_backbone()
         );
         assert_eq!(
-            BTreeSet::from([v1.neg_lit(), v2.neg_lit(), v3.neg_lit(), v4.pos_lit(), v5.pos_lit()]),
-            Backbone::new_sat(Some(BTreeSet::from([v4, v5])), Some(BTreeSet::from([v1, v2, v3])), None).complete_backbone()
+            BTreeSet::from([
+                v1.neg_lit(),
+                v2.neg_lit(),
+                v3.neg_lit(),
+                v4.pos_lit(),
+                v5.pos_lit()
+            ]),
+            Backbone::new_sat(
+                Some(BTreeSet::from([v4, v5])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                None
+            )
+            .complete_backbone()
         );
         assert_eq!(
             BTreeSet::from([v1.neg_lit(), v2.neg_lit(), v3.neg_lit(), v4.pos_lit()]),
-            Backbone::new_sat(Some(BTreeSet::from([v4])), Some(BTreeSet::from([v1, v2, v3])), Some(BTreeSet::from([v5])))
-                .complete_backbone()
+            Backbone::new_sat(
+                Some(BTreeSet::from([v4])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                Some(BTreeSet::from([v5]))
+            )
+            .complete_backbone()
         );
     }
 
@@ -212,19 +280,47 @@ mod tests {
         let (v1, v2, v3, v4, v5) = (f.var("a"), f.var("b"), f.var("c"), f.var("d"), f.var("e"));
         assert_eq!(f.falsum(), Backbone::new_unsat().to_formula(f));
         assert_eq!(f.verum(), Backbone::new_sat(None, None, None).to_formula(f));
-        assert_eq!(f.verum(), Backbone::new_sat(None, None, Some(BTreeSet::from([v1, v2, v3]))).to_formula(f));
-        assert_eq!(f.verum(), Backbone::new_sat(Some(BTreeSet::new()), None, None).to_formula(f));
-        assert_eq!(f.verum(), Backbone::new_sat(None, Some(BTreeSet::new()), None).to_formula(f));
-        assert_eq!(f.verum(), Backbone::new_sat(Some(BTreeSet::new()), Some(BTreeSet::new()), None).to_formula(f));
-        assert_eq!("a & b & c".to_formula(f), Backbone::new_sat(Some(BTreeSet::from([v1, v2, v3])), None, None).to_formula(f));
-        assert_eq!("~a & ~b & ~c".to_formula(f), Backbone::new_sat(None, Some(BTreeSet::from([v1, v2, v3])), None).to_formula(f));
+        assert_eq!(
+            f.verum(),
+            Backbone::new_sat(None, None, Some(BTreeSet::from([v1, v2, v3]))).to_formula(f)
+        );
+        assert_eq!(
+            f.verum(),
+            Backbone::new_sat(Some(BTreeSet::new()), None, None).to_formula(f)
+        );
+        assert_eq!(
+            f.verum(),
+            Backbone::new_sat(None, Some(BTreeSet::new()), None).to_formula(f)
+        );
+        assert_eq!(
+            f.verum(),
+            Backbone::new_sat(Some(BTreeSet::new()), Some(BTreeSet::new()), None).to_formula(f)
+        );
+        assert_eq!(
+            "a & b & c".to_formula(f),
+            Backbone::new_sat(Some(BTreeSet::from([v1, v2, v3])), None, None).to_formula(f)
+        );
+        assert_eq!(
+            "~a & ~b & ~c".to_formula(f),
+            Backbone::new_sat(None, Some(BTreeSet::from([v1, v2, v3])), None).to_formula(f)
+        );
         assert_eq!(
             "~a & ~b & ~c & d & e".to_formula(f),
-            Backbone::new_sat(Some(BTreeSet::from([v4, v5])), Some(BTreeSet::from([v1, v2, v3])), None).to_formula(f)
+            Backbone::new_sat(
+                Some(BTreeSet::from([v4, v5])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                None
+            )
+            .to_formula(f)
         );
         assert_eq!(
             "~a & ~b & ~c & d".to_formula(f),
-            Backbone::new_sat(Some(BTreeSet::from([v4])), Some(BTreeSet::from([v1, v2, v3])), Some(BTreeSet::from([v5]))).to_formula(f)
+            Backbone::new_sat(
+                Some(BTreeSet::from([v4])),
+                Some(BTreeSet::from([v1, v2, v3])),
+                Some(BTreeSet::from([v5]))
+            )
+            .to_formula(f)
         );
     }
 }

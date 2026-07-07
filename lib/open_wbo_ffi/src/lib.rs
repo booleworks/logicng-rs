@@ -95,7 +95,12 @@ pub mod ffi {
         /// # Safety
         ///
         /// We flag all FFI-functions as unsafe. If this function fails, the return value is null.
-        pub unsafe fn linear_su(verbosity: Verbosity, bmo: bool, enc: CardEncoding, pb: PB) -> *mut MaxSAT;
+        pub unsafe fn linear_su(
+            verbosity: Verbosity,
+            bmo: bool,
+            enc: CardEncoding,
+            pb: PB,
+        ) -> *mut MaxSAT;
 
         /// Creates a _OpenWBO_ MaxSAT instance with the WBO algorithm and the given configuration.
         ///
@@ -105,7 +110,12 @@ pub mod ffi {
         /// # Safety
         ///
         /// We flag all FFI-functions as unsafe. If this function fails, the return value is null.
-        pub unsafe fn wbo(verbosity: Verbosity, weight: Weight, symmetry: bool, limit: i32) -> *mut MaxSAT;
+        pub unsafe fn wbo(
+            verbosity: Verbosity,
+            weight: Weight,
+            symmetry: bool,
+            limit: i32,
+        ) -> *mut MaxSAT;
 
         /// Creates a _OpenWBO_ MaxSAT instance with the OLL algorithm and the given configuration.
         ///
@@ -125,7 +135,12 @@ pub mod ffi {
         /// # Safety
         ///
         /// We flag all FFI-functions as unsafe. If this function fails, the return value is null.
-        pub unsafe fn part_msu_3(verbosity: Verbosity, merge: Merge, graph: GraphType, enc: CardEncoding) -> *mut MaxSAT;
+        pub unsafe fn part_msu_3(
+            verbosity: Verbosity,
+            merge: Merge,
+            graph: GraphType,
+            enc: CardEncoding,
+        ) -> *mut MaxSAT;
 
         /// Creates a _OpenWBO_ MaxSAT instance with the MSU3 algorithm and the given configuration.
         ///
@@ -188,7 +203,11 @@ pub mod ffi {
         /// We flag all FFI-functions as unsafe. This function fails, if the passed weight is an
         /// invalid value.
         /// You need to use `get_error()` to check for that.
-        pub unsafe fn add_soft_clause(formula: *mut MaxSATFormula, weight: u64, clause: *mut Clause);
+        pub unsafe fn add_soft_clause(
+            formula: *mut MaxSATFormula,
+            weight: u64,
+            clause: *mut Clause,
+        );
 
         /// Adds a _OpenWBO_ formula to a _OpenWBO_ MaxSAT algorithm.
         /// After adding the formula to the algorithm, it should no longer be extended/edited.

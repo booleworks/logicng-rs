@@ -66,8 +66,12 @@ impl Model {
     pub fn new<P, N>(pos: P, neg: N) -> Self
     where
         P: Into<Vec<Variable>>,
-        N: Into<Vec<Variable>>, {
-        Self { pos: pos.into(), neg: neg.into() }
+        N: Into<Vec<Variable>>,
+    {
+        Self {
+            pos: pos.into(),
+            neg: neg.into(),
+        }
     }
 
     /// Creates a new model from slices.
@@ -87,7 +91,10 @@ impl Model {
     /// let model = Model::from_variables(&[a], &[b]);
     /// ```
     pub fn from_variables(pos: &[Variable], neg: &[Variable]) -> Self {
-        Self { pos: pos.into(), neg: neg.into() }
+        Self {
+            pos: pos.into(),
+            neg: neg.into(),
+        }
     }
 
     /// Converts a literal into a model.
@@ -114,7 +121,17 @@ impl Model {
     /// assert_eq!(model2.neg(), &vec![b.variable()]);
     /// ```
     pub fn from_lit(lit: Literal) -> Self {
-        if lit.phase() { Self { pos: vec![lit.variable()], neg: vec![] } } else { Self { pos: vec![], neg: vec![lit.variable()] } }
+        if lit.phase() {
+            Self {
+                pos: vec![lit.variable()],
+                neg: vec![],
+            }
+        } else {
+            Self {
+                pos: vec![],
+                neg: vec![lit.variable()],
+            }
+        }
     }
 
     /// Creates a model from a single vector of literals.
@@ -320,8 +337,12 @@ impl Model {
     /// ```
     pub fn literals(&self) -> Vec<Literal> {
         let mut result = Vec::with_capacity(self.len());
-        self.pos.iter().for_each(|var| result.push(Literal::Pos(*var)));
-        self.neg.iter().for_each(|var| result.push(Literal::Neg(*var)));
+        self.pos
+            .iter()
+            .for_each(|var| result.push(Literal::Pos(*var)));
+        self.neg
+            .iter()
+            .for_each(|var| result.push(Literal::Neg(*var)));
         result
     }
 
@@ -349,8 +370,12 @@ impl Model {
     /// ```
     pub fn string_literals<'c>(&self, f: &'c FormulaFactory) -> Vec<StringLiteral<'c>> {
         let mut result = Vec::with_capacity(self.len());
-        self.pos.iter().for_each(|var| result.push(Literal::Pos(*var).to_string_lit(f)));
-        self.neg.iter().for_each(|var| result.push(Literal::Neg(*var).to_string_lit(f)));
+        self.pos
+            .iter()
+            .for_each(|var| result.push(Literal::Pos(*var).to_string_lit(f)));
+        self.neg
+            .iter()
+            .for_each(|var| result.push(Literal::Neg(*var).to_string_lit(f)));
         result
     }
 
@@ -429,7 +454,9 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<Vec<Variabl
         let index = match f.variables.lookup(name) {
             Some(i) => Variable::FF(i),
             None => {
-                return Err(LngError::UnknownVariable { var: name.to_string() });
+                return Err(LngError::UnknownVariable {
+                    var: name.to_string(),
+                });
             }
         };
         result.push(index);
@@ -518,8 +545,17 @@ mod tests {
         let a3 = Model::new(vec![], vars2.clone());
         let a4 = Model::new(vars1, vars2);
         assert_eq!(Vec::<StringLiteral>::new(), a1.string_literals(f));
-        assert_eq!(vec![StringLiteral::new("b", true), StringLiteral::new("a", true)], a2.string_literals(f));
-        assert_eq!(vec![StringLiteral::new("x", false), StringLiteral::new("y", false),], a3.string_literals(f));
+        assert_eq!(
+            vec![StringLiteral::new("b", true), StringLiteral::new("a", true)],
+            a2.string_literals(f)
+        );
+        assert_eq!(
+            vec![
+                StringLiteral::new("x", false),
+                StringLiteral::new("y", false),
+            ],
+            a3.string_literals(f)
+        );
         assert_eq!(
             vec![
                 StringLiteral::new("b", true),

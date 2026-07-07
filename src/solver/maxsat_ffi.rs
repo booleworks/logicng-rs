@@ -2,8 +2,8 @@ use crate::datastructures::{Assignment, Model};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::solver::maxsat::MaxSatResult::{Optimum, Undef, Unsatisfiable};
 use crate::solver::maxsat::{
-    Algorithm, CardinalEncoding, GraphType, MaxSatConfig, MaxSatResult, MaxSatStats, MergeStrategy, PbEncoding, Symmetry, Verbosity,
-    WeightStrategy,
+    Algorithm, CardinalEncoding, GraphType, MaxSatConfig, MaxSatResult, MaxSatStats, MergeStrategy,
+    PbEncoding, Symmetry, Verbosity, WeightStrategy,
 };
 use logicng_open_wbo_sys::ffi;
 use std::collections::{BTreeSet, HashMap};
@@ -51,7 +51,11 @@ impl OpenWboSolver {
         let formula = unsafe {
             let f = ffi::new_formula();
             check_error()?;
-            if f.is_null() { Err(MaxSatError::InvalidExternalResponse) } else { Ok(f) }
+            if f.is_null() {
+                Err(MaxSatError::InvalidExternalResponse)
+            } else {
+                Ok(f)
+            }
         }?;
 
         Ok(Self {
@@ -66,7 +70,12 @@ impl OpenWboSolver {
         })
     }
 
-    pub(super) fn add_soft_clause(&mut self, weight: u64, formula: &EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    pub(super) fn add_soft_clause(
+        &mut self,
+        weight: u64,
+        formula: &EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         if weight < 1 {
             return Err(MaxSatError::IllegalWeightedClause);
         }
@@ -81,17 +90,29 @@ impl OpenWboSolver {
         check_error()
     }
 
-    pub(super) fn add_hard_clause(&mut self, formula: &EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    pub(super) fn add_hard_clause(
+        &mut self,
+        formula: &EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         let clause = self.convert_clause(formula, f)?;
         unsafe { ffi::add_hard_clause(self.formula, clause) };
         check_error()
     }
 
-    fn convert_clause(&mut self, formula: &EncodedFormula, f: &FormulaFactory) -> Result<*mut ffi::Clause, MaxSatError> {
+    fn convert_clause(
+        &mut self,
+        formula: &EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<*mut ffi::Clause, MaxSatError> {
         let clause = unsafe {
             let c = ffi::new_clause();
             check_error()?;
-            if c.is_null() { Err(MaxSatError::InvalidExternalResponse) } else { Ok(c) }
+            if c.is_null() {
+                Err(MaxSatError::InvalidExternalResponse)
+            } else {
+                Ok(c)
+            }
         }?;
 
         for lit in &*formula.literals(f) {
@@ -118,7 +139,11 @@ impl OpenWboSolver {
             return *i;
         }
 
-        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+        #[allow(
+            clippy::cast_precision_loss,
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap
+        )]
         let index = self.var_map_down.len() as i32;
         self.var_map_down.insert(var, index);
         self.var_map_up.push(var);
@@ -161,7 +186,10 @@ impl OpenWboSolver {
         }
     }
 
-    pub(super) fn model(&mut self, selection_variables: &BTreeSet<Variable>) -> Result<Model, MaxSatError> {
+    pub(super) fn model(
+        &mut self,
+        selection_variables: &BTreeSet<Variable>,
+    ) -> Result<Model, MaxSatError> {
         match (&self.model, &self.status) {
             (Some(model), _) => Ok(model.clone()),
             (None, &ffi::StatusCode::Optimum | &ffi::StatusCode::Satisfiable) => {
@@ -172,7 +200,10 @@ impl OpenWboSolver {
         }
     }
 
-    pub(super) fn assignment(&mut self, selection_variables: &BTreeSet<Variable>) -> Result<Assignment, MaxSatError> {
+    pub(super) fn assignment(
+        &mut self,
+        selection_variables: &BTreeSet<Variable>,
+    ) -> Result<Assignment, MaxSatError> {
         match (&self.model, &self.status) {
             (Some(model), _) => Ok(model.into()),
             (None, &ffi::StatusCode::Optimum | &ffi::StatusCode::Satisfiable) => {
@@ -183,7 +214,10 @@ impl OpenWboSolver {
         }
     }
 
-    fn create_model(&mut self, selection_variables: &BTreeSet<Variable>) -> Result<Model, MaxSatError> {
+    fn create_model(
+        &mut self,
+        selection_variables: &BTreeSet<Variable>,
+    ) -> Result<Model, MaxSatError> {
         unsafe {
             let model_size = ffi::get_model_size(self.solver);
             check_error()?;
@@ -220,15 +254,33 @@ impl OpenWboSolver {
     }
 
     pub(super) fn stats(&self) -> MaxSatStats {
-        #[allow(clippy::cast_precision_loss, clippy::cast_sign_loss, clippy::cast_lossless)]
+        #[allow(
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss,
+            clippy::cast_lossless
+        )]
         unsafe {
-            let ubc = if ffi::get_model_size(self.solver) == 0 { None } else { Some(ffi::ub_cost(self.solver)) };
+            let ubc = if ffi::get_model_size(self.solver) == 0 {
+                None
+            } else {
+                Some(ffi::ub_cost(self.solver))
+            };
             let nbs = ffi::nb_satisfiable(self.solver);
             let nbc = ffi::nb_cores(self.solver);
-            let avg_cs = if nbc == 0 { 0.0 } else { (ffi::sum_size_cores(self.solver) as f64) / (nbc as f64) };
+            let avg_cs = if nbc == 0 {
+                0.0
+            } else {
+                (ffi::sum_size_cores(self.solver) as f64) / (nbc as f64)
+            };
             let nbsc = ffi::nb_symmetry_clauses(self.solver);
 
-            MaxSatStats { ub_cost: ubc, nb_cores: nbc as u64, avg_core_size: avg_cs, nb_satisfied: nbs as u64, nb_sym_clauses: nbsc as u64 }
+            MaxSatStats {
+                ub_cost: ubc,
+                nb_cores: nbc as u64,
+                avg_core_size: avg_cs,
+                nb_satisfied: nbs as u64,
+                nb_sym_clauses: nbsc as u64,
+            }
         }
     }
 }
@@ -246,12 +298,24 @@ impl Drop for OpenWboSolver {
 impl Display for MaxSatError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
-            Self::ExternalError(ie) => format!("OpenWBO crashed internally, the last documented error was: \"{ie}\""),
-            Self::IllegalConfig => String::from("The selected maxSAT algorithm doesn't support the given configuration."),
-            Self::IllegalWeightedClause => String::from("The selected maxSAT algorithm doesn't support weighted clauses."),
-            Self::InitializationError => String::from("Couldn't initialize maxSAT solver in openWBO library."),
-            Self::InvalidExternalResponse => String::from("OpenWBO library gave a invalid response."),
-            Self::IllegalModelRequest => String::from("The model can only requested if the status is \"Optimal\" or \"Satisfied\""),
+            Self::ExternalError(ie) => {
+                format!("OpenWBO crashed internally, the last documented error was: \"{ie}\"")
+            }
+            Self::IllegalConfig => String::from(
+                "The selected maxSAT algorithm doesn't support the given configuration.",
+            ),
+            Self::IllegalWeightedClause => {
+                String::from("The selected maxSAT algorithm doesn't support weighted clauses.")
+            }
+            Self::InitializationError => {
+                String::from("Couldn't initialize maxSAT solver in openWBO library.")
+            }
+            Self::InvalidExternalResponse => {
+                String::from("OpenWBO library gave a invalid response.")
+            }
+            Self::IllegalModelRequest => String::from(
+                "The model can only requested if the status is \"Optimal\" or \"Satisfied\"",
+            ),
         };
         f.write_str(&msg)
     }
@@ -268,7 +332,11 @@ fn wbo_solver(config: &MaxSatConfig) -> Result<*mut ffi::MaxSAT, MaxSatError> {
         let solver = ffi::wbo(verb, weight, sym, limit);
         check_error()?;
 
-        if solver.is_null() { Err(MaxSatError::InitializationError) } else { Ok(solver) }
+        if solver.is_null() {
+            Err(MaxSatError::InitializationError)
+        } else {
+            Ok(solver)
+        }
     }
 }
 
@@ -281,7 +349,11 @@ fn linear_su_solver(config: &MaxSatConfig) -> Result<*mut ffi::MaxSAT, MaxSatErr
         let solver = ffi::linear_su(verb, config.bmo, enc, pb);
         check_error()?;
 
-        if solver.is_null() { Err(MaxSatError::InitializationError) } else { Ok(solver) }
+        if solver.is_null() {
+            Err(MaxSatError::InitializationError)
+        } else {
+            Ok(solver)
+        }
     }
 }
 
@@ -388,6 +460,10 @@ const fn convert_graph_type(graph: &GraphType) -> ffi::GraphType {
 fn check_error() -> Result<(), MaxSatError> {
     unsafe {
         let err = ffi::get_error();
-        if err == ffi::OpenWboError::NoError { Ok(()) } else { Err(MaxSatError::ExternalError(err)) }
+        if err == ffi::OpenWboError::NoError {
+            Ok(())
+        } else {
+            Err(MaxSatError::ExternalError(err))
+        }
     }
 }

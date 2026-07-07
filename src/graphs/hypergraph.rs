@@ -39,13 +39,20 @@ pub struct HypergraphEdge {
 impl<T> Hypergraph<T> {
     /// Creates an empty hypergraph.
     pub const fn new() -> Self {
-        Self { nodes: BTreeMap::new(), edges: BTreeMap::new() }
+        Self {
+            nodes: BTreeMap::new(),
+            edges: BTreeMap::new(),
+        }
     }
 
     /// Adds a node to the hypergraph and returns the node index.
     pub fn add_node(&mut self, content: T) -> NodeIndex {
         let index = self.nodes.len();
-        let node = HypergraphNode { content, index, edges: Vec::new() };
+        let node = HypergraphNode {
+            content,
+            index,
+            edges: Vec::new(),
+        };
         self.nodes.insert(index, node);
         index
     }
@@ -64,7 +71,10 @@ impl<T> Hypergraph<T> {
             if let Some(n) = node {
                 n.edges.push(index);
             } else {
-                return Err(GraphError::UnknownNode { node_index: *node_index }.into());
+                return Err(GraphError::UnknownNode {
+                    node_index: *node_index,
+                }
+                .into());
             }
         }
         self.edges.insert(index, edge);
@@ -174,12 +184,26 @@ mod tests {
         node_ordering.insert(id2, 2);
         node_ordering.insert(id3, 3);
         node_ordering.insert(id4, 4);
-        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering).unwrap(), 2.5);
+        assert_eq!(
+            graph
+                .get_edge(edge)
+                .unwrap()
+                .center_of_gravity(&node_ordering)
+                .unwrap(),
+            2.5
+        );
 
         node_ordering.insert(id1, 2);
         node_ordering.insert(id2, 4);
         node_ordering.insert(id3, 6);
         node_ordering.insert(id4, 8);
-        assert_eq!(graph.get_edge(edge).unwrap().center_of_gravity(&node_ordering).unwrap(), 5.0);
+        assert_eq!(
+            graph
+                .get_edge(edge)
+                .unwrap()
+                .center_of_gravity(&node_ordering)
+                .unwrap(),
+            5.0
+        );
     }
 }

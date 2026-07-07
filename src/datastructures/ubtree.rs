@@ -11,7 +11,10 @@ struct UbNode<T: Ord> {
 
 impl<T: Ord> UbNode<T> {
     const fn new(children: ChildrenIndex) -> Self {
-        Self { children, set: None }
+        Self {
+            children,
+            set: None,
+        }
     }
 
     const fn end_of_path(&self) -> Option<&BTreeSet<T>> {
@@ -39,7 +42,11 @@ pub struct UbTree<T: Ord> {
 impl<T: Ord + Copy> UbTree<T> {
     /// Construct an empty `UbTree`.
     pub fn new() -> Self {
-        Self { root_nodes: 0, nodes: Vec::new(), children_maps: vec![BTreeMap::new()] }
+        Self {
+            root_nodes: 0,
+            nodes: Vec::new(),
+            children_maps: vec![BTreeMap::new()],
+        }
     }
 
     /// Adds a set of comparable objects to this `UbTree`.
@@ -95,7 +102,11 @@ impl<T: Ord + Copy> UbTree<T> {
         self.get_children(self.root_nodes)
     }
 
-    fn first_subset_from_forest(&self, set: &BTreeSet<T>, forest: ChildrenIndex) -> Option<&BTreeSet<T>> {
+    fn first_subset_from_forest(
+        &self,
+        set: &BTreeSet<T>,
+        forest: ChildrenIndex,
+    ) -> Option<&BTreeSet<T>> {
         let nodes = self.get_all_nodes_containing_elements(set, forest);
         let mut found_subset = None;
         for node in nodes {
@@ -114,7 +125,11 @@ impl<T: Ord + Copy> UbTree<T> {
         found_subset
     }
 
-    fn get_all_nodes_containing_elements(&self, set: &BTreeSet<T>, forest: ChildrenIndex) -> HashSet<NodeIndex> {
+    fn get_all_nodes_containing_elements(
+        &self,
+        set: &BTreeSet<T>,
+        forest: ChildrenIndex,
+    ) -> HashSet<NodeIndex> {
         let mut nodes = HashSet::new();
         for element in set {
             let node_index = self.get_children(forest).get(element);
@@ -206,15 +221,27 @@ mod tests {
         let e0 = tree.get_node(tree.root_nodes()[&0]);
         let e2 = tree.get_node(tree.root_nodes()[&2]);
         assert!(!e0.is_end_of_path());
-        assert_eq!(tree.get_children(e0.children).keys().copied().collect_vec(), vec![1]);
+        assert_eq!(
+            tree.get_children(e0.children).keys().copied().collect_vec(),
+            vec![1]
+        );
         assert!(!e2.is_end_of_path());
-        assert_eq!(tree.get_children(e2.children).keys().copied().collect_vec(), vec![3]);
+        assert_eq!(
+            tree.get_children(e2.children).keys().copied().collect_vec(),
+            vec![3]
+        );
 
         // first level
         let e0e1 = tree.get_node(tree.get_children(e0.children)[&1]);
         let e2e3 = tree.get_node(tree.get_children(e2.children)[&3]);
         assert!(!e0e1.is_end_of_path());
-        assert_eq!(tree.get_children(e0e1.children).keys().copied().collect_vec(), vec![2, 3]);
+        assert_eq!(
+            tree.get_children(e0e1.children)
+                .keys()
+                .copied()
+                .collect_vec(),
+            vec![2, 3]
+        );
         assert!(e2e3.is_end_of_path());
         assert_eq!(e2e3.set, Some(BTreeSet::from_iter([2, 3])));
         assert!(tree.get_children(e2e3.children).is_empty());
@@ -223,7 +250,13 @@ mod tests {
         let e0e1e2 = tree.get_node(tree.get_children(e0e1.children)[&2]);
         assert!(e0e1e2.is_end_of_path());
         assert_eq!(e0e1e2.set, Some(BTreeSet::from_iter([0, 1, 2])));
-        assert_eq!(tree.get_children(e0e1e2.children).keys().copied().collect_vec(), vec![3]);
+        assert_eq!(
+            tree.get_children(e0e1e2.children)
+                .keys()
+                .copied()
+                .collect_vec(),
+            vec![3]
+        );
         let e0e1e3 = tree.get_node(tree.get_children(e0e1.children)[&3]);
         assert!(e0e1e3.is_end_of_path());
         assert_eq!(e0e1e3.set, Some(BTreeSet::from_iter([0, 1, 3])));
@@ -257,10 +290,22 @@ mod tests {
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 3])), None);
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([1, 2])), None);
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([2, 3])), Some(&e23));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 1, 2])), Some(&e012));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 1, 3])), Some(&e013));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 2, 3])), Some(&e23));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([1, 2, 3])), Some(&e23));
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 1, 2])),
+            Some(&e012)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 1, 3])),
+            Some(&e013)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 2, 3])),
+            Some(&e23)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([1, 2, 3])),
+            Some(&e23)
+        );
         let res0123 = tree.first_subset(&BTreeSet::from_iter([0, 1, 2, 3]));
         assert!([Some(&e0123), Some(&e013), Some(&e012), Some(&e23)].contains(&res0123));
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 4])), None);
@@ -272,11 +317,26 @@ mod tests {
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 3, 4])), None);
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([1, 2, 4])), None);
         assert_eq!(tree.first_subset(&BTreeSet::from_iter([1, 2, 4])), None);
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([2, 3, 4])), Some(&e23));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 1, 2, 4])), Some(&e012));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 1, 3, 4])), Some(&e013));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([0, 2, 3, 4])), Some(&e23));
-        assert_eq!(tree.first_subset(&BTreeSet::from_iter([1, 2, 3, 4])), Some(&e23));
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([2, 3, 4])),
+            Some(&e23)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 1, 2, 4])),
+            Some(&e012)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 1, 3, 4])),
+            Some(&e013)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([0, 2, 3, 4])),
+            Some(&e23)
+        );
+        assert_eq!(
+            tree.first_subset(&BTreeSet::from_iter([1, 2, 3, 4])),
+            Some(&e23)
+        );
         let res01234 = tree.first_subset(&BTreeSet::from_iter([0, 1, 2, 3, 4]));
         assert!([Some(&e0123), Some(&e013), Some(&e012), Some(&e23)].contains(&res01234));
     }
@@ -295,6 +355,9 @@ mod tests {
         tree.add_set(e012.clone());
         assert_eq!(tree.all_sets(), BTreeSet::from_iter([&e0123, &e013, &e012]));
         tree.add_set(e23.clone());
-        assert_eq!(tree.all_sets(), BTreeSet::from_iter([&e0123, &e013, &e012, &e23]));
+        assert_eq!(
+            tree.all_sets(),
+            BTreeSet::from_iter([&e0123, &e013, &e012, &e23])
+        );
     }
 }

@@ -62,9 +62,15 @@ mod and_test {
         let ff = F::new();
         let f = &ff.f;
         assert_eq!(*ff.AND1.variables(f), vars("a b", f));
-        assert_eq!(*f.and([ff.A, ff.A, ff.B, ff.IMP3]).variables(f), vars("a b x y", f));
+        assert_eq!(
+            *f.and([ff.A, ff.A, ff.B, ff.IMP3]).variables(f),
+            vars("a b x y", f)
+        );
         assert_eq!(ff.AND1.string_variables(f), string_vars("a b"));
-        assert_eq!(f.and([ff.A, ff.A, ff.B, ff.IMP3]).string_variables(f), string_vars("a b x y"));
+        assert_eq!(
+            f.and([ff.A, ff.A, ff.B, ff.IMP3]).string_variables(f),
+            string_vars("a b x y")
+        );
     }
 
     #[test]
@@ -72,9 +78,15 @@ mod and_test {
         let ff = F::new();
         let f = &ff.f;
         assert_eq!(*ff.AND1.literals(f), lits("a b", f));
-        assert_eq!(*f.and([ff.A, ff.A, ff.B, ff.IMP2]).literals(f), lits("a b ~a ~b", f));
+        assert_eq!(
+            *f.and([ff.A, ff.A, ff.B, ff.IMP2]).literals(f),
+            lits("a b ~a ~b", f)
+        );
         assert_eq!(ff.AND1.string_literals(f), string_lits("a b"));
-        assert_eq!(f.and([ff.A, ff.A, ff.B, ff.IMP2]).string_literals(f), string_lits("a b ~a ~b"));
+        assert_eq!(
+            f.and([ff.A, ff.A, ff.B, ff.IMP2]).string_literals(f),
+            string_lits("a b ~a ~b")
+        );
     }
 
     #[test]
@@ -84,9 +96,18 @@ mod and_test {
         assert_eq!(ff.AND1.to_string(f), "a & b");
         assert_eq!(ff.AND2.to_string(f), "~a & ~b");
         assert_eq!(ff.AND3.to_string(f), "(x | y) & (~x | ~y)");
-        assert_eq!(f.and([ff.A, ff.B, ff.NX, ff.NY]).to_string(f), "a & b & ~x & ~y");
-        assert_eq!(f.and([ff.IMP1, ff.IMP2]).to_string(f), "(a => b) & (~a => ~b)");
-        assert_eq!(f.and([ff.EQ1, ff.EQ2]).to_string(f), "(a <=> b) & (~a <=> ~b)");
+        assert_eq!(
+            f.and([ff.A, ff.B, ff.NX, ff.NY]).to_string(f),
+            "a & b & ~x & ~y"
+        );
+        assert_eq!(
+            f.and([ff.IMP1, ff.IMP2]).to_string(f),
+            "(a => b) & (~a => ~b)"
+        );
+        assert_eq!(
+            f.and([ff.EQ1, ff.EQ2]).to_string(f),
+            "(a <=> b) & (~a <=> ~b)"
+        );
     }
 
     #[test]
@@ -105,7 +126,10 @@ mod and_test {
         let or3 = f.or([a, b]);
         let or4 = f.or([x, ny]);
         assert_eq!(f.and([or1, or2]), f.and([or3, or4]));
-        assert_eq!(f.and([ff.NX, ff.A, ff.NB, ff.OR1]), f.and([ff.A, ff.NB, ff.OR1, ff.NX]));
+        assert_eq!(
+            f.and([ff.NX, ff.A, ff.NB, ff.OR1]),
+            f.and([ff.A, ff.NB, ff.OR1, ff.NX])
+        );
         assert_ne!(ff.AND2, ff.AND1);
         assert_ne!(f.and([ff.A, ff.B, ff.C]), ff.AND1);
     }
@@ -182,10 +206,30 @@ mod and_test {
         let f = &ff.f;
         assert!(ff.AND3.contains_var_name("x", f));
         assert!(!ff.AND3.contains_var_name("a", f));
-        assert!(f.parse("a & b & (c | (d & e))").unwrap().contains_node(f.parse("d & e").unwrap(), f));
-        assert!(f.parse("a & b & (c | (d & ~e))").unwrap().contains_node(f.parse("b").unwrap(), f));
-        assert!(f.parse("a & b & (c | (d & ~e))").unwrap().contains_node(f.parse("~e").unwrap(), f));
-        assert!(!f.parse("a & b & (c | (d & e))").unwrap().contains_node(f.parse("d & f").unwrap(), f));
-        assert!(!f.parse("a & b & (c | (d & ~e))").unwrap().contains_node(f.parse("e").unwrap(), f));
+        assert!(
+            f.parse("a & b & (c | (d & e))")
+                .unwrap()
+                .contains_node(f.parse("d & e").unwrap(), f)
+        );
+        assert!(
+            f.parse("a & b & (c | (d & ~e))")
+                .unwrap()
+                .contains_node(f.parse("b").unwrap(), f)
+        );
+        assert!(
+            f.parse("a & b & (c | (d & ~e))")
+                .unwrap()
+                .contains_node(f.parse("~e").unwrap(), f)
+        );
+        assert!(
+            !f.parse("a & b & (c | (d & e))")
+                .unwrap()
+                .contains_node(f.parse("d & f").unwrap(), f)
+        );
+        assert!(
+            !f.parse("a & b & (c | (d & ~e))")
+                .unwrap()
+                .contains_node(f.parse("e").unwrap(), f)
+        );
     }
 }

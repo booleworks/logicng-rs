@@ -32,11 +32,16 @@ use std::io::{BufRead, BufReader};
 /// assert_eq!(my_formula, expected)
 /// ```
 pub fn read_formula(file_path: &str, f: &FormulaFactory) -> LngResult<EncodedFormula> {
-    let reader =
-        BufReader::new(File::open(file_path).map_err(|err| IoError::OpenFile { path: file_path.to_string(), reason: err.to_string() })?);
+    let reader = BufReader::new(File::open(file_path).map_err(|err| IoError::OpenFile {
+        path: file_path.to_string(),
+        reason: err.to_string(),
+    })?);
     let mut operands = Vec::new();
     for (line_number, line) in reader.lines().enumerate() {
-        let line = line.map_err(|err| IoError::ReadFile { path: file_path.to_string(), reason: err.to_string() })?;
+        let line = line.map_err(|err| IoError::ReadFile {
+            path: file_path.to_string(),
+            reason: err.to_string(),
+        })?;
         let operand = f.parse(&line).map_err(|err| IoError::InvalidFormula {
             path: file_path.to_string(),
             line: line_number + 1,

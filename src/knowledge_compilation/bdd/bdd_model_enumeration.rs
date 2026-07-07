@@ -6,7 +6,11 @@ use crate::knowledge_compilation::bdd::BddError;
 use super::bdd_kernel::BddKernel;
 use super::bdd_operations::all_sat;
 
-pub fn enumerate_all_models(index: usize, variables: Option<&[Variable]>, kernel: &mut BddKernel) -> LngResult<Vec<Model>> {
+pub fn enumerate_all_models(
+    index: usize,
+    variables: Option<&[Variable]>,
+    kernel: &mut BddKernel,
+) -> LngResult<Vec<Model>> {
     let mut res = Vec::new();
     let models = all_sat(index, kernel);
     let mut relevant_indices = Vec::new();
@@ -44,8 +48,12 @@ fn generate_all_models(
         let mut pos = Vec::new();
         let mut neg = Vec::new();
         for i in relevant_indices {
-            let assignment = *model.get(*i).ok_or(BddError::InvalidVarNum { var_num: *i })?;
-            let variable = kernel.get_variable_for_index(*i).ok_or(BddError::InvalidVarNum { var_num: *i })?;
+            let assignment = *model
+                .get(*i)
+                .ok_or(BddError::InvalidVarNum { var_num: *i })?;
+            let variable = kernel
+                .get_variable_for_index(*i)
+                .ok_or(BddError::InvalidVarNum { var_num: *i })?;
             if assignment == 0 {
                 neg.push(variable);
             } else if assignment == 1 {
@@ -53,7 +61,13 @@ fn generate_all_models(
             }
         }
         models.push(Model::new(pos, neg));
-    } else if *model.get(relevant_indices[position]).ok_or(BddError::InvalidVarNum { var_num: relevant_indices[position] })? != -1 {
+    } else if *model
+        .get(relevant_indices[position])
+        .ok_or(BddError::InvalidVarNum {
+            var_num: relevant_indices[position],
+        })?
+        != -1
+    {
         generate_all_models(models, model, relevant_indices, position + 1, kernel)?;
     } else {
         model[relevant_indices[position]] = 0;

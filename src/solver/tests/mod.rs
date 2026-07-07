@@ -10,7 +10,11 @@ pub fn generate_pigeon_hole(n: usize, f: &FormulaFactory) -> EncodedFormula {
     generate_pigeon_hole_with_prefix(n, "v", f)
 }
 
-pub fn generate_pigeon_hole_with_prefix(n: usize, prefix: &str, f: &FormulaFactory) -> EncodedFormula {
+pub fn generate_pigeon_hole_with_prefix(
+    n: usize,
+    prefix: &str,
+    f: &FormulaFactory,
+) -> EncodedFormula {
     let some_hole = place_in_some_hole(n, prefix, f);
     let one_pigeon = only_one_pigeon_in_hole(n, prefix, f);
     f.and([some_hole, one_pigeon])

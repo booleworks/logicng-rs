@@ -26,13 +26,21 @@ impl OptimizationFunction {
     /// Returns an optimization function which maximizes the given set of literals.
     pub fn maximize(literals: Vec<Literal>) -> Self {
         let result_model_variables = literals.iter().map(Literal::variable).collect();
-        Self { literals, result_model_variables, maximize: true }
+        Self {
+            literals,
+            result_model_variables,
+            maximize: true,
+        }
     }
 
     /// Returns an optimization function which minimizes the given set of literals.
     pub fn minimize(literals: Vec<Literal>) -> Self {
         let result_model_variables = literals.iter().map(Literal::variable).collect();
-        Self { literals, result_model_variables, maximize: false }
+        Self {
+            literals,
+            result_model_variables,
+            maximize: false,
+        }
     }
 
     /// Extends the function with additional variables.
@@ -42,8 +50,16 @@ impl OptimizationFunction {
         self
     }
 
-    pub(crate) fn optimize<B: Clone>(&self, solver: &mut MiniSat<B>, f: &FormulaFactory) -> LngResult<Option<Model>> {
-        let solver_state = if solver.config.incremental { Some(solver.save_state()?) } else { None };
+    pub(crate) fn optimize<B: Clone>(
+        &self,
+        solver: &mut MiniSat<B>,
+        f: &FormulaFactory,
+    ) -> LngResult<Option<Model>> {
+        let solver_state = if solver.config.incremental {
+            Some(solver.save_state()?)
+        } else {
+            None
+        };
         let model = self.compute(solver, f);
         if let Some(state) = solver_state {
             solver.load_state(&state)?;
@@ -51,22 +67,51 @@ impl OptimizationFunction {
         model
     }
 
-    fn compute<B: Clone>(&self, solver: &mut MiniSat<B>, f: &FormulaFactory) -> LngResult<Option<Model>> {
-        let selector_map: BTreeMap<Variable, Literal> =
-            self.literals.iter().enumerate().map(|(i, &l)| (f.var(format!("{SEL_PREFIX}{i}")), l)).collect();
+    fn compute<B: Clone>(
+        &self,
+        solver: &mut MiniSat<B>,
+        f: &FormulaFactory,
+    ) -> LngResult<Option<Model>> {
+        let selector_map: BTreeMap<Variable, Literal> = self
+            .literals
+            .iter()
+            .enumerate()
+            .map(|(i, &l)| (f.var(format!("{SEL_PREFIX}{i}")), l))
+            .collect();
         if self.maximize {
             for (sel_var, lit) in &selector_map {
-                solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(*lit)]), f)?;
+                solver.add(
+                    f.or([
+                        EncodedFormula::from(sel_var.negate()),
+                        EncodedFormula::from(*lit),
+                    ]),
+                    f,
+                )?;
             }
             for (sel_var, lit) in &selector_map {
-                solver.add(f.or([EncodedFormula::from(lit.negate()), EncodedFormula::from(*sel_var)]), f)?;
+                solver.add(
+                    f.or([
+                        EncodedFormula::from(lit.negate()),
+                        EncodedFormula::from(*sel_var),
+                    ]),
+                    f,
+                )?;
             }
         } else {
             for (sel_var, lit) in &selector_map {
-                solver.add(f.or([EncodedFormula::from(sel_var.negate()), EncodedFormula::from(lit.negate())]), f)?;
+                solver.add(
+                    f.or([
+                        EncodedFormula::from(sel_var.negate()),
+                        EncodedFormula::from(lit.negate()),
+                    ]),
+                    f,
+                )?;
             }
             for (sel_var, lit) in &selector_map {
-                solver.add(f.or([EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]), f)?;
+                solver.add(
+                    f.or([EncodedFormula::from(*lit), EncodedFormula::from(*sel_var)]),
+                    f,
+                )?;
             }
         }
         if solver.sat() != True {
@@ -74,7 +119,9 @@ impl OptimizationFunction {
         }
         let selectors: Box<[Variable]> = selector_map.keys().copied().collect();
         let mut internal_model = solver.underlying_solver.model.clone();
-        let mut current_model = solver.model(Some(&selectors))?.expect("solver was true, there is a model");
+        let mut current_model = solver
+            .model(Some(&selectors))?
+            .expect("solver was true, there is a model");
         let mut current_bound = current_model.pos().len();
         if current_bound == 0 {
             solver.add(f.cc(GE, 1, selectors.clone())?, f)?;
@@ -87,25 +134,40 @@ impl OptimizationFunction {
         } else if current_bound == selectors.len() {
             return Ok(Some(self.mk_result_model(&internal_model, solver)));
         }
-        let bound = u32::try_from(current_bound).map_err(|_| SolverError::OptimizationBoundTooLarge { bound: current_bound })? + 1;
+        let bound =
+            u32::try_from(current_bound).map_err(|_| SolverError::OptimizationBoundTooLarge {
+                bound: current_bound,
+            })? + 1;
         let cc = f.cc(GE, bound, selectors.clone())?.as_cc(f).unwrap();
         let mut incremental_data = solver.add_incremental_cc(&cc, f)?;
         while solver.sat() == True {
             internal_model.clone_from(&solver.underlying_solver.model);
-            current_model = solver.model(Some(&selectors))?.expect("solver was true, there is a model");
+            current_model = solver
+                .model(Some(&selectors))?
+                .expect("solver was true, there is a model");
             current_bound = current_model.pos().len();
             if current_bound == selectors.len() {
                 return Ok(Some(self.mk_result_model(&internal_model, solver)));
             }
-            let bound = u32::try_from(current_bound).map_err(|_| SolverError::OptimizationBoundTooLarge { bound: current_bound })? + 1;
-            incremental_data.as_mut().unwrap().new_lower_bound_for_solver(solver, f, bound)?;
+            let bound = u32::try_from(current_bound).map_err(|_| {
+                SolverError::OptimizationBoundTooLarge {
+                    bound: current_bound,
+                }
+            })? + 1;
+            incremental_data
+                .as_mut()
+                .unwrap()
+                .new_lower_bound_for_solver(solver, f, bound)?;
         }
         Ok(Some(self.mk_result_model(&internal_model, solver)))
     }
 
     fn mk_result_model<B: Clone>(&self, internal_model: &[bool], solver: &MiniSat<B>) -> Model {
-        let relevant_indices: Vec<MsVar> =
-            self.result_model_variables.iter().filter_map(|&v| solver.underlying_solver.idx_for_variable(v)).collect();
+        let relevant_indices: Vec<MsVar> = self
+            .result_model_variables
+            .iter()
+            .filter_map(|&v| solver.underlying_solver.idx_for_variable(v))
+            .collect();
         solver.create_assignment(internal_model, &Some(relevant_indices))
     }
 }

@@ -29,18 +29,32 @@ pub fn variable_profile(formula: EncodedFormula, f: &FormulaFactory) -> HashMap<
     result
 }
 
-fn variable_profile_rec(formula: EncodedFormula, f: &FormulaFactory, result: &mut HashMap<Variable, usize>) {
+fn variable_profile_rec(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+    result: &mut HashMap<Variable, usize>,
+) {
     match formula.unpack(f) {
         Formula::Lit(lit) => {
-            result.entry(lit.variable()).and_modify(|counter| *counter += 1).or_insert(1);
+            result
+                .entry(lit.variable())
+                .and_modify(|counter| *counter += 1)
+                .or_insert(1);
         }
         Formula::Cc(cc) => {
-            cc.variables.iter().for_each(|var| variable_profile_rec(EncodedFormula::from(*var), f, result));
+            cc.variables
+                .iter()
+                .for_each(|var| variable_profile_rec(EncodedFormula::from(*var), f, result));
         }
         Formula::Pbc(pbc) => {
-            pbc.literals.iter().for_each(|lit| variable_profile_rec(EncodedFormula::from(*lit), f, result));
+            pbc.literals
+                .iter()
+                .for_each(|lit| variable_profile_rec(EncodedFormula::from(*lit), f, result));
         }
-        _ => formula.operands(f).iter().for_each(|op| variable_profile_rec(*op, f, result)),
+        _ => formula
+            .operands(f)
+            .iter()
+            .for_each(|op| variable_profile_rec(*op, f, result)),
     }
 }
 
@@ -108,7 +122,9 @@ mod tests {
     fn test_variable_profile_complex() {
         let f = FormulaFactory::new();
         let formula1 = f.parse("(a & (b | c) & (~b | ~c)) => c").unwrap();
-        let formula2 = f.parse("(a => ~b) & ((a & c) | (d & ~c)) & (a | y | x) & (y <=> (x | (w + a + f < 1)))").unwrap();
+        let formula2 = f
+            .parse("(a => ~b) & ((a & c) | (d & ~c)) & (a | y | x) & (y <=> (x | (w + a + f < 1)))")
+            .unwrap();
         let prof1 = variable_profile(formula1, &f);
         let prof2 = variable_profile(formula2, &f);
 

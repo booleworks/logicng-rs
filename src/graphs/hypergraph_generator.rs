@@ -12,11 +12,18 @@ use super::hypergraph::NodeIndex;
 /// # Errors
 ///
 /// Returns an error if the given formula is not a CNF formula.
-pub fn hypergraph_from_cnf(cnf: EncodedFormula, f: &FormulaFactory) -> LngResult<Hypergraph<Variable>> {
+pub fn hypergraph_from_cnf(
+    cnf: EncodedFormula,
+    f: &FormulaFactory,
+) -> LngResult<Hypergraph<Variable>> {
     let mut hypergraph = Hypergraph::new();
     let mut node_map = HashMap::new();
     match cnf.unpack(f) {
-        Formula::Cc(_) | Formula::Pbc(_) | Formula::Impl(_) | Formula::Equiv(_) | Formula::Not(_) => {
+        Formula::Cc(_)
+        | Formula::Pbc(_)
+        | Formula::Impl(_)
+        | Formula::Equiv(_)
+        | Formula::Not(_) => {
             return Err(GraphError::UnexpectedFormulaInCnf { formula: cnf }.into());
         }
         Formula::Lit(_) | Formula::Or(_) => add_clause(cnf, f, &mut hypergraph, &mut node_map)?,
@@ -63,10 +70,30 @@ mod tests {
     #[test]
     fn test_from_constants() {
         let f = FormulaFactory::new();
-        assert_eq!(hypergraph_from_cnf(f.parse("$false").unwrap(), &f).unwrap().number_of_nodes(), 0);
-        assert_eq!(hypergraph_from_cnf(f.parse("$false").unwrap(), &f).unwrap().number_of_edges(), 0);
-        assert_eq!(hypergraph_from_cnf(f.parse("$true").unwrap(), &f).unwrap().number_of_nodes(), 0);
-        assert_eq!(hypergraph_from_cnf(f.parse("$true").unwrap(), &f).unwrap().number_of_edges(), 0);
+        assert_eq!(
+            hypergraph_from_cnf(f.parse("$false").unwrap(), &f)
+                .unwrap()
+                .number_of_nodes(),
+            0
+        );
+        assert_eq!(
+            hypergraph_from_cnf(f.parse("$false").unwrap(), &f)
+                .unwrap()
+                .number_of_edges(),
+            0
+        );
+        assert_eq!(
+            hypergraph_from_cnf(f.parse("$true").unwrap(), &f)
+                .unwrap()
+                .number_of_nodes(),
+            0
+        );
+        assert_eq!(
+            hypergraph_from_cnf(f.parse("$true").unwrap(), &f)
+                .unwrap()
+                .number_of_edges(),
+            0
+        );
     }
 
     #[test]
@@ -101,7 +128,12 @@ mod tests {
     #[test]
     fn test_from_cnf() {
         let f = FormulaFactory::new();
-        let hg = hypergraph_from_cnf(f.parse("(a | b | ~c) & (b | ~d) & (c | ~e) & (~b | ~d | e) & x & ~y").unwrap(), &f).unwrap();
+        let hg = hypergraph_from_cnf(
+            f.parse("(a | b | ~c) & (b | ~d) & (c | ~e) & (~b | ~d | e) & x & ~y")
+                .unwrap(),
+            &f,
+        )
+        .unwrap();
 
         assert_eq!(hg.number_of_nodes(), 7);
         assert_eq!(hg.number_of_edges(), 6);

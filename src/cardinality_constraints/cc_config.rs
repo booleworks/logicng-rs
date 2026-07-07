@@ -110,7 +110,12 @@ impl CcConfig {
 
     /// Creates a new configuration.
     pub const fn new() -> Self {
-        Self { amo_encoder: AmoEncoder::Best, amk_encoder: AmkEncoder::Best, alk_encoder: AlkEncoder::Best, exk_encoder: ExkEncoder::Best }
+        Self {
+            amo_encoder: AmoEncoder::Best,
+            amk_encoder: AmkEncoder::Best,
+            alk_encoder: AlkEncoder::Best,
+            exk_encoder: ExkEncoder::Best,
+        }
     }
 
     /// Sets the encoder for at-most-one constraints.

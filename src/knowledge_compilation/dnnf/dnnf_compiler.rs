@@ -9,7 +9,9 @@ use itertools::Itertools;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
 use crate::knowledge_compilation::dnnf::DnnfSatSolver;
-use crate::knowledge_compilation::dnnf::dtree::{DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation};
+use crate::knowledge_compilation::dnnf::dtree::{
+    DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation,
+};
 use crate::operations::predicates::is_sat;
 use crate::operations::transformations::{backbone_simplification, cnf_subsumption};
 use crate::solver::minisat::sat::{MiniSat2Solver, MsVar, Tristate, var};
@@ -39,7 +41,10 @@ pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Dn
     let simplified = backbone_simplification(cnf, f)?;
     let subsumption = cnf_subsumption(simplified, f)?;
     let dnnf = DnnfCompiler::new(subsumption, f).compile()?;
-    Ok(DnnfFormula { formula: dnnf, original_variables })
+    Ok(DnnfFormula {
+        formula: dnnf,
+        original_variables,
+    })
 }
 
 struct DnnfCompiler<'a> {
@@ -105,7 +110,11 @@ impl<'a> DnnfCompiler<'a> {
             let var = self.choose_shannon_variable(tree, &sep);
 
             // Positive branch
-            let positive_dnnf = if self.solver.decide(var, true) { self.cnf2ddnnf(tree) } else { self.f.falsum() };
+            let positive_dnnf = if self.solver.decide(var, true) {
+                self.cnf2ddnnf(tree)
+            } else {
+                self.f.falsum()
+            };
             self.solver.undo_decide(var);
             if positive_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
@@ -116,7 +125,11 @@ impl<'a> DnnfCompiler<'a> {
             }
 
             // Negative branch
-            let negative_dnnf = if self.solver.decide(var, false) { self.cnf2ddnnf(tree) } else { self.f.falsum() };
+            let negative_dnnf = if self.solver.decide(var, false) {
+                self.cnf2ddnnf(tree)
+            } else {
+                self.f.falsum()
+            };
             self.solver.undo_decide(var);
             if negative_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
@@ -147,7 +160,10 @@ impl<'a> DnnfCompiler<'a> {
             match self.solver.value_of(*lit) {
                 Tristate::True => return self.f.verum(),
                 Tristate::Undef => {
-                    let literal = EncodedFormula::from(Literal::new(self.solver.var_for_idx(var(*lit)), DnnfSatSolver::phase(*lit)));
+                    let literal = EncodedFormula::from(Literal::new(
+                        self.solver.var_for_idx(var(*lit)),
+                        DnnfSatSolver::phase(*lit),
+                    ));
                     leaf_current_literals.push(literal);
                     leaf_result_operands.push(self.f.and(&leaf_current_literals));
                     let last_index = leaf_current_literals.len() - 1;
@@ -195,7 +211,8 @@ impl<'a> DnnfCompiler<'a> {
     fn compute_cache_key(&self, tree: DTree) -> BitVec {
         // cached allocation as in Java was significantly slower here, so we rather create a new bitvec on every call
         let mut result = bitvec![0; self.df.tree_size() + self.number_of_variables];
-        self.df.cache_key(tree, &self.solver, &mut result, self.number_of_variables);
+        self.df
+            .cache_key(tree, &self.solver, &mut result, self.number_of_variables);
         result
     }
 
@@ -205,7 +222,8 @@ impl<'a> DnnfCompiler<'a> {
         let mut occurrences: Vec<isize> = repeat_n(-1, self.number_of_variables).collect();
         separator.iter_ones().for_each(|n| occurrences[n] = 0);
 
-        self.df.count_unsubsumed_occurrences(tree, &mut occurrences, &self.solver);
+        self.df
+            .count_unsubsumed_occurrences(tree, &mut occurrences, &self.solver);
 
         MsVar(occurrences.iter().position_max().unwrap())
     }
@@ -214,7 +232,8 @@ impl<'a> DnnfCompiler<'a> {
 fn initialize_clauses(cnf: EncodedFormula, f: &FormulaFactory) -> (EncodedFormula, EncodedFormula) {
     match cnf.formula_type() {
         FormulaType::And => {
-            let (l, r): (Vec<EncodedFormula>, Vec<EncodedFormula>) = cnf.operands(f).iter().partition(|&&o| o.is_atomic());
+            let (l, r): (Vec<EncodedFormula>, Vec<EncodedFormula>) =
+                cnf.operands(f).iter().partition(|&&o| o.is_atomic());
             (f.and(l), f.and(r))
         }
         FormulaType::Or => (f.verum(), cnf),
@@ -249,7 +268,11 @@ mod tests {
         test_formula("a | b | c".to_formula(f), f, true);
         test_formula("a & b & c".to_formula(f), f, true);
         test_formula("f & ((~b | c) <=> ~a & ~c)".to_formula(f), f, true);
-        test_formula("a | ((b & ~c) | (c & (~d | ~a & b)) & e)".to_formula(f), f, true);
+        test_formula(
+            "a | ((b & ~c) | (c & (~d | ~a & b)) & e)".to_formula(f),
+            f,
+            true,
+        );
         test_formula("a + b + c + d <= 1".to_formula(f), f, true);
         test_formula("a + b + c + d <= 3".to_formula(f), f, true);
         test_formula("2*a + 3*b + -2*c + d < 5".to_formula(f), f, true);
@@ -299,8 +322,15 @@ mod tests {
             FormulaType::True => 1.to_biguint().unwrap(),
             FormulaType::False => 0.to_biguint().unwrap(),
             _ => {
-                let kernel = &mut BddKernel::new_with_var_ordering(&force_ordering(formula, f).unwrap(), 10000, 10000).unwrap();
-                Bdd::from_formula(formula, f, kernel).unwrap().model_count(kernel)
+                let kernel = &mut BddKernel::new_with_var_ordering(
+                    &force_ordering(formula, f).unwrap(),
+                    10000,
+                    10000,
+                )
+                .unwrap();
+                Bdd::from_formula(formula, f, kernel)
+                    .unwrap()
+                    .model_count(kernel)
             }
         }
     }

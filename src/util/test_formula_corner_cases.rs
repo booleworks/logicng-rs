@@ -11,7 +11,17 @@ pub fn formula_corner_cases(f: &FormulaFactory) -> (Vec<EncodedFormula>, BTreeSe
     let nc = f.literal("c", false);
     let not_a = f.not(a);
     let not_not_a = f.not(not_a);
-    let mut formulas = vec![f.falsum(), f.not(f.falsum()), f.verum(), f.not(f.verum()), a, na, not_a, not_not_a, f.not(not_not_a)];
+    let mut formulas = vec![
+        f.falsum(),
+        f.not(f.falsum()),
+        f.verum(),
+        f.not(f.verum()),
+        a,
+        na,
+        not_a,
+        not_not_a,
+        f.not(not_not_a),
+    ];
     for (left, right) in binary_corner_cases(f, a, b, na, nb) {
         formulas.push(f.implication(left, right));
     }
@@ -25,7 +35,14 @@ pub fn formula_corner_cases(f: &FormulaFactory) -> (Vec<EncodedFormula>, BTreeSe
         formulas.push(f.and(&ops));
     }
     add_pbc_corner_cases(&mut formulas, f, a, b, c, na, nb);
-    (formulas, BTreeSet::from([a.as_variable().unwrap(), b.as_variable().unwrap(), c.as_variable().unwrap()]))
+    (
+        formulas,
+        BTreeSet::from([
+            a.as_variable().unwrap(),
+            b.as_variable().unwrap(),
+            c.as_variable().unwrap(),
+        ]),
+    )
 }
 
 fn binary_corner_cases(

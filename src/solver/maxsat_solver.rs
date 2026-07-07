@@ -169,7 +169,12 @@ impl MaxSatSolver {
     pub fn from_config(algorithm: Algorithm, config: MaxSatConfig) -> Result<Self, MaxSatError> {
         let solver = OpenWboSolver::new(&algorithm, &config)?;
 
-        Ok(Self { algorithm, config, solver, selector_variables: BTreeSet::new() })
+        Ok(Self {
+            algorithm,
+            config,
+            solver,
+            selector_variables: BTreeSet::new(),
+        })
     }
 
     /// Returns `true` if this solver is capable of solving the weighted MaxSAT
@@ -226,7 +231,8 @@ impl MaxSatSolver {
     pub fn reset(&mut self) {
         // Algorithm and Config can not be changed. Therefore, we can expect that we can create this solver,
         // because otherwise it would have failed in the constructor.
-        self.solver = OpenWboSolver::new(&self.algorithm, &self.config).expect("Failed to reset the MaxSAT solver!");
+        self.solver = OpenWboSolver::new(&self.algorithm, &self.config)
+            .expect("Failed to reset the MaxSAT solver!");
         self.selector_variables.clear();
     }
 
@@ -254,7 +260,11 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn add_hard_formula(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    pub fn add_hard_formula(
+        &mut self,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         self.add_cnf(None, f.cnf_of(formula), f)
     }
 
@@ -303,7 +313,12 @@ impl MaxSatSolver {
     /// Returns an error if the weight is invalid for the selected algorithm, if
     /// the formula cannot be encoded as CNF, or if OpenWBO rejects one of the
     /// resulting clauses.
-    pub fn add_soft_formula(&mut self, weight: u64, formula: EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    pub fn add_soft_formula(
+        &mut self,
+        weight: u64,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         if (formula.is_or() || formula.is_literal()) && formula.is_cnf(f) {
             self.add_clause(Some(weight), formula, f)
         } else {
@@ -352,7 +367,11 @@ impl MaxSatSolver {
     /// status.
     pub fn solve(&mut self) -> Result<MaxSatResult, MaxSatError> {
         let status = self.solver.status();
-        if status == Ok(MaxSatResult::Undef) { self.solver.search() } else { status }
+        if status == Ok(MaxSatResult::Undef) {
+            self.solver.search()
+        } else {
+            status
+        }
     }
 
     /// Returns the result of the last search.
@@ -503,10 +522,17 @@ impl MaxSatSolver {
         self.solver.stats()
     }
 
-    fn add_cnf(&mut self, weight: Option<u64>, formula: EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    fn add_cnf(
+        &mut self,
+        weight: Option<u64>,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         match formula.unpack(f) {
             Formula::True => Ok(()),
-            Formula::False | Formula::Lit(_) | Formula::Or(_) => self.add_clause(weight, formula, f),
+            Formula::False | Formula::Lit(_) | Formula::Or(_) => {
+                self.add_clause(weight, formula, f)
+            }
             Formula::And(ops) => {
                 for op in ops {
                     self.add_clause(weight, op, f)?;
@@ -517,7 +543,12 @@ impl MaxSatSolver {
         }
     }
 
-    fn add_clause(&mut self, weight: Option<u64>, formula: EncodedFormula, f: &FormulaFactory) -> Result<(), MaxSatError> {
+    fn add_clause(
+        &mut self,
+        weight: Option<u64>,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> Result<(), MaxSatError> {
         match weight {
             Some(w) => self.solver.add_soft_clause(w, &formula, f),
             None => self.solver.add_hard_clause(&formula, f),

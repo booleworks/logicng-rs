@@ -65,7 +65,12 @@ impl SharpSatSolver {
     /// let mut solver = SharpSatSolver::new();
     /// ```
     pub fn new() -> Self {
-        Self { solver: unsafe { ffi::new_solver() }, var_map_down: HashMap::default(), var_map_up: Vec::default(), constant: None }
+        Self {
+            solver: unsafe { ffi::new_solver() },
+            var_map_down: HashMap::default(),
+            var_map_up: Vec::default(),
+            constant: None,
+        }
     }
 
     /// Adds a clause to the solver.
@@ -93,7 +98,9 @@ impl SharpSatSolver {
                 let var_index = self.var_map_down.entry(var).or_insert_with_key(|k| {
                     let new_index = self.var_map_up.len() + 1;
                     self.var_map_up.push(*k);
-                    new_index.try_into().expect("SharpSat FFI: The number of variables exceeds the limit")
+                    new_index
+                        .try_into()
+                        .expect("SharpSat FFI: The number of variables exceeds the limit")
                 });
 
                 if matches!(lit, Literal::Pos(_)) {
@@ -107,7 +114,10 @@ impl SharpSatSolver {
                 ffi::add_clause(
                     self.solver,
                     new_clause.as_ptr(),
-                    new_clause.len().try_into().expect("SharpSat FFI: Size of clause exceeds the limit"),
+                    new_clause
+                        .len()
+                        .try_into()
+                        .expect("SharpSat FFI: Size of clause exceeds the limit"),
                 );
             }
         }
@@ -132,7 +142,10 @@ impl SharpSatSolver {
     pub fn add_cnf(&mut self, cnf_formula: EncodedFormula, f: &FormulaFactory) {
         match cnf_formula.unpack(f) {
             Formula::Or(ops) => {
-                self.add_clause(&ops.map(|formula| formula.as_literal().expect("SharpSat FFI: invalid cnf")).collect::<Box<_>>());
+                self.add_clause(
+                    &ops.map(|formula| formula.as_literal().expect("SharpSat FFI: invalid cnf"))
+                        .collect::<Box<_>>(),
+                );
             }
             Formula::And(ops) => {
                 for op in ops {
@@ -202,8 +215,9 @@ impl SharpSatSolver {
                     BigUint::from(1_u64)
                 } else {
                     let res = unsafe { ffi::solve(self.solver) };
-                    BigUint::from_str(&format!("{res}"))
-                        .unwrap_or_else(|_| panic!("SharpSat FFI: Returned value {res} is not a vaild result"))
+                    BigUint::from_str(&format!("{res}")).unwrap_or_else(|_| {
+                        panic!("SharpSat FFI: Returned value {res} is not a vaild result")
+                    })
                 }
             }
         }

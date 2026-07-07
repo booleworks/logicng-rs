@@ -178,7 +178,11 @@ impl Display for CType {
 
 impl CardinalityConstraint {
     pub(crate) fn new(variables: Box<[Variable]>, comparator: CType, rhs: u32) -> Self {
-        Self { variables, comparator, rhs }
+        Self {
+            variables,
+            comparator,
+            rhs,
+        }
     }
 
     /// Returns true, if this `CardinalityConstraint` is a _at most one_ problem.
@@ -264,11 +268,15 @@ impl CardinalityConstraint {
     /// let encoded = formula.encode(&f);
     /// ```
     pub fn encode(&self, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
-        let index = f.ccs.lookup(self).expect("Cardinality Constraint must be present in FF");
+        let index = f
+            .ccs
+            .lookup(self)
+            .expect("Cardinality Constraint must be present in FF");
         if let Some(cached) = f.caches.cc_encoding.get(&index) {
             return Ok(cached.clone());
         }
-        let result: Arc<[_]> = Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f)?);
+        let result: Arc<[_]> =
+            Arc::from(CcEncoder::new(f.config.cc_config.clone()).encode(self, f)?);
         if f.config.caches.cc_encoding {
             f.caches.cc_encoding.insert(index, result.clone());
         }
@@ -286,7 +294,12 @@ impl CardinalityConstraint {
     ///
     /// [`restrict`]: CardinalityConstraint::restrict
     pub fn evaluate(&self, assignment: &Assignment) -> bool {
-        let lhs = self.variables.iter().map(|v| assignment.evaluate_lit(v.pos_lit())).filter(|b| *b).count();
+        let lhs = self
+            .variables
+            .iter()
+            .map(|v| assignment.evaluate_lit(v.pos_lit()))
+            .filter(|b| *b)
+            .count();
         evaluate_comparator(lhs as i64, self.comparator, self.rhs.into())
     }
 
@@ -316,7 +329,8 @@ impl CardinalityConstraint {
         } else if satisfied == self.rhs && self.comparator == LT {
             f.falsum()
         } else {
-            f.cc(self.comparator, self.rhs - satisfied, remaining).expect("must be valid")
+            f.cc(self.comparator, self.rhs - satisfied, remaining)
+                .expect("must be valid")
         }
     }
 
@@ -328,7 +342,10 @@ impl CardinalityConstraint {
                     .pbc(
                         LT,
                         self.rhs.into(),
-                        self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
+                        self.variables
+                            .iter()
+                            .map(Variable::pos_lit)
+                            .collect::<Box<[_]>>(),
                         vec![1; self.variables.len()],
                     )
                     .expect("pbc is already verified");
@@ -336,23 +353,58 @@ impl CardinalityConstraint {
                     .pbc(
                         GT,
                         self.rhs.into(),
-                        self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(),
+                        self.variables
+                            .iter()
+                            .map(Variable::pos_lit)
+                            .collect::<Box<[_]>>(),
                         vec![1; self.variables.len()],
                     )
                     .expect("pbc is already verified");
                 f.or([lt, gt])
             }
             GT => f
-                .pbc(LE, self.rhs.into(), self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(), vec![1; self.variables.len()])
+                .pbc(
+                    LE,
+                    self.rhs.into(),
+                    self.variables
+                        .iter()
+                        .map(Variable::pos_lit)
+                        .collect::<Box<[_]>>(),
+                    vec![1; self.variables.len()],
+                )
                 .expect("pbc is already verified"),
             GE => f
-                .pbc(LT, self.rhs.into(), self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(), vec![1; self.variables.len()])
+                .pbc(
+                    LT,
+                    self.rhs.into(),
+                    self.variables
+                        .iter()
+                        .map(Variable::pos_lit)
+                        .collect::<Box<[_]>>(),
+                    vec![1; self.variables.len()],
+                )
                 .expect("pbc is already verified"),
             LT => f
-                .pbc(GE, self.rhs.into(), self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(), vec![1; self.variables.len()])
+                .pbc(
+                    GE,
+                    self.rhs.into(),
+                    self.variables
+                        .iter()
+                        .map(Variable::pos_lit)
+                        .collect::<Box<[_]>>(),
+                    vec![1; self.variables.len()],
+                )
                 .expect("pbc is already verified"),
             LE => f
-                .pbc(GT, self.rhs.into(), self.variables.iter().map(Variable::pos_lit).collect::<Box<[_]>>(), vec![1; self.variables.len()])
+                .pbc(
+                    GT,
+                    self.rhs.into(),
+                    self.variables
+                        .iter()
+                        .map(Variable::pos_lit)
+                        .collect::<Box<[_]>>(),
+                    vec![1; self.variables.len()],
+                )
                 .expect("pbc is already verified"),
         }
     }
@@ -361,19 +413,38 @@ impl CardinalityConstraint {
     ///
     /// Strings obtained by this function, can also be parsed back again.
     pub fn to_string(&self, f: &FormulaFactory) -> String {
-        let lhs = self.variables.iter().map(|v| v.pos_lit().to_string(f)).collect::<Vec<String>>().join(" + ");
+        let lhs = self
+            .variables
+            .iter()
+            .map(|v| v.pos_lit().to_string(f))
+            .collect::<Vec<String>>()
+            .join(" + ");
         format!("{lhs} {} {}", self.comparator, self.rhs)
     }
 }
 
 impl PbConstraint {
-    pub(crate) fn new(literals: Box<[Literal]>, coefficients: Box<[i64]>, comparator: CType, rhs: i64) -> Self {
-        Self { literals, coefficients, comparator, rhs }
+    pub(crate) fn new(
+        literals: Box<[Literal]>,
+        coefficients: Box<[i64]>,
+        comparator: CType,
+        rhs: i64,
+    ) -> Self {
+        Self {
+            literals,
+            coefficients,
+            comparator,
+            rhs,
+        }
     }
 
     /// Returns the value of the largest coefficient.
     pub fn max_weight(&self) -> i64 {
-        *self.coefficients.iter().max().expect("A pseudo-boolean constraint without literals should never be created.")
+        *self
+            .coefficients
+            .iter()
+            .max()
+            .expect("A pseudo-boolean constraint without literals should never be created.")
     }
 
     /// Encodes this `PbConstraint` into a vector of simple formulas.
@@ -409,7 +480,10 @@ impl PbConstraint {
     /// let encoded = formula.encode(&f);
     /// ```
     pub fn encode(&self, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
-        let index = f.pbcs.lookup(self).expect("pseudo-boolean constraint must be present in formula factory");
+        let index = f
+            .pbcs
+            .lookup(self)
+            .expect("pseudo-boolean constraint must be present in formula factory");
         if let Some(cached) = f.caches.pbc_encoding.get(&index) {
             return Ok(cached.clone());
         }
@@ -462,7 +536,9 @@ impl PbConstraint {
                 }
                 FormulaType::True => lhs_fixed += self.coefficients[i],
                 FormulaType::False => {}
-                _ => unreachable!("The function `restrict_lit` can only produce `True`, `False`, or `Lit`."),
+                _ => unreachable!(
+                    "The function `restrict_lit` can only produce `True`, `False`, or `Lit`."
+                ),
             }
         }
 
@@ -479,21 +555,64 @@ impl PbConstraint {
                 return f.falsum();
             }
         }
-        f.pbc(self.comparator, new_rhs, new_lits, new_coeffs).expect("pbc already verified")
+        f.pbc(self.comparator, new_rhs, new_lits, new_coeffs)
+            .expect("pbc already verified")
     }
 
     /// Returns a negated copy of this constraint as a [`EncodedFormula`].
     pub fn negate(&self, f: &FormulaFactory) -> EncodedFormula {
         match self.comparator {
             EQ => {
-                let lt = f.pbc(LT, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified");
-                let gt = f.pbc(GT, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified");
+                let lt = f
+                    .pbc(
+                        LT,
+                        self.rhs,
+                        self.literals.clone(),
+                        self.coefficients.clone(),
+                    )
+                    .expect("pbc is already verified");
+                let gt = f
+                    .pbc(
+                        GT,
+                        self.rhs,
+                        self.literals.clone(),
+                        self.coefficients.clone(),
+                    )
+                    .expect("pbc is already verified");
                 f.or([lt, gt])
             }
-            GT => f.pbc(LE, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified"),
-            GE => f.pbc(LT, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified"),
-            LT => f.pbc(GE, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified"),
-            LE => f.pbc(GT, self.rhs, self.literals.clone(), self.coefficients.clone()).expect("pbc is already verified"),
+            GT => f
+                .pbc(
+                    LE,
+                    self.rhs,
+                    self.literals.clone(),
+                    self.coefficients.clone(),
+                )
+                .expect("pbc is already verified"),
+            GE => f
+                .pbc(
+                    LT,
+                    self.rhs,
+                    self.literals.clone(),
+                    self.coefficients.clone(),
+                )
+                .expect("pbc is already verified"),
+            LT => f
+                .pbc(
+                    GE,
+                    self.rhs,
+                    self.literals.clone(),
+                    self.coefficients.clone(),
+                )
+                .expect("pbc is already verified"),
+            LE => f
+                .pbc(
+                    GT,
+                    self.rhs,
+                    self.literals.clone(),
+                    self.coefficients.clone(),
+                )
+                .expect("pbc is already verified"),
         }
     }
 
@@ -519,7 +638,10 @@ impl PbConstraint {
                 norm_cs.clear();
                 for i in 0..self.literals.len() {
                     norm_ps.push(self.literals[i]);
-                    norm_cs.push(checked_neg(self.coefficients[i], "negating coefficient for equality lower bound")?);
+                    norm_cs.push(checked_neg(
+                        self.coefficients[i],
+                        "negating coefficient for equality lower bound",
+                    )?);
                 }
                 norm_rhs = checked_neg(self.rhs, "negating rhs for equality lower bound")?;
                 let f2 = normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)?;
@@ -530,18 +652,29 @@ impl PbConstraint {
                     norm_ps.push(self.literals[i]);
                     norm_cs.push(self.coefficients[i]);
                 }
-                norm_rhs = if self.comparator == LE { self.rhs } else { checked_sub(self.rhs, 1, "converting strict less-than rhs")? };
+                norm_rhs = if self.comparator == LE {
+                    self.rhs
+                } else {
+                    checked_sub(self.rhs, 1, "converting strict less-than rhs")?
+                };
                 normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)
             }
             GT | GE => {
                 for i in 0..self.literals.len() {
                     norm_ps.push(self.literals[i]);
-                    norm_cs.push(checked_neg(self.coefficients[i], "negating coefficient for greater-than bound")?);
+                    norm_cs.push(checked_neg(
+                        self.coefficients[i],
+                        "negating coefficient for greater-than bound",
+                    )?);
                 }
                 norm_rhs = if self.comparator == GE {
                     checked_neg(self.rhs, "negating rhs for greater-equal bound")?
                 } else {
-                    checked_sub(checked_neg(self.rhs, "negating rhs for greater-than bound")?, 1, "converting strict greater-than rhs")?
+                    checked_sub(
+                        checked_neg(self.rhs, "negating rhs for greater-than bound")?,
+                        1,
+                        "converting strict greater-than rhs",
+                    )?
                 };
                 normalize_le(&mut norm_ps, &mut norm_cs, norm_rhs, f)
             }
@@ -556,7 +689,13 @@ impl PbConstraint {
             .literals
             .iter()
             .zip(self.coefficients.iter())
-            .map(|pair| if *pair.1 == 1 { pair.0.to_string(f) } else { format!("{}*{}", pair.1, pair.0.to_string(f)) })
+            .map(|pair| {
+                if *pair.1 == 1 {
+                    pair.0.to_string(f)
+                } else {
+                    format!("{}*{}", pair.1, pair.0.to_string(f))
+                }
+            })
             .collect::<Vec<String>>()
             .join(" + ");
         format!("{lhs} {} {}", self.comparator, self.rhs)
@@ -646,7 +785,12 @@ const fn evaluate_coeffs(min_value: i64, max_value: i64, rhs: i64, comparator: C
     }
 }
 
-fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+fn normalize_le(
+    ps: &mut Vec<Literal>,
+    cs: &mut Vec<i64>,
+    rhs: i64,
+    f: &FormulaFactory,
+) -> LngResult<EncodedFormula> {
     let mut c = rhs;
     let mut new_size: usize = 0;
     for i in 0..ps.len() {
@@ -663,19 +807,37 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
         let x = ps[i].variable();
         let consts = *var2consts.get(&x).unwrap_or(&(0, 0));
         if ps[i].phase() {
-            var2consts.insert(x, (consts.0, checked_add(consts.1, cs[i], "aggregating positive literal coefficients")?));
+            var2consts.insert(
+                x,
+                (
+                    consts.0,
+                    checked_add(consts.1, cs[i], "aggregating positive literal coefficients")?,
+                ),
+            );
         } else {
-            var2consts.insert(x, (checked_add(consts.0, cs[i], "aggregating negative literal coefficients")?, consts.1));
+            var2consts.insert(
+                x,
+                (
+                    checked_add(consts.0, cs[i], "aggregating negative literal coefficients")?,
+                    consts.1,
+                ),
+            );
         }
     }
     let mut csps = Vec::with_capacity(var2consts.len());
     for (variable, (first, second)) in var2consts {
         if first < second {
             c = checked_sub(c, first, "normalizing positive literal rhs")?;
-            csps.push((checked_sub(second, first, "normalizing positive literal coefficient")?, variable.pos_lit()));
+            csps.push((
+                checked_sub(second, first, "normalizing positive literal coefficient")?,
+                variable.pos_lit(),
+            ));
         } else {
             c = checked_sub(c, second, "normalizing negative literal rhs")?;
-            csps.push((checked_sub(first, second, "normalizing negative literal coefficient")?, variable.neg_lit()));
+            csps.push((
+                checked_sub(first, second, "normalizing negative literal coefficient")?,
+                variable.neg_lit(),
+            ));
         }
     }
     let mut sum = 0;
@@ -713,19 +875,27 @@ fn normalize_le(ps: &mut Vec<Literal>, cs: &mut Vec<i64>, rhs: i64, f: &FormulaF
 }
 
 fn gcd(small: i64, big: i64) -> i64 {
-    if small == 0 { big } else { gcd(big % small, small) }
+    if small == 0 {
+        big
+    } else {
+        gcd(big % small, small)
+    }
 }
 
 fn checked_add(left: i64, right: i64, operation: &'static str) -> LngResult<i64> {
-    left.checked_add(right).ok_or(PbcError::NormalizationOverflow { operation }.into())
+    left.checked_add(right)
+        .ok_or(PbcError::NormalizationOverflow { operation }.into())
 }
 
 fn checked_sub(left: i64, right: i64, operation: &'static str) -> LngResult<i64> {
-    left.checked_sub(right).ok_or(PbcError::NormalizationOverflow { operation }.into())
+    left.checked_sub(right)
+        .ok_or(PbcError::NormalizationOverflow { operation }.into())
 }
 
 fn checked_neg(value: i64, operation: &'static str) -> LngResult<i64> {
-    value.checked_neg().ok_or(PbcError::NormalizationOverflow { operation }.into())
+    value
+        .checked_neg()
+        .ok_or(PbcError::NormalizationOverflow { operation }.into())
 }
 
 #[allow(non_snake_case)]
@@ -739,31 +909,62 @@ mod tests {
     #[test]
     fn test_normalization() {
         let f = &FormulaFactory::new();
-        let lits: Box<[_]> = vec![f.lit("a", true), f.lit("b", false), f.lit("c", true), f.lit("d", true), f.lit("b", false)].into();
+        let lits: Box<[_]> = vec![
+            f.lit("a", true),
+            f.lit("b", false),
+            f.lit("c", true),
+            f.lit("d", true),
+            f.lit("b", false),
+        ]
+        .into();
         let coeffs: Box<[_]> = vec![2, -3, 3, 0, 1].into();
         let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone()).unwrap();
         let pb2 = f.pbc(GE, 1, lits.clone(), coeffs.clone()).unwrap();
         let pb3 = f.pbc(GT, 0, lits.clone(), coeffs.clone()).unwrap();
         let pb4 = f.pbc(LE, 1, lits.clone(), coeffs.clone()).unwrap();
         let pb5 = f.pbc(LT, 2, lits, coeffs).unwrap();
-        assert_eq!("(2*a + 2*b + 3*c <= 4) & (2*~a + 2*~b + 3*~c <= 3)".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f).unwrap());
-        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
-        assert_eq!("2*~a + 2*~b + 3*~c <= 4".to_formula(f), pb3.as_pbc(f).unwrap().normalize(f).unwrap());
-        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb4.as_pbc(f).unwrap().normalize(f).unwrap());
-        assert_eq!("2*a + 2*b + 3*c <= 3".to_formula(f), pb5.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(
+            "(2*a + 2*b + 3*c <= 4) & (2*~a + 2*~b + 3*~c <= 3)".to_formula(f),
+            pb1.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
+        assert_eq!(
+            "2*~a + 2*~b + 3*~c <= 4".to_formula(f),
+            pb2.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
+        assert_eq!(
+            "2*~a + 2*~b + 3*~c <= 4".to_formula(f),
+            pb3.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
+        assert_eq!(
+            "2*a + 2*b + 3*c <= 3".to_formula(f),
+            pb4.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
+        assert_eq!(
+            "2*a + 2*b + 3*c <= 3".to_formula(f),
+            pb5.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
     }
 
     #[test]
     fn test_normalization_trivial() {
         let f = &FormulaFactory::new();
-        let lits: Box<[_]> = vec![f.lit("a", true), f.lit("b", false), f.lit("c", true), f.lit("d", true)].into();
+        let lits: Box<[_]> = vec![
+            f.lit("a", true),
+            f.lit("b", false),
+            f.lit("c", true),
+            f.lit("d", true),
+        ]
+        .into();
         let coeffs: Box<[_]> = vec![2, -2, 3, 0].into();
         let pb1 = f.pbc(LE, 4, lits.clone(), coeffs.clone()).unwrap();
         let pb2 = f.pbc(LE, 5, lits.clone(), coeffs.clone()).unwrap();
         let pb3 = f.pbc(LE, 7, lits.clone(), coeffs.clone()).unwrap();
         let pb4 = f.pbc(LE, 10, lits.clone(), coeffs.clone()).unwrap();
         let pb5 = f.pbc(LE, -3, lits, coeffs).unwrap();
-        assert_eq!("2*a + 2*b + 3*c <= 6".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(
+            "2*a + 2*b + 3*c <= 6".to_formula(f),
+            pb1.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
         assert_eq!(f.verum(), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
         assert_eq!(f.verum(), pb3.as_pbc(f).unwrap().normalize(f).unwrap());
         assert_eq!(f.verum(), pb4.as_pbc(f).unwrap().normalize(f).unwrap());
@@ -773,16 +974,34 @@ mod tests {
     #[test]
     fn test_normalization_simplifications() {
         let f = &FormulaFactory::new();
-        let lits: Box<[_]> = vec![f.lit("a", true), f.lit("a", true), f.lit("c", true), f.lit("d", true)].into();
+        let lits: Box<[_]> = vec![
+            f.lit("a", true),
+            f.lit("a", true),
+            f.lit("c", true),
+            f.lit("d", true),
+        ]
+        .into();
         let coeffs: Box<[_]> = vec![2, -2, 4, 4].into();
         let pb1 = f.pbc(LE, 4, lits, coeffs).unwrap();
-        assert_eq!("c + d <= 1".to_formula(f), pb1.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(
+            "c + d <= 1".to_formula(f),
+            pb1.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
         assert!(pb1.as_pbc(f).unwrap().normalize(f).unwrap().is_cc());
 
-        let lits2: Box<[_]> = vec![f.lit("a", true), f.lit("a", false), f.lit("c", true), f.lit("d", true)].into();
+        let lits2: Box<[_]> = vec![
+            f.lit("a", true),
+            f.lit("a", false),
+            f.lit("c", true),
+            f.lit("d", true),
+        ]
+        .into();
         let coeffs2: Box<[_]> = vec![2, 2, 4, 2].into();
         let pb2 = f.pbc(LE, 4, lits2, coeffs2).unwrap();
-        assert_eq!("2*c + d <= 1".to_formula(f), pb2.as_pbc(f).unwrap().normalize(f).unwrap());
+        assert_eq!(
+            "2*c + d <= 1".to_formula(f),
+            pb2.as_pbc(f).unwrap().normalize(f).unwrap()
+        );
     }
 
     #[test]

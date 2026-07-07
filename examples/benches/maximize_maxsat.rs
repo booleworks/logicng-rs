@@ -18,7 +18,10 @@ fn main() {
 fn maximize(thread_count: usize) {
     let f = Arc::new(FormulaFactory::new());
     let paths = Arc::new(
-        fs::read_dir("./resources/formula_suite_1/").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec(),
+        fs::read_dir("./resources/formula_suite_1/")
+            .unwrap()
+            .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+            .collect_vec(),
     );
 
     let start = std::time::Instant::now();
@@ -40,7 +43,9 @@ fn maximize(thread_count: usize) {
                 let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
                 solver.add_hard_formula(formula, &f_l).unwrap();
                 for var in &*variables {
-                    solver.add_soft_formula(1, EncodedFormula::from(var.pos_lit()), &f_l).unwrap();
+                    solver
+                        .add_soft_formula(1, EncodedFormula::from(var.pos_lit()), &f_l)
+                        .unwrap();
                 }
                 let _res = solver.solve().unwrap();
             }
@@ -51,5 +56,8 @@ fn maximize(thread_count: usize) {
     for thread in threads {
         thread.join().expect("thread failed!");
     }
-    println!("MaxSAT, {thread_count} Threads: {}s", start.elapsed().as_secs_f64());
+    println!(
+        "MaxSAT, {thread_count} Threads: {}s",
+        start.elapsed().as_secs_f64()
+    );
 }

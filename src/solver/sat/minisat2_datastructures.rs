@@ -96,13 +96,19 @@ pub struct ProofInformation<Backpack> {
 
 impl<Backpack> Clone for ProofInformation<Backpack> {
     fn clone(&self) -> Self {
-        Self { clause: self.clause.clone(), proposition: self.proposition.clone() }
+        Self {
+            clause: self.clause.clone(),
+            proposition: self.proposition.clone(),
+        }
     }
 }
 
 impl<B> ProofInformation<B> {
     /// Constructs new proof information object.
     pub fn new(clause: Vec<isize>, proposition: Option<Proposition<B>>) -> Self {
-        Self { clause, proposition }
+        Self {
+            clause,
+            proposition,
+        }
     }
 }

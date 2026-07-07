@@ -207,7 +207,10 @@ impl MiniSatConfig {
     /// and ``@RESERVED_CNF_`` will be excluded from the models. The default
     /// value is `false`.
     #[must_use]
-    pub const fn auxiliary_variables_in_models(mut self, auxiliary_variables_in_models: bool) -> Self {
+    pub const fn auxiliary_variables_in_models(
+        mut self,
+        auxiliary_variables_in_models: bool,
+    ) -> Self {
         self.auxiliary_variables_in_models = auxiliary_variables_in_models;
         self
     }
@@ -215,7 +218,10 @@ impl MiniSatConfig {
     /// Sets whether the backbone algorithm should check for rotatable literals
     /// during initial unit propagation. The default value is `true`.
     #[must_use]
-    pub const fn bb_initial_ubcheck_for_rotatable_literals(mut self, bb_initial_ubcheck_for_rotatable_literals: bool) -> Self {
+    pub const fn bb_initial_ubcheck_for_rotatable_literals(
+        mut self,
+        bb_initial_ubcheck_for_rotatable_literals: bool,
+    ) -> Self {
         self.bb_initial_ubcheck_for_rotatable_literals = bb_initial_ubcheck_for_rotatable_literals;
         self
     }
@@ -223,7 +229,10 @@ impl MiniSatConfig {
     /// Sets whether the backbone algorithm should check for complement model
     /// literals. The default value is `true`.
     #[must_use]
-    pub const fn bb_check_for_complement_model_literals(mut self, bb_check_for_complement_model_literals: bool) -> Self {
+    pub const fn bb_check_for_complement_model_literals(
+        mut self,
+        bb_check_for_complement_model_literals: bool,
+    ) -> Self {
         self.bb_check_for_complement_model_literals = bb_check_for_complement_model_literals;
         self
     }
@@ -231,7 +240,10 @@ impl MiniSatConfig {
     /// Sets whether the backbone algorithm should check for rotatable literals.
     /// The default value is `true`.
     #[must_use]
-    pub const fn bb_check_for_rotatable_literals(mut self, bb_check_for_rotatable_literals: bool) -> Self {
+    pub const fn bb_check_for_rotatable_literals(
+        mut self,
+        bb_check_for_rotatable_literals: bool,
+    ) -> Self {
         self.bb_check_for_rotatable_literals = bb_check_for_rotatable_literals;
         self
     }

@@ -14,8 +14,18 @@ mod drup_tests {
 
     fn solvers() -> [MiniSat<String>; 2] {
         [
-            MiniSat::from_config_with_backpack(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(FactoryCnf)),
-            MiniSat::from_config_with_backpack(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(FactoryCnf)),
+            MiniSat::from_config_with_backpack(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(FactoryCnf),
+            ),
+            MiniSat::from_config_with_backpack(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(FactoryCnf),
+            ),
         ]
     }
 
@@ -96,7 +106,10 @@ mod drup_tests {
     pub fn test_proposition_handling() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let propositions = [
-            Proposition::standard_proposition("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1"),
+            Proposition::standard_proposition(
+                "((a & b) => c) &  ((a & b) => d)".to_formula(f),
+                "P1",
+            ),
             Proposition::standard_proposition("(c & d) <=> ~e".to_formula(f), "P2"),
             Proposition::standard_proposition("~e => f | g".to_formula(f), "P3"),
             Proposition::standard_proposition("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4"),
@@ -120,7 +133,12 @@ mod drup_tests {
                 propositions[5].clone(),
             ];
             assert_eq!(unsat_core.propositions.len(), expected_result.len());
-            assert!(unsat_core.propositions.iter().all(|p| expected_result.contains(p)));
+            assert!(
+                unsat_core
+                    .propositions
+                    .iter()
+                    .all(|p| expected_result.contains(p))
+            );
         }
 
         Ok(())
@@ -129,10 +147,14 @@ mod drup_tests {
     #[test]
     pub fn test_proposition_inc_dec() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let p1 = Proposition::standard_proposition("((a & b) => c) &  ((a & b) => d)".to_formula(f), "P1");
+        let p1 = Proposition::standard_proposition(
+            "((a & b) => c) &  ((a & b) => d)".to_formula(f),
+            "P1",
+        );
         let p2 = Proposition::standard_proposition("(c & d) <=> ~e".to_formula(f), "P2");
         let p3 = Proposition::standard_proposition("~e => f | g".to_formula(f), "P3");
-        let p4 = Proposition::standard_proposition("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4");
+        let p4 =
+            Proposition::standard_proposition("(f => ~a) & (g => ~b) & p & q".to_formula(f), "P4");
         let p5 = Proposition::standard_proposition("a => b".to_formula(f), "P5");
         let p6 = Proposition::standard_proposition("a".to_formula(f), "P6");
         let p7 = Proposition::standard_proposition("g | h".to_formula(f), "P7");
@@ -148,14 +170,40 @@ mod drup_tests {
         let state2 = solver.save_state().unwrap();
         solver.add_propositions([p7, p8], f)?;
 
-        assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p5.clone(), p6.clone()], f);
+        assert_unsat_core(
+            solver,
+            &[
+                p1.clone(),
+                p2.clone(),
+                p3.clone(),
+                p4.clone(),
+                p5.clone(),
+                p6.clone(),
+            ],
+            f,
+        );
 
         solver.load_state(&state2)?;
-        assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p5.clone(), p6.clone()], f);
+        assert_unsat_core(
+            solver,
+            &[
+                p1.clone(),
+                p2.clone(),
+                p3.clone(),
+                p4.clone(),
+                p5.clone(),
+                p6.clone(),
+            ],
+            f,
+        );
 
         solver.load_state(&state1)?;
         solver.add_proposition(p9.clone(), f)?;
-        assert_unsat_core(solver, &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p9], f);
+        assert_unsat_core(
+            solver,
+            &[p1.clone(), p2.clone(), p3.clone(), p4.clone(), p9],
+            f,
+        );
 
         solver.load_state(&state1)?;
         solver.add_proposition(p5.clone(), f)?;
@@ -196,8 +244,18 @@ mod drup_tests {
     fn test_core_and_assumptions() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(PgOnSolver)),
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(PgOnSolver)),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(PgOnSolver),
+            ),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(PgOnSolver),
+            ),
         ];
 
         for mut solver in solvers {
@@ -227,8 +285,18 @@ mod drup_tests {
     fn test_core_and_assumptions2() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(PgOnSolver)),
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(PgOnSolver)),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(PgOnSolver),
+            ),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(PgOnSolver),
+            ),
         ];
 
         for mut solver in solvers {
@@ -253,8 +321,18 @@ mod drup_tests {
         // Unit test for DRUP issue which led to java.lang.ArrayIndexOutOfBoundsException: -1
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(PgOnSolver)),
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(PgOnSolver)),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(PgOnSolver),
+            ),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(PgOnSolver),
+            ),
         ];
 
         for mut solver in solvers {
@@ -285,8 +363,18 @@ mod drup_tests {
     fn test_core_and_assumptions4() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(PgOnSolver)),
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(PgOnSolver)),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(PgOnSolver),
+            ),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(PgOnSolver),
+            ),
         ];
 
         for mut solver in solvers {
@@ -310,7 +398,11 @@ mod drup_tests {
     #[test]
     fn test_with_cc_propositions() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::from_config_with_backpack(MiniSatConfig::default().proof_generation(true).cnf_method(PgOnSolver));
+        let mut solver = MiniSat::from_config_with_backpack(
+            MiniSatConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        );
 
         let p1 = Proposition::standard_proposition("A + B + C <= 1".to_formula(f), "CC");
         let p2 = StandardProposition::new("A".to_formula(f));
@@ -329,8 +421,18 @@ mod drup_tests {
     fn test_with_special_unit_case_mini_sat() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(true).cnf_method(PgOnSolver)),
-            MiniSat::from_config(MiniSatConfig::default().proof_generation(true).incremental(false).cnf_method(PgOnSolver)),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(true)
+                    .cnf_method(PgOnSolver),
+            ),
+            MiniSat::from_config(
+                MiniSatConfig::default()
+                    .proof_generation(true)
+                    .incremental(false)
+                    .cnf_method(PgOnSolver),
+            ),
         ];
 
         for mut solver in solvers {
@@ -363,16 +465,43 @@ mod drup_tests {
             )?;
             assert_eq!(True, solver.sat());
             solver.add("a".to_formula(f), f)?;
-            assert_unsat_core(&mut solver, &[p1, p2, p4, p5, p6, p7, p8, p9, p10, p11, Proposition::new("a".to_formula(f))], f);
+            assert_unsat_core(
+                &mut solver,
+                &[
+                    p1,
+                    p2,
+                    p4,
+                    p5,
+                    p6,
+                    p7,
+                    p8,
+                    p9,
+                    p10,
+                    p11,
+                    Proposition::new("a".to_formula(f)),
+                ],
+                f,
+            );
         }
 
         Ok(())
     }
 
-    fn verify_core<B>(original_core: &UnsatCore<B>, cnf: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()> {
-        let core: Vec<EncodedFormula> = original_core.propositions.iter().map(|p| p.formula).collect();
+    fn verify_core<B>(
+        original_core: &UnsatCore<B>,
+        cnf: &[EncodedFormula],
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
+        let core: Vec<EncodedFormula> = original_core
+            .propositions
+            .iter()
+            .map(|p| p.formula)
+            .collect();
         let cnf_set: HashSet<EncodedFormula> = cnf.iter().map(EncodedFormula::clone).collect();
-        assert!(core.iter().all(|c| cnf_set.contains(c)), "Core must contain only original clauses");
+        assert!(
+            core.iter().all(|c| cnf_set.contains(c)),
+            "Core must contain only original clauses"
+        );
         let mut solver = MiniSat::new();
         solver.add_all(&core, f)?;
         assert_eq!(solver.sat(), False, "Core must be unsatisfiable");
@@ -387,8 +516,17 @@ mod drup_tests {
     ) {
         assert_eq!(solver.sat(), False);
         assert_eq!(
-            solver.unsat_core(f).unwrap().propositions.iter().cloned().collect::<HashSet<Proposition<B>>>(),
-            expected.iter().cloned().collect::<HashSet<Proposition<B>>>()
+            solver
+                .unsat_core(f)
+                .unwrap()
+                .propositions
+                .iter()
+                .cloned()
+                .collect::<HashSet<Proposition<B>>>(),
+            expected
+                .iter()
+                .cloned()
+                .collect::<HashSet<Proposition<B>>>()
         );
     }
 }

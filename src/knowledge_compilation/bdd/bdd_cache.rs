@@ -29,7 +29,15 @@ impl BddCache {
     pub fn new(cs: usize) -> Self {
         let size = prime_gte(cs);
         let mut table = Vec::new();
-        (0..size).for_each(|_x| table.push(BddCacheEntry { a: None, b: 0, c: 0, bdres: 0.to_biguint().unwrap(), res: 0 }));
+        (0..size).for_each(|_x| {
+            table.push(BddCacheEntry {
+                a: None,
+                b: 0,
+                c: 0,
+                bdres: 0.to_biguint().unwrap(),
+                res: 0,
+            })
+        });
         Self { table }
     }
 

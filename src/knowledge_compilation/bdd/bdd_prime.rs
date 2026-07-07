@@ -33,7 +33,11 @@ fn is_prime(src: usize) -> bool {
 }
 
 const fn has_easy_factors(src: usize) -> bool {
-    has_factor(src, 3) || has_factor(src, 5) || has_factor(src, 7) || has_factor(src, 11) || has_factor(src, 13)
+    has_factor(src, 3)
+        || has_factor(src, 5)
+        || has_factor(src, 7)
+        || has_factor(src, 11)
+        || has_factor(src, 13)
 }
 
 const fn has_factor(src: usize, n: usize) -> bool {

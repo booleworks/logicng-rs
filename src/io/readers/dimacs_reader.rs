@@ -59,27 +59,45 @@ pub fn read_cnf(file_path: &str, f: &FormulaFactory) -> LngResult<Vec<EncodedFor
 /// ];
 /// assert_eq!(clauses, expected);
 /// ```
-pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -> LngResult<Vec<EncodedFormula>> {
+pub fn read_cnf_with_prefix(
+    file_path: &str,
+    f: &FormulaFactory,
+    prefix: &str,
+) -> LngResult<Vec<EncodedFormula>> {
     let mut result = Vec::new();
 
-    let file = File::open(file_path).map_err(|err| IoError::OpenFile { path: file_path.to_string(), reason: err.to_string() })?;
+    let file = File::open(file_path).map_err(|err| IoError::OpenFile {
+        path: file_path.to_string(),
+        reason: err.to_string(),
+    })?;
     let reader = BufReader::new(file);
     for (line_number, l) in reader.lines().enumerate() {
-        let line = l.map_err(|err| IoError::ReadFile { path: file_path.to_string(), reason: err.to_string() })?;
+        let line = l.map_err(|err| IoError::ReadFile {
+            path: file_path.to_string(),
+            reason: err.to_string(),
+        })?;
         if !line.starts_with('c') && !line.starts_with('p') && !line.trim().is_empty() {
             let split: Vec<&str> = line.split_whitespace().collect();
             if split.last().copied() != Some("0") {
-                return Err(IoError::DimacsLineWithoutTerminator { path: file_path.to_string(), line: line_number + 1 }.into());
+                return Err(IoError::DimacsLineWithoutTerminator {
+                    path: file_path.to_string(),
+                    line: line_number + 1,
+                }
+                .into());
             }
-            let vars = split.iter().take(split.len() - 1).map(|&lit| parse_dimacs_literal(file_path, line_number + 1, lit)).map(|lit| {
-                lit.map(|lit| {
-                    if lit < 0 {
-                        f.literal(&format!("{prefix}{}", lit.unsigned_abs()), false)
-                    } else {
-                        f.variable(format!("{prefix}{lit}"))
-                    }
-                })
-            });
+            let vars = split
+                .iter()
+                .take(split.len() - 1)
+                .map(|&lit| parse_dimacs_literal(file_path, line_number + 1, lit))
+                .map(|lit| {
+                    lit.map(|lit| {
+                        if lit < 0 {
+                            f.literal(&format!("{prefix}{}", lit.unsigned_abs()), false)
+                        } else {
+                            f.variable(format!("{prefix}{lit}"))
+                        }
+                    })
+                });
             let vars = vars.collect::<LngResult<Vec<_>>>()?;
             result.push(f.or(vars));
         }
@@ -88,16 +106,28 @@ pub fn read_cnf_with_prefix(file_path: &str, f: &FormulaFactory, prefix: &str) -
 }
 
 fn parse_dimacs_literal(file_path: &str, line: usize, literal: &str) -> LngResult<i64> {
-    let value = literal.parse::<i64>().map_err(|_| IoError::InvalidDimacsLiteral {
-        path: file_path.to_string(),
-        line,
-        literal: literal.to_string(),
-    })?;
+    let value = literal
+        .parse::<i64>()
+        .map_err(|_| IoError::InvalidDimacsLiteral {
+            path: file_path.to_string(),
+            line,
+            literal: literal.to_string(),
+        })?;
     if value == 0 {
-        return Err(IoError::InvalidDimacsLiteral { path: file_path.to_string(), line, literal: literal.to_string() }.into());
+        return Err(IoError::InvalidDimacsLiteral {
+            path: file_path.to_string(),
+            line,
+            literal: literal.to_string(),
+        }
+        .into());
     }
     if value == i64::MIN {
-        return Err(IoError::DimacsLiteralOverflow { path: file_path.to_string(), line, literal: literal.to_string() }.into());
+        return Err(IoError::DimacsLiteralOverflow {
+            path: file_path.to_string(),
+            line,
+            literal: literal.to_string(),
+        }
+        .into());
     }
     Ok(value)
 }

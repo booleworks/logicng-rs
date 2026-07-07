@@ -141,7 +141,11 @@ impl<T> AppendOnlyVec<T> {
         // visible to any thread that has confirmed that the count is big enough
         // to read that element.  In case of failure, we can be relaxed, since
         // we don't do anything with the result other than try again.
-        while self.count.compare_exchange(idx, idx + 1, Ordering::Release, Ordering::Relaxed).is_err() {
+        while self
+            .count
+            .compare_exchange(idx, idx + 1, Ordering::Release, Ordering::Relaxed)
+            .is_err()
+        {
             // This means that someone else *started* pushing before we started,
             // but hasn't yet finished.  We have to wait for them to finish
             // pushing before we can update the count.  Note that using a
@@ -159,7 +163,11 @@ impl<T> AppendOnlyVec<T> {
     const EMPTY: UnsafeCell<*mut T> = UnsafeCell::new(std::ptr::null_mut());
     /// Allocate a new empty array
     pub const fn new() -> Self {
-        Self { count: AtomicUsize::new(0), reserved: AtomicUsize::new(0), data: [Self::EMPTY; BITS_USED - 1 - 3] }
+        Self {
+            count: AtomicUsize::new(0),
+            reserved: AtomicUsize::new(0),
+            data: [Self::EMPTY; BITS_USED - 1 - 3],
+        }
     }
 }
 

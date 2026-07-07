@@ -7,34 +7,53 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, StringLiteral, ToFormula, ToStringLiteral, Variable};
+use crate::formulas::{
+    EncodedFormula, FormulaFactory, Literal, StringLiteral, ToFormula, ToStringLiteral, Variable,
+};
 
 pub fn string_vars(elements: &'static str) -> BTreeSet<Cow<'static, str>> {
     elements.split(' ').map(Cow::from).collect()
 }
 
 pub fn string_lits(elements: &str) -> BTreeSet<StringLiteral<'_>> {
-    elements.split(' ').map(|x| x.to_string().to_string_literal()).collect()
+    elements
+        .split(' ')
+        .map(|x| x.to_string().to_string_literal())
+        .collect()
 }
 
 pub fn vars(elements: &'static str, f: &FormulaFactory) -> BTreeSet<Variable> {
-    string_vars(elements).iter().map(|v| v.to_formula(f).as_variable().unwrap()).collect()
+    string_vars(elements)
+        .iter()
+        .map(|v| v.to_formula(f).as_variable().unwrap())
+        .collect()
 }
 
 pub fn vars_list(elements: &'static str, f: &FormulaFactory) -> Vec<Variable> {
-    elements.split(' ').map(|v| v.to_formula(f).as_variable().unwrap()).collect()
+    elements
+        .split(' ')
+        .map(|v| v.to_formula(f).as_variable().unwrap())
+        .collect()
 }
 
 pub fn lits(elements: &str, f: &FormulaFactory) -> BTreeSet<Literal> {
-    string_lits(elements).iter().map(|v| v.to_formula(f).as_literal().unwrap()).collect()
+    string_lits(elements)
+        .iter()
+        .map(|v| v.to_formula(f).as_literal().unwrap())
+        .collect()
 }
 
 pub fn lits_list(elements: &str, f: &FormulaFactory) -> Vec<Literal> {
-    elements.split(' ').map(|v| v.to_formula(f).as_literal().unwrap()).collect()
+    elements
+        .split(' ')
+        .map(|v| v.to_formula(f).as_literal().unwrap())
+        .collect()
 }
 
 pub fn hash<H>(element: H) -> u64
-where H: Hash {
+where
+    H: Hash,
+{
     let mut hasher = DefaultHasher::new();
     element.hash(&mut hasher);
     hasher.finish()
@@ -141,10 +160,18 @@ impl F {
 
         let literals: Box<[Literal]> = Box::new([A, B, C].map(|lit| lit.as_literal().unwrap()));
         let coefficients: Box<[i64]> = Box::new([2_i64, -4, 3]);
-        let PBC1 = f.pbc(EQ, 2, literals.clone(), coefficients.clone()).unwrap();
-        let PBC2 = f.pbc(GT, 2, literals.clone(), coefficients.clone()).unwrap();
-        let PBC3 = f.pbc(GE, 2, literals.clone(), coefficients.clone()).unwrap();
-        let PBC4 = f.pbc(LT, 2, literals.clone(), coefficients.clone()).unwrap();
+        let PBC1 = f
+            .pbc(EQ, 2, literals.clone(), coefficients.clone())
+            .unwrap();
+        let PBC2 = f
+            .pbc(GT, 2, literals.clone(), coefficients.clone())
+            .unwrap();
+        let PBC3 = f
+            .pbc(GE, 2, literals.clone(), coefficients.clone())
+            .unwrap();
+        let PBC4 = f
+            .pbc(LT, 2, literals.clone(), coefficients.clone())
+            .unwrap();
         let PBC5 = f.pbc(LE, 2, literals, coefficients).unwrap();
         Self {
             f,

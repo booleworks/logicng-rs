@@ -1,4 +1,9 @@
-#![allow(clippy::too_many_arguments, clippy::many_single_char_names, clippy::if_not_else, clippy::cast_possible_truncation)]
+#![allow(
+    clippy::too_many_arguments,
+    clippy::many_single_char_names,
+    clippy::if_not_else,
+    clippy::cast_possible_truncation
+)]
 
 use crate::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
@@ -17,7 +22,9 @@ pub fn encode_binary_merge(
     let max_weight = *coeffs.iter().max().unwrap();
     if !config.binary_merge_use_gac {
         let n = lits.len();
-        formula.extend(binary_merge(&lits, &coeffs, rhs, max_weight, n, None, config, f));
+        formula.extend(binary_merge(
+            &lits, &coeffs, rhs, max_weight, n, None, config, f,
+        ));
     } else {
         let mut encode_complete_constraint = false;
         for i in 0..lits.len() {
@@ -39,7 +46,16 @@ pub fn encode_binary_merge(
                             formula.push(f.clause([tmp_lit.negate(), lit.negate()]));
                         }
                     } else {
-                        formula.extend(binary_merge(&lits, &coeffs, rhs - tmp_coeff, mw, lits.len(), Some(tmp_lit.negate()), config, f));
+                        formula.extend(binary_merge(
+                            &lits,
+                            &coeffs,
+                            rhs - tmp_coeff,
+                            mw,
+                            lits.len(),
+                            Some(tmp_lit.negate()),
+                            config,
+                            f,
+                        ));
                     }
                 } else {
                     if rhs <= tmp_coeff {
@@ -68,7 +84,9 @@ pub fn encode_binary_merge(
         }
         if config.binary_merge_no_support_for_single_bit && encode_complete_constraint {
             let n = lits.len();
-            formula.extend(binary_merge(&lits, &coeffs, rhs, max_weight, n, None, config, f));
+            formula.extend(binary_merge(
+                &lits, &coeffs, rhs, max_weight, n, None, config, f,
+            ));
         }
     }
     formula
@@ -142,15 +160,24 @@ fn binary_merge(
                     bucket_merge_i = carries.clone();
                 } else {
                     if config.binary_merge_use_watch_dog {
-                        let (formula_extension, new_merge_bucket) = unary_adder(bucket_card_i, carries.clone(), f);
+                        let (formula_extension, new_merge_bucket) =
+                            unary_adder(bucket_card_i, carries.clone(), f);
                         formula.extend(formula_extension);
                         bucket_merge_i = new_merge_bucket;
                     } else {
                         let mut temp_result = EncodingResultFF::new(f);
-                        bucket_merge_i = cc_merge(k, bucket_card_i.clone(), carries.clone(), &mut temp_result, InputToOutput);
+                        bucket_merge_i = cc_merge(
+                            k,
+                            bucket_card_i.clone(),
+                            carries.clone(),
+                            &mut temp_result,
+                            InputToOutput,
+                        );
                         formula.extend(temp_result.result);
                     }
-                    if k == bucket_merge_i.len() || config.binary_merge_use_watch_dog && k <= bucket_merge_i.len() {
+                    if k == bucket_merge_i.len()
+                        || config.binary_merge_use_watch_dog && k <= bucket_merge_i.len()
+                    {
                         if let Some(gac) = gac_lit {
                             formula.push(f.clause([gac, bucket_merge_i[k - 1].negate()]));
                         } else {
@@ -188,7 +215,11 @@ fn totalizer(x: Vec<Literal>, f: &FormulaFactory) -> (Vec<EncodedFormula>, Vec<L
     }
 }
 
-fn unary_adder(u: Vec<Literal>, v: Vec<Literal>, f: &FormulaFactory) -> (Vec<EncodedFormula>, Vec<Literal>) {
+fn unary_adder(
+    u: Vec<Literal>,
+    v: Vec<Literal>,
+    f: &FormulaFactory,
+) -> (Vec<EncodedFormula>, Vec<Literal>) {
     if u.is_empty() {
         (Vec::new(), v)
     } else if v.is_empty() {

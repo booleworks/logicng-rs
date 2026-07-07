@@ -10,7 +10,11 @@ use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree;
 use crate::knowledge_compilation::dnnf::dtree::dtree_factory::DTreeFactory;
 
-pub fn min_fill_dtree_generation(cnf: EncodedFormula, f: &FormulaFactory, df: &mut DTreeFactory) -> LngResult<DTree> {
+pub fn min_fill_dtree_generation(
+    cnf: EncodedFormula,
+    f: &FormulaFactory,
+    df: &mut DTreeFactory,
+) -> LngResult<DTree> {
     let graph = Graph::new_from_cnf(cnf, f);
     let ordering = graph.get_min_fill_ordering();
     generate_with_eliminating_order(cnf, ordering, f, df)
@@ -31,8 +35,11 @@ fn generate_with_eliminating_order(
     } else if !cnf.is_and() {
         df.leaf((*cnf.literals(f)).iter().copied().collect())
     } else {
-        let mut sigma: Vec<DTree> =
-            cnf.operands(f).iter().map(|clause| df.leaf((*clause.literals(f)).iter().copied().collect())).collect::<Result<Vec<_>, _>>()?;
+        let mut sigma: Vec<DTree> = cnf
+            .operands(f)
+            .iter()
+            .map(|clause| df.leaf((*clause.literals(f)).iter().copied().collect()))
+            .collect::<Result<Vec<_>, _>>()?;
 
         for variable in ordering {
             let mut gamma = Vec::new();
@@ -76,7 +83,12 @@ struct Graph {
 
 impl Graph {
     fn new_from_cnf(cnf: EncodedFormula, f: &FormulaFactory) -> Self {
-        let cnf_variables: Vec<Variable> = cnf.variables(f).iter().sorted_by_key(|&v| v.name(f)).copied().collect();
+        let cnf_variables: Vec<Variable> = cnf
+            .variables(f)
+            .iter()
+            .sorted_by_key(|&v| v.name(f))
+            .copied()
+            .collect();
         let number_of_vertices = cnf_variables.len();
         let mut vertices = Vec::with_capacity(number_of_vertices);
         let mut var_to_index = HashMap::new();
@@ -85,12 +97,20 @@ impl Graph {
             vertices.push(var);
         }
 
-        let mut adj_matrix: Vec<Vec<bool>> = repeat_n(repeat_n(false, number_of_vertices).collect(), number_of_vertices).collect();
-        let mut edge_list: Vec<HashSet<usize>> = repeat_n(HashSet::new(), number_of_vertices).collect();
+        let mut adj_matrix: Vec<Vec<bool>> = repeat_n(
+            repeat_n(false, number_of_vertices).collect(),
+            number_of_vertices,
+        )
+        .collect();
+        let mut edge_list: Vec<HashSet<usize>> =
+            repeat_n(HashSet::new(), number_of_vertices).collect();
 
         for clause in &*cnf.operands(f) {
             let variables = clause.variables(f);
-            let var_nums: Vec<usize> = variables.iter().map(|v| *var_to_index.get(v).unwrap()).collect();
+            let var_nums: Vec<usize> = variables
+                .iter()
+                .map(|v| *var_to_index.get(v).unwrap())
+                .collect();
             for i in 0..var_nums.len() {
                 for j in (i + 1)..var_nums.len() {
                     let var_i = var_nums[i];
@@ -106,7 +126,10 @@ impl Graph {
             number_of_vertices,
             adj_matrix,
             vertices,
-            edge_list: edge_list.into_iter().map(|edges| edges.into_iter().collect::<Vec<usize>>()).collect(),
+            edge_list: edge_list
+                .into_iter()
+                .map(|edges| edges.into_iter().collect::<Vec<usize>>())
+                .collect(),
         }
     }
 
@@ -131,7 +154,9 @@ impl Graph {
                         continue;
                     }
                     for second_neighbor in neighbor_list.iter().skip(i + 1) {
-                        if !processed[*second_neighbor] && !fill_adj_matrix[first_neighbor][*second_neighbor] {
+                        if !processed[*second_neighbor]
+                            && !fill_adj_matrix[first_neighbor][*second_neighbor]
+                        {
                             edges_added += 1;
                         }
                     }
@@ -158,7 +183,9 @@ impl Graph {
                     continue;
                 }
                 for second_neighbor in neighbor_list.iter().skip(i + 1).copied() {
-                    if !processed[second_neighbor] && !fill_adj_matrix[first_neighbor][second_neighbor] {
+                    if !processed[second_neighbor]
+                        && !fill_adj_matrix[first_neighbor][second_neighbor]
+                    {
                         fill_adj_matrix[first_neighbor][second_neighbor] = true;
                         fill_adj_matrix[second_neighbor][first_neighbor] = true;
                         fill_edge_list[first_neighbor].push(second_neighbor);
@@ -202,7 +229,9 @@ mod tests {
         let mut df = DTreeFactory::new();
         let formulas = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap());
         let formula = f.and(formulas);
-        let cnf = CnfEncoder::new(CnfAlgorithm::Factorization).transform(formula, f).unwrap();
+        let cnf = CnfEncoder::new(CnfAlgorithm::Factorization)
+            .transform(formula, f)
+            .unwrap();
         let tree = min_fill_dtree_generation(cnf, f, &mut df).unwrap();
         println!("{}", tree.to_string(&df, f));
     }

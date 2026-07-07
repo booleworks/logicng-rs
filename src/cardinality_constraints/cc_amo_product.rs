@@ -1,11 +1,19 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss
+)]
 
 use crate::datastructures::EncodingResult;
 use crate::formulas::{AuxVarType, Literal, Variable};
 
 /// An encoding of at-most-one cardinality constraints using the 2-product
 /// method due to Chen.
-pub fn build_amo_product<R: EncodingResult>(recursive_bound: usize, result: &mut R, vars: &[Variable]) {
+pub fn build_amo_product<R: EncodingResult>(
+    recursive_bound: usize,
+    result: &mut R,
+    vars: &[Variable],
+) {
     product_rec(recursive_bound, result, vars);
 }
 
@@ -14,8 +22,12 @@ fn product_rec<R: EncodingResult>(recursive_bound: usize, result: &mut R, vars: 
     let n = vars.len();
     let p = (n as f64).sqrt().ceil() as usize;
     let q = (n as f64 / p as f64).ceil() as usize;
-    let us: Vec<Variable> = (0..p).map(|_| result.new_auxiliary_variable(AuxVarType::CC)).collect();
-    let vs: Vec<Variable> = (0..q).map(|_| result.new_auxiliary_variable(AuxVarType::CC)).collect();
+    let us: Vec<Variable> = (0..p)
+        .map(|_| result.new_auxiliary_variable(AuxVarType::CC))
+        .collect();
+    let vs: Vec<Variable> = (0..q)
+        .map(|_| result.new_auxiliary_variable(AuxVarType::CC))
+        .collect();
 
     if p <= recursive_bound {
         build_pure(result, &us);

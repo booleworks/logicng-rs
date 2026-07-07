@@ -57,7 +57,10 @@ mod tests {
         assert!(F.AND1.is_nnf(f));
         assert!(F.AND3.is_nnf(f));
         assert!(f.and([F.OR1, F.OR2, F.A, F.NY]).is_nnf(f));
-        assert!(f.and([F.OR1, F.OR2, F.AND1, F.AND2, F.AND3, F.A, F.NY]).is_nnf(f));
+        assert!(
+            f.and([F.OR1, F.OR2, F.AND1, F.AND2, F.AND3, F.A, F.NY])
+                .is_nnf(f)
+        );
         assert!(F.OR3.is_nnf(f));
         assert!(!F.IMP1.is_nnf(f));
         assert!(!F.EQ1.is_nnf(f));

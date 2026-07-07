@@ -26,7 +26,10 @@ fn read(path: &Path, f: &FormulaFactory) -> Vec<(EncodedFormula, BigUint)> {
             let formulas = fs::read_to_string(&path).unwrap();
             path.set_extension("count");
             let counts = fs::read_to_string(&path).unwrap();
-            res.extend(zip(formulas.lines().map(|form| form.to_formula(f)), counts.lines().map(|c| BigUint::from_str(c).unwrap())));
+            res.extend(zip(
+                formulas.lines().map(|form| form.to_formula(f)),
+                counts.lines().map(|c| BigUint::from_str(c).unwrap()),
+            ));
         }
     }
     res

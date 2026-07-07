@@ -24,7 +24,12 @@ impl<'a> Anonymizer<'a> {
 
     /// Create a new `Anonymizer` with a custom prefix.
     pub fn with_prefix(prefix: &str, f: &'a FormulaFactory) -> Self {
-        Self { prefix: prefix.to_owned(), substitution: Substitution::new(), counter: 0, factory: f }
+        Self {
+            prefix: prefix.to_owned(),
+            substitution: Substitution::new(),
+            counter: 0,
+            factory: f,
+        }
     }
 
     /// Anonymizes a formula.
@@ -37,7 +42,9 @@ impl<'a> Anonymizer<'a> {
                 self.factory.variable(format!("{}{}", self.prefix, c))
             });
         }
-        self.factory.substitute(formula, &self.substitution).expect("error cannot occur since we do not substitute formulas")
+        self.factory
+            .substitute(formula, &self.substitution)
+            .expect("error cannot occur since we do not substitute formulas")
     }
 
     /// Returns the substitution used by this anonymizer.

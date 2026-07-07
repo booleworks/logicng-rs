@@ -80,7 +80,10 @@ fn sub_nodes_cached(
     if f.config.caches.sub_nodes {
         f.caches.sub_nodes.insert(formula, Arc::clone(&rc));
     } else {
-        local_cache.as_mut().unwrap().insert(formula, Arc::clone(&rc));
+        local_cache
+            .as_mut()
+            .unwrap()
+            .insert(formula, Arc::clone(&rc));
     }
     rc
 }
@@ -113,7 +116,11 @@ pub fn number_of_atoms(formula: EncodedFormula, f: &FormulaFactory) -> u64 {
     } else if let Some(result) = f.caches.number_of_atoms.get(formula) {
         result
     } else {
-        let result = formula.operands(f).iter().map(|op| number_of_atoms(*op, f)).sum();
+        let result = formula
+            .operands(f)
+            .iter()
+            .map(|op| number_of_atoms(*op, f))
+            .sum();
         if f.config.caches.number_of_atoms {
             f.caches.number_of_atoms.insert(formula, result);
         }
@@ -195,7 +202,11 @@ pub fn number_of_nodes(formula: EncodedFormula, f: &FormulaFactory) -> u64 {
         } else if formula.is_pbc() {
             formula.as_pbc(f).unwrap().literals.len() as u64
         } else {
-            formula.operands(f).iter().map(|op| number_of_nodes(*op, f)).sum()
+            formula
+                .operands(f)
+                .iter()
+                .map(|op| number_of_nodes(*op, f))
+                .sum()
         };
         if f.config.caches.number_of_nodes {
             f.caches.number_of_nodes.insert(formula, result);

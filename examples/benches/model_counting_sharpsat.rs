@@ -16,7 +16,10 @@ pub fn main() {
 pub fn parallel(thread_count: usize) {
     let f = Arc::new(FormulaFactory::new());
     let paths = Arc::new(
-        fs::read_dir("./resources/formula_suite_1").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec(),
+        fs::read_dir("./resources/formula_suite_1")
+            .unwrap()
+            .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+            .collect_vec(),
     );
 
     let start = std::time::Instant::now();
@@ -41,5 +44,8 @@ pub fn parallel(thread_count: usize) {
     for thread in threads {
         thread.join().expect("thread failed!");
     }
-    println!("Model counting (SharpSAT), {thread_count} Threads: {}s", start.elapsed().as_secs_f64());
+    println!(
+        "Model counting (SharpSAT), {thread_count} Threads: {}s",
+        start.elapsed().as_secs_f64()
+    );
 }

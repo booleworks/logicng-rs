@@ -18,16 +18,28 @@ pub enum IoError {
     WriteFile { path: String, reason: String },
 
     #[error("invalid formula in file {path:?} on line {line}: {reason}")]
-    InvalidFormula { path: String, line: usize, reason: String },
+    InvalidFormula {
+        path: String,
+        line: usize,
+        reason: String,
+    },
 
     #[error("DIMACS clause line in file {path:?} on line {line} does not end with 0")]
     DimacsLineWithoutTerminator { path: String, line: usize },
 
     #[error("invalid DIMACS literal {literal:?} in file {path:?} on line {line}")]
-    InvalidDimacsLiteral { path: String, line: usize, literal: String },
+    InvalidDimacsLiteral {
+        path: String,
+        line: usize,
+        literal: String,
+    },
 
     #[error("DIMACS literal {literal:?} in file {path:?} on line {line} overflows")]
-    DimacsLiteralOverflow { path: String, line: usize, literal: String },
+    DimacsLiteralOverflow {
+        path: String,
+        line: usize,
+        literal: String,
+    },
 
     #[error("path is not valid UTF-8")]
     InvalidPath,

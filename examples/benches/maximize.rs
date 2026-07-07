@@ -19,7 +19,10 @@ fn main() {
 fn maximize(thread_count: usize) {
     let f = Arc::new(FormulaFactory::new());
     let paths = Arc::new(
-        fs::read_dir("./resources/formula_suite_1/").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec(),
+        fs::read_dir("./resources/formula_suite_1/")
+            .unwrap()
+            .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+            .collect_vec(),
     );
 
     let start = std::time::Instant::now();
@@ -37,7 +40,11 @@ fn maximize(thread_count: usize) {
                     break;
                 }
                 let formula = read_formula(&paths_l[c], &f_l).unwrap();
-                let literals = formula.variables(&f_l).iter().map(|v| v.pos_lit()).collect_vec();
+                let literals = formula
+                    .variables(&f_l)
+                    .iter()
+                    .map(|v| v.pos_lit())
+                    .collect_vec();
                 let mut solver = MiniSat::new();
                 let _ = solver.add(formula, &f_l);
                 let _model = solver.optimize(&f_l, &OptimizationFunction::maximize(literals));
@@ -49,5 +56,8 @@ fn maximize(thread_count: usize) {
     for thread in threads {
         thread.join().expect("thread failed!");
     }
-    println!("Solver function, {thread_count} Threads: {}s", start.elapsed().as_secs_f64());
+    println!(
+        "Solver function, {thread_count} Threads: {}s",
+        start.elapsed().as_secs_f64()
+    );
 }

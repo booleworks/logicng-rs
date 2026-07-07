@@ -54,7 +54,9 @@ impl NotCache {
         if element.encoding.is_large() {
             self.reverse_map64.get(&element.encoding).map(|v| *v)
         } else {
-            self.reverse_map32.get(&element.encoding.as_32()).map(|v| *v)
+            self.reverse_map32
+                .get(&element.encoding.as_32())
+                .map(|v| *v)
         }
     }
 

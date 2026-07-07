@@ -16,7 +16,13 @@ fn main() {
     let operating_path = PathBuf::from(&out_dir);
     let lib_path = operating_path.join(lib_file_name);
     if !lib_path.exists() {
-        build_open_wbo(open_wbo_path, &lib_path, &operating_path.join("logicng-open-wbo-src"), &os, &arch);
+        build_open_wbo(
+            open_wbo_path,
+            &lib_path,
+            &operating_path.join("logicng-open-wbo-src"),
+            &os,
+            &arch,
+        );
     }
 
     //Link OpenWBO Library
@@ -48,7 +54,13 @@ fn main() {
     build.compile("open_wbo_wrapper");
 }
 
-fn build_open_wbo(open_wbo_path: &std::path::Path, lib_path: &std::path::Path, operating_path: &std::path::Path, os: &str, arch: &str) {
+fn build_open_wbo(
+    open_wbo_path: &std::path::Path,
+    lib_path: &std::path::Path,
+    operating_path: &std::path::Path,
+    os: &str,
+    arch: &str,
+) {
     let open_wbo_src_path = open_wbo_path.join("logicng-open-wbo");
     if !open_wbo_src_path.exists() {
         panic!("Cannot build OpenWBO, because the source code is missing.")

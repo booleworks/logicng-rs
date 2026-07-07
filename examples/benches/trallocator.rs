@@ -38,7 +38,11 @@ impl<A: GlobalAlloc> Trallocator<A> {
 
     pub fn print_memory(&self, prefix: &str) {
         if PRINT_MEMORY {
-            println!("{}: {:.3} MB", prefix, self.get() as f64 / 1024_i32.pow(2) as f64);
+            println!(
+                "{}: {:.3} MB",
+                prefix,
+                self.get() as f64 / 1024_i32.pow(2) as f64
+            );
         }
     }
 
@@ -49,7 +53,9 @@ impl<A: GlobalAlloc> Trallocator<A> {
     }
 
     pub fn measure<F>(&self, op: F) -> u64
-    where F: FnOnce() {
+    where
+        F: FnOnce(),
+    {
         let start = self.get();
         op();
         let end = self.get();

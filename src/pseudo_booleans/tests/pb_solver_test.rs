@@ -56,7 +56,9 @@ fn configs() -> Vec<PbConfig> {
 }
 
 fn literals(n: usize, f: &FormulaFactory) -> Box<[Literal]> {
-    (0..n).map(|n| f.variable(format!("v{n}")).as_literal().unwrap()).collect()
+    (0..n)
+        .map(|n| f.variable(format!("v{n}")).as_literal().unwrap())
+        .collect()
 }
 
 #[test]
@@ -67,59 +69,103 @@ fn test_pb_eq() -> LngResult<()> {
         let mut solver = MiniSat::new();
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
-        solver.add(f.pbc(EQ, 5, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 5, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 9);
         for model in models {
             assert_eq!(model.pos().len(), 2);
-            assert!(Assignment::from(model).contains_pos(f.variable("v0").as_literal().unwrap().variable()));
+            assert!(
+                Assignment::from(model)
+                    .contains_pos(f.variable("v0").as_literal().unwrap().variable())
+            );
         }
 
         solver.reset();
-        solver.add(f.pbc(EQ, 7, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 7, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 36);
         for model in models {
             assert_eq!(model.pos().len(), 3);
-            assert!(Assignment::from(model).contains_pos(f.variable("v0").as_literal().unwrap().variable()));
+            assert!(
+                Assignment::from(model)
+                    .contains_pos(f.variable("v0").as_literal().unwrap().variable())
+            );
         }
 
         solver.reset();
-        solver.add(f.pbc(EQ, 0, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 0, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(EQ, 1, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 1, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::False);
 
         solver.reset();
-        solver.add(f.pbc(EQ, 21, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 21, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(EQ, 22, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(EQ, 22, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::False);
     }
 
@@ -136,11 +182,19 @@ fn test_pb_less() -> LngResult<()> {
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
 
-        solver.add(f.pbc(LE, 6, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 6, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 140);
@@ -149,11 +203,19 @@ fn test_pb_less() -> LngResult<()> {
         }
 
         solver.reset();
-        solver.add(f.pbc(LT, 7, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LT, 7, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 140);
@@ -162,71 +224,127 @@ fn test_pb_less() -> LngResult<()> {
         }
 
         solver.reset();
-        solver.add(f.pbc(LE, 0, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 0, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(LE, 1, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 1, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(LT, 2, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LT, 2, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(LT, 1, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LT, 1, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(LE, 2, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 2, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 10);
 
         solver.reset();
-        solver.add(f.pbc(LE, 3, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 3, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 11);
 
         solver.reset();
-        solver.add(f.pbc(LE, 4, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(LE, 4, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -245,11 +363,19 @@ fn test_pb_greater() -> LngResult<()> {
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
 
-        solver.add(f.pbc(GE, 17, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GE, 17, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -258,11 +384,19 @@ fn test_pb_greater() -> LngResult<()> {
         }
 
         solver.reset();
-        solver.add(f.pbc(GT, 16, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GT, 16, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -271,61 +405,109 @@ fn test_pb_greater() -> LngResult<()> {
         }
 
         solver.reset();
-        solver.add(f.pbc(GE, 21, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GE, 21, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(GE, 20, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GE, 20, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(GT, 19, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GT, 19, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(GT, 20, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GT, 20, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);
 
         solver.reset();
-        solver.add(f.pbc(GE, 19, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GE, 19, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 10);
 
         solver.reset();
-        solver.add(f.pbc(GE, 18, literals10.clone(), coeffs10.clone()).unwrap(), f)?;
+        solver.add(
+            f.pbc(GE, 18, literals10.clone(), coeffs10.clone()).unwrap(),
+            f,
+        )?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 11);
@@ -349,7 +531,12 @@ fn test_pb_negative() -> LngResult<()> {
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 45);
@@ -363,7 +550,12 @@ fn test_pb_negative() -> LngResult<()> {
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 120);
@@ -378,7 +570,12 @@ fn test_pb_negative() -> LngResult<()> {
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 57);
@@ -388,12 +585,19 @@ fn test_pb_negative() -> LngResult<()> {
 
         solver.reset();
         let coeffs10: Box<[i64]> = Box::new([2, 2, -3, 2, -7, 2, 2, 2, 2, -2]);
-        let pbc = f.pbc(EQ, -10, literals10.clone(), coeffs10.clone()).unwrap();
+        let pbc = f
+            .pbc(EQ, -10, literals10.clone(), coeffs10.clone())
+            .unwrap();
         solver.add(pbc, f)?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 8);
@@ -403,12 +607,19 @@ fn test_pb_negative() -> LngResult<()> {
 
         solver.reset();
         let coeffs10: Box<[i64]> = Box::new([2, 2, -4, 2, -6, 2, 2, 2, 2, -2]);
-        let pbc = f.pbc(EQ, -12, literals10.clone(), coeffs10.clone()).unwrap();
+        let pbc = f
+            .pbc(EQ, -12, literals10.clone(), coeffs10.clone())
+            .unwrap();
         solver.add(pbc, f)?;
         assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default().variables(literals10.iter().map(Literal::variable).collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::default().variables(
+                literals10
+                    .iter()
+                    .map(Literal::variable)
+                    .collect::<Box<[_]>>(),
+            ),
         )
         .unwrap();
         assert_eq!(models.len(), 1);

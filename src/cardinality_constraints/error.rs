@@ -4,7 +4,9 @@ use thiserror::Error;
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum CcError {
-    #[error("right hand side of cardinality constraint is too large for this architecture: {rhs:?}")]
+    #[error(
+        "right hand side of cardinality constraint is too large for this architecture: {rhs:?}"
+    )]
     TooLargeRhs { rhs: u64 },
 
     #[error("incremental encodings are only supported for at-most-k and at-least k constraints")]

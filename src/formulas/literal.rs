@@ -87,7 +87,11 @@ impl Literal {
     /// let literal2 = Literal::new(var, false); // "~a"
     /// ```
     pub const fn new(variable: Variable, phase: bool) -> Self {
-        if phase { Self::Pos(variable) } else { Self::Neg(variable) }
+        if phase {
+            Self::Pos(variable)
+        } else {
+            Self::Neg(variable)
+        }
     }
 
     /// Returns the internal variable of this literal.
@@ -217,7 +221,10 @@ impl Literal {
     /// assert_eq!(literal.to_string_lit(&f), StringLiteral::new("a", true));
     /// ```
     pub fn to_string_lit<'a>(&self, f: &'a FormulaFactory) -> StringLiteral<'a> {
-        StringLiteral { name: self.name(f), phase: self.phase() }
+        StringLiteral {
+            name: self.name(f),
+            phase: self.phase(),
+        }
     }
 
     /// Converts this literal into a string representation.
@@ -292,7 +299,10 @@ impl<'a> StringLiteral<'a> {
     /// let literal = StringLiteral::new("a", true);
     /// ```
     pub fn new(name: &'a str, phase: bool) -> Self {
-        StringLiteral { name: Cow::from(name), phase }
+        StringLiteral {
+            name: Cow::from(name),
+            phase,
+        }
     }
 
     /// Creates a new `StringLiteral` with an owned string for the name.
@@ -311,7 +321,10 @@ impl<'a> StringLiteral<'a> {
     /// let literal = StringLiteral::new_owned(name, true);
     /// ```
     pub fn new_owned(name: String, phase: bool) -> Self {
-        StringLiteral { name: Cow::from(name), phase }
+        StringLiteral {
+            name: Cow::from(name),
+            phase,
+        }
     }
 
     /// Creates a new `StringLiteral` representing a variable with the name as

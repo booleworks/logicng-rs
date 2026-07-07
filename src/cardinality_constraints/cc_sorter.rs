@@ -1,6 +1,8 @@
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{Both, InputToOutput, OutputToInput};
+use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{
+    Both, InputToOutput, OutputToInput,
+};
 use crate::datastructures::EncodingResult;
 use crate::formulas::{AuxVarType, Literal};
 
@@ -11,7 +13,12 @@ pub enum ImplicationDirection {
     Both,
 }
 
-pub fn cc_sort(m: usize, input: Vec<Literal>, result: &mut dyn EncodingResult, direction: ImplicationDirection) -> Vec<Literal> {
+pub fn cc_sort(
+    m: usize,
+    input: Vec<Literal>,
+    result: &mut dyn EncodingResult,
+    direction: ImplicationDirection,
+) -> Vec<Literal> {
     let n = input.len();
     let m2 = m.min(n);
     if m == 0 || n == 0 {
@@ -68,10 +75,20 @@ const fn counter_sorter_value(m: usize, n: usize) -> usize {
 }
 
 const fn direct_sorter_value(n: usize) -> usize {
-    if n > 30 { usize::MAX } else { 2_usize.pow(n as u32) - 1 }
+    if n > 30 {
+        usize::MAX
+    } else {
+        2_usize.pow(n as u32) - 1
+    }
 }
 
-fn comparator1(x1: Literal, x2: Literal, y: Literal, result: &mut dyn EncodingResult, direction: ImplicationDirection) {
+fn comparator1(
+    x1: Literal,
+    x2: Literal,
+    y: Literal,
+    result: &mut dyn EncodingResult,
+    direction: ImplicationDirection,
+) {
     assert_ne!(x1, x2);
     if direction == InputToOutput || direction == Both {
         result.add_clause(&[x1.negate(), y]);
@@ -82,7 +99,14 @@ fn comparator1(x1: Literal, x2: Literal, y: Literal, result: &mut dyn EncodingRe
     }
 }
 
-fn comparator2(x1: Literal, x2: Literal, y1: Literal, y2: Literal, result: &mut dyn EncodingResult, direction: ImplicationDirection) {
+fn comparator2(
+    x1: Literal,
+    x2: Literal,
+    y1: Literal,
+    y2: Literal,
+    result: &mut dyn EncodingResult,
+    direction: ImplicationDirection,
+) {
     assert_ne!(x1, x2);
     assert_ne!(y1, y2);
     if direction == InputToOutput || direction == Both {
@@ -97,7 +121,12 @@ fn comparator2(x1: Literal, x2: Literal, y1: Literal, y2: Literal, result: &mut 
     }
 }
 
-fn recursive_sorter(m: usize, input: &[Literal], result: &mut dyn EncodingResult, direction: ImplicationDirection) -> Vec<Literal> {
+fn recursive_sorter(
+    m: usize,
+    input: &[Literal],
+    result: &mut dyn EncodingResult,
+    direction: ImplicationDirection,
+) -> Vec<Literal> {
     let n = input.len();
     let l = n / 2;
     assert!(m <= n);
@@ -118,7 +147,12 @@ fn recursive_sorter(m: usize, input: &[Literal], result: &mut dyn EncodingResult
     cc_merge(m, tmp_lits_o1, tmp_lits_o2, result, direction)
 }
 
-fn counter_sorter(k: usize, x: &[Literal], result: &mut dyn EncodingResult, direction: ImplicationDirection) -> Vec<Literal> {
+fn counter_sorter(
+    k: usize,
+    x: &[Literal],
+    result: &mut dyn EncodingResult,
+    direction: ImplicationDirection,
+) -> Vec<Literal> {
     let n = x.len();
     let mut aux_vars = Vec::with_capacity(n);
     for _ in 0..n {
@@ -139,7 +173,11 @@ fn counter_sorter(k: usize, x: &[Literal], result: &mut dyn EncodingResult, dire
         }
         for j in 1..k {
             for i in j..n {
-                result.add_clause(&[x[i].negate(), aux_vars[i - 1][j - 1].negate(), aux_vars[i][j]]);
+                result.add_clause(&[
+                    x[i].negate(),
+                    aux_vars[i - 1][j - 1].negate(),
+                    aux_vars[i][j],
+                ]);
                 if i > j {
                     result.add_clause(&[aux_vars[i - 1][j].negate(), aux_vars[i][j]]);
                 }
@@ -258,10 +296,18 @@ fn recursive_merger(
     }
 }
 
-fn direct_merger(m: usize, input_a: &[Literal], input_b: &[Literal], result: &mut dyn EncodingResult) -> Vec<Literal> {
+fn direct_merger(
+    m: usize,
+    input_a: &[Literal],
+    input_b: &[Literal],
+    result: &mut dyn EncodingResult,
+) -> Vec<Literal> {
     let a = input_a.len();
     let b = input_b.len();
-    let output: Vec<Literal> = std::iter::repeat_with(|| result.new_auxiliary_variable(AuxVarType::CC).pos_lit()).take(m).collect();
+    let output: Vec<Literal> =
+        std::iter::repeat_with(|| result.new_auxiliary_variable(AuxVarType::CC).pos_lit())
+            .take(m)
+            .collect();
     for i in 0..m.min(a) {
         result.add_clause(&[input_a[i].negate(), output[i]]);
     }

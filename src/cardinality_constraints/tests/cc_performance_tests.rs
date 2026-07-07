@@ -7,9 +7,15 @@ use crate::solver::minisat::sat::Tristate::True;
 
 const fn configs() -> [CcConfig; 3] {
     [
-        CcConfig::new().amk_encoder(AmkEncoder::Totalizer).alk_encoder(AlkEncoder::Totalizer),
-        CcConfig::new().amk_encoder(AmkEncoder::CardinalityNetwork).alk_encoder(AlkEncoder::CardinalityNetwork),
-        CcConfig::new().amk_encoder(AmkEncoder::ModularTotalizer).alk_encoder(AlkEncoder::ModularTotalizer),
+        CcConfig::new()
+            .amk_encoder(AmkEncoder::Totalizer)
+            .alk_encoder(AlkEncoder::Totalizer),
+        CcConfig::new()
+            .amk_encoder(AmkEncoder::CardinalityNetwork)
+            .alk_encoder(AlkEncoder::CardinalityNetwork),
+        CcConfig::new()
+            .amk_encoder(AmkEncoder::ModularTotalizer)
+            .alk_encoder(AlkEncoder::ModularTotalizer),
     ]
 }
 

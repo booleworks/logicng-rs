@@ -11,7 +11,12 @@ pub struct MsVariable {
 
 impl MsVariable {
     pub const fn new(polarity: bool, decision: bool) -> Self {
-        Self { assignment: Tristate::Undef, level: None, polarity, decision }
+        Self {
+            assignment: Tristate::Undef,
+            level: None,
+            polarity,
+            decision,
+        }
     }
 
     pub fn level_greater_zero(&self) -> bool {

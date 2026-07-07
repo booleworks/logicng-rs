@@ -16,12 +16,18 @@ pub struct VariableCache {
 
 impl VariableCache {
     pub fn new() -> Self {
-        Self { vec: AppendOnlyVec::new(), reverse_map: DashMap::with_capacity(CACHE_INITIAL_CAPACITY) }
+        Self {
+            vec: AppendOnlyVec::new(),
+            reverse_map: DashMap::with_capacity(CACHE_INITIAL_CAPACITY),
+        }
     }
 
     #[allow(clippy::cast_possible_truncation)]
     pub fn get(&self, index: FormulaEncoding) -> &str {
-        assert!(index.is_large_cache(), "VariableCache does not optimize for small formulas!");
+        assert!(
+            index.is_large_cache(),
+            "VariableCache does not optimize for small formulas!"
+        );
         &self.vec[index.index() as usize]
     }
 
@@ -36,7 +42,11 @@ impl VariableCache {
         let name = element.into_owned();
         *self.reverse_map.entry(name.clone()).or_insert_with(|| {
             let index = self.vec.push(name);
-            FormulaEncoding::encode(index as u64, FormulaType::Lit(LitType::Pos(VarType::FF)), true)
+            FormulaEncoding::encode(
+                index as u64,
+                FormulaType::Lit(LitType::Pos(VarType::FF)),
+                true,
+            )
         })
     }
 

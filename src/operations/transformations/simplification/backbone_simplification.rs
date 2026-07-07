@@ -28,7 +28,10 @@ use crate::solver::minisat::MiniSat;
 ///
 /// assert_eq!(simplified.to_string(&f), "A & B & D");
 /// ```
-pub fn backbone_simplification(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+pub fn backbone_simplification(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+) -> LngResult<EncodedFormula> {
     match f.caches.backbone_simps.get(formula) {
         Some(c) => Ok(c),
         None => {
@@ -64,30 +67,57 @@ mod tests {
     #[test]
     fn test_trivial_backbones() {
         let f = &FormulaFactory::new();
-        assert_eq!("$true".to_formula(f), backbone_simplification("$true".to_formula(f), f).unwrap());
-        assert_eq!("$false".to_formula(f), backbone_simplification("$false".to_formula(f), f).unwrap());
-        assert_eq!("$false".to_formula(f), backbone_simplification("A & (A => B) & ~B".to_formula(f), f).unwrap());
-        assert_eq!("A".to_formula(f), backbone_simplification("A".to_formula(f), f).unwrap());
-        assert_eq!("A & B".to_formula(f), backbone_simplification("A & B".to_formula(f), f).unwrap());
-        assert_eq!("A | B | C".to_formula(f), backbone_simplification("A | B | C".to_formula(f), f).unwrap());
+        assert_eq!(
+            "$true".to_formula(f),
+            backbone_simplification("$true".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "$false".to_formula(f),
+            backbone_simplification("$false".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "$false".to_formula(f),
+            backbone_simplification("A & (A => B) & ~B".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "A".to_formula(f),
+            backbone_simplification("A".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "A & B".to_formula(f),
+            backbone_simplification("A & B".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "A | B | C".to_formula(f),
+            backbone_simplification("A | B | C".to_formula(f), f).unwrap()
+        );
     }
 
     #[test]
     fn test_real_backbones() {
         let f = &FormulaFactory::new();
-        assert_eq!("A & B".to_formula(f), backbone_simplification("A & B & (B | C)".to_formula(f), f).unwrap());
-        assert_eq!("A & B & C".to_formula(f), backbone_simplification("A & B & (~B | C)".to_formula(f), f).unwrap());
+        assert_eq!(
+            "A & B".to_formula(f),
+            backbone_simplification("A & B & (B | C)".to_formula(f), f).unwrap()
+        );
+        assert_eq!(
+            "A & B & C".to_formula(f),
+            backbone_simplification("A & B & (~B | C)".to_formula(f), f).unwrap()
+        );
         assert_eq!(
             "A & B & C & F".to_formula(f),
-            backbone_simplification("A & B & (~B | C) & (B | D) & (A => F)".to_formula(f), f).unwrap()
+            backbone_simplification("A & B & (~B | C) & (B | D) & (A => F)".to_formula(f), f)
+                .unwrap()
         );
         assert_eq!(
             "X & Y & (~B | C) & (B | D) & (A => F)".to_formula(f),
-            backbone_simplification("X & Y & (~B | C) & (B | D) & (A => F)".to_formula(f), f).unwrap()
+            backbone_simplification("X & Y & (~B | C) & (B | D) & (A => F)".to_formula(f), f)
+                .unwrap()
         );
         assert_eq!(
             "~A & ~B & D".to_formula(f),
-            backbone_simplification("~A & ~B & (~B | C) & (B | D) & (A => F)".to_formula(f), f).unwrap()
+            backbone_simplification("~A & ~B & (~B | C) & (B | D) & (A => F)".to_formula(f), f)
+                .unwrap()
         );
     }
 }

@@ -28,7 +28,11 @@ impl PbEncoder {
     /// Returns an error if normalization overflows, if the normalized
     /// right-hand side or a coefficient cannot be represented on this
     /// architecture, or if a delegated cardinality encoding fails.
-    pub fn encode(&self, constraint: &PbConstraint, f: &FormulaFactory) -> LngResult<Arc<[EncodedFormula]>> {
+    pub fn encode(
+        &self,
+        constraint: &PbConstraint,
+        f: &FormulaFactory,
+    ) -> LngResult<Arc<[EncodedFormula]>> {
         let normalized = constraint.normalize(f)?;
         match normalized.formula_type() {
             FormulaType::Pbc => {
@@ -59,7 +63,13 @@ impl PbEncoder {
         }
     }
 
-    fn encode_internal(&self, lits: &[Literal], coeffs: &[i64], rhs: i64, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
+    fn encode_internal(
+        &self,
+        lits: &[Literal],
+        coeffs: &[i64],
+        rhs: i64,
+        f: &FormulaFactory,
+    ) -> LngResult<Vec<EncodedFormula>> {
         if rhs < 0 {
             return Ok(vec![f.falsum()]);
         }
@@ -69,7 +79,10 @@ impl PbEncoder {
             return Err(PbcError::TooLargeRhs { rhs: original_rhs }.into());
         }
         if rhs == 0 {
-            Ok(lits.iter().map(|lit| EncodedFormula::from(lit.negate())).collect())
+            Ok(lits
+                .iter()
+                .map(|lit| EncodedFormula::from(lit.negate()))
+                .collect())
         } else {
             let mut simplified_lits = Vec::with_capacity(lits.len());
             let mut simplified_coeffs = Vec::with_capacity(coeffs.len());
@@ -78,9 +91,14 @@ impl PbEncoder {
                 let lit = lits[i];
                 let coeff = coeffs[i];
                 if coeff <= 0 {
-                    return Err(PbcError::NormalizationOverflow { operation: "normalized coefficient is not positive" }.into());
+                    return Err(PbcError::NormalizationOverflow {
+                        operation: "normalized coefficient is not positive",
+                    }
+                    .into());
                 }
-                let coeff: usize = coeff.try_into().map_err(|_| PbcError::TooLargeCoefficient { coefficient: coeff })?;
+                let coeff: usize = coeff
+                    .try_into()
+                    .map_err(|_| PbcError::TooLargeCoefficient { coefficient: coeff })?;
                 if coeff <= rhs {
                     simplified_lits.push(lit);
                     simplified_coeffs.push(coeff);
@@ -90,9 +108,19 @@ impl PbEncoder {
             }
             if simplified_lits.len() > 1 {
                 result.extend(match self.config.pb_algorithm {
-                    PbAlgorithm::Best | PbAlgorithm::Swc => encode_swc(&simplified_lits, &simplified_coeffs, rhs, f),
-                    PbAlgorithm::BinaryMerge => encode_binary_merge(&self.config, simplified_lits, simplified_coeffs, rhs, f),
-                    PbAlgorithm::AdderNetworks => encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs, f),
+                    PbAlgorithm::Best | PbAlgorithm::Swc => {
+                        encode_swc(&simplified_lits, &simplified_coeffs, rhs, f)
+                    }
+                    PbAlgorithm::BinaryMerge => encode_binary_merge(
+                        &self.config,
+                        simplified_lits,
+                        simplified_coeffs,
+                        rhs,
+                        f,
+                    ),
+                    PbAlgorithm::AdderNetworks => {
+                        encode_adder_networks(&simplified_lits, &simplified_coeffs, rhs, f)
+                    }
                 });
             }
             Ok(result)

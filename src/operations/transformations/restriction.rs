@@ -31,7 +31,11 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal};
 /// assert_eq!(restricted1.to_string(&f), "b");
 /// assert_eq!(restricted2.to_string(&f), "$false");
 /// ```
-pub fn restrict(formula: EncodedFormula, assignment: &Assignment, f: &FormulaFactory) -> EncodedFormula {
+pub fn restrict(
+    formula: EncodedFormula,
+    assignment: &Assignment,
+    f: &FormulaFactory,
+) -> EncodedFormula {
     use Formula::{And, Cc, Equiv, False, Impl, Lit, Not, Or, Pbc, True};
     match formula.unpack(f) {
         Lit(lit) => assignment.restrict_lit(lit),

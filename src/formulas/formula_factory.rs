@@ -21,7 +21,8 @@ use crate::formulas::Literal::Pos;
 use crate::formulas::formula_cache::formula_factory_caches::FormulaFactoryCaches;
 use crate::formulas::formula_cache::simple_cache::SimpleCache;
 use crate::formulas::{
-    AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig, Literal, PbConstraint, Variable,
+    AuxVarType, CType, CardinalityConstraint, EncodedFormula, FormulaError, FormulaFactoryConfig,
+    Literal, PbConstraint, Variable,
 };
 use crate::operations::transformations::{self, CnfEncoder, Substitution};
 use crate::parser::pseudo_boolean_parser::parse;
@@ -37,7 +38,8 @@ use super::{Formula, FormulaType};
 const FF_ID_LENGTH: i32 = 4;
 
 pub(super) const AUX_PREFIX: &str = "@RESERVED_";
-pub(super) const AUX_REGEX: &str = "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>(CNF)|(CC)|(PB))_(?P<INDEX>[0-9]+)$";
+pub(super) const AUX_REGEX: &str =
+    "^@RESERVED_(?P<FF_ID>[0-9A-Z]*)_(?P<AUX_TYPE>(CNF)|(CC)|(PB))_(?P<INDEX>[0-9]+)$";
 
 static AUX_REGEX_LOCK: LazyLock<Regex> = LazyLock::new(|| Regex::new(AUX_REGEX).unwrap());
 struct FilterResult {
@@ -623,7 +625,13 @@ impl FormulaFactory {
     {
         match self.prepare_nary(operands, FormulaType::And) {
             None => self.falsum(),
-            Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
+            Some(FilterResult {
+                reduced32,
+                reduced_set32,
+                reduced64,
+                reduced_set64,
+                is_cnf,
+            }) => {
                 let res = if reduced32.is_empty() && reduced64.is_empty() {
                     self.verum()
                 } else if reduced32.len() == 1 && reduced64.is_empty() {
@@ -631,7 +639,12 @@ impl FormulaFactory {
                 } else if reduced32.is_empty() && reduced64.len() == 1 {
                     reduced64[0].to_formula()
                 } else {
-                    EncodedFormula::from(self.ands.get_or_insert(reduced32, reduced_set32, reduced64, reduced_set64))
+                    EncodedFormula::from(self.ands.get_or_insert(
+                        reduced32,
+                        reduced_set32,
+                        reduced64,
+                        reduced_set64,
+                    ))
                 };
                 if is_cnf && res.is_nary_operator() {
                     self.caches.is_cnf.insert(res, ());
@@ -667,7 +680,13 @@ impl FormulaFactory {
     {
         match self.prepare_nary(operands, FormulaType::Or) {
             None => self.verum(),
-            Some(FilterResult { reduced32, reduced_set32, reduced64, reduced_set64, is_cnf }) => {
+            Some(FilterResult {
+                reduced32,
+                reduced_set32,
+                reduced64,
+                reduced_set64,
+                is_cnf,
+            }) => {
                 let res = if reduced32.is_empty() && reduced64.is_empty() {
                     self.falsum()
                 } else if reduced32.len() == 1 && reduced64.is_empty() {
@@ -675,7 +694,12 @@ impl FormulaFactory {
                 } else if reduced32.is_empty() && reduced64.len() == 1 {
                     reduced64[0].to_formula()
                 } else {
-                    EncodedFormula::from(self.ors.get_or_insert(reduced32, reduced_set32, reduced64, reduced_set64))
+                    EncodedFormula::from(self.ors.get_or_insert(
+                        reduced32,
+                        reduced_set32,
+                        reduced64,
+                        reduced_set64,
+                    ))
                 };
                 if is_cnf && res.is_nary_operator() {
                     self.caches.is_cnf.insert(res, ());
@@ -714,7 +738,9 @@ impl FormulaFactory {
         E: Borrow<Literal>,
         Ops: IntoIterator<Item = E>,
     {
-        self.or(operands.into_iter().map(|lit| EncodedFormula::from(*lit.borrow())))
+        self.or(operands
+            .into_iter()
+            .map(|lit| EncodedFormula::from(*lit.borrow())))
     }
 
     /// Creates a new implication, where `left` implies `right`.
@@ -820,7 +846,9 @@ impl FormulaFactory {
     /// ```
     pub fn not(&self, op: EncodedFormula) -> EncodedFormula {
         match op.formula_type() {
-            FormulaType::False | FormulaType::True | FormulaType::Lit(_) | FormulaType::Not => self.negate(op),
+            FormulaType::False | FormulaType::True | FormulaType::Lit(_) | FormulaType::Not => {
+                self.negate(op)
+            }
             _ => EncodedFormula::from(self.nots.get_or_insert(op)),
         }
     }
@@ -856,7 +884,9 @@ impl FormulaFactory {
         match formula.unpack(self) {
             Formula::Pbc(pbc) => pbc.clone().negate(self),
             Formula::Cc(cc) => cc.clone().negate(self),
-            Formula::Equiv(_) | Formula::Impl(_) | Formula::Or(_) | Formula::And(_) => self.not(formula),
+            Formula::Equiv(_) | Formula::Impl(_) | Formula::Or(_) | Formula::And(_) => {
+                self.not(formula)
+            }
             Formula::Not(op) => op,
             Formula::Lit(lit) => lit.negate().into(),
             Formula::True => self.falsum(),
@@ -890,9 +920,18 @@ impl FormulaFactory {
     /// assert_eq!(cc1.to_string(&f), "a + b + c = 2");
     /// assert_eq!(cc2.to_string(&f), "a + c < 1");
     /// ```
-    pub fn cc<V: Into<Box<[Variable]>>>(&self, comparator: CType, rhs: u32, variables: V) -> LngResult<EncodedFormula> {
+    pub fn cc<V: Into<Box<[Variable]>>>(
+        &self,
+        comparator: CType,
+        rhs: u32,
+        variables: V,
+    ) -> LngResult<EncodedFormula> {
         if !is_cc(comparator, rhs.into()) {
-            return Err(FormulaError::NoCc { comp: comparator, rhs }.into());
+            return Err(FormulaError::NoCc {
+                comp: comparator,
+                rhs,
+            }
+            .into());
         }
         Ok(self.construct_cc_unsafe(comparator, rhs.into(), variables.into()))
     }
@@ -925,7 +964,8 @@ impl FormulaFactory {
     /// assert_eq!(exo, f.cc(EQ, 1, vec![a, b]).unwrap());
     /// ```
     pub fn exo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(EQ, 1, variables).expect("exo is a valid cardinality constraint")
+        self.cc(EQ, 1, variables)
+            .expect("exo is a valid cardinality constraint")
     }
 
     /// Creates a new _at-most-one_ cardinality constraint.
@@ -956,7 +996,8 @@ impl FormulaFactory {
     /// assert_eq!(amo, f.cc(LE, 1, vec![a, b]).unwrap());
     /// ```
     pub fn amo<V: Into<Box<[Variable]>>>(&self, variables: V) -> EncodedFormula {
-        self.cc(LE, 1, variables).expect("amo is a valid cardinality constraint")
+        self.cc(LE, 1, variables)
+            .expect("amo is a valid cardinality constraint")
     }
 
     /// Creates a new pseudo-boolean constraint.
@@ -984,7 +1025,13 @@ impl FormulaFactory {
     /// assert_eq!(pbc1.to_string(&f), "2*a + -1*b + ~c = 2");
     /// assert_eq!(pbc2.to_string(&f), "3*a + -4*~c < 1");
     /// ```
-    pub fn pbc<L, C>(&self, comparator: CType, rhs: i64, literals: L, coefficients: C) -> LngResult<EncodedFormula>
+    pub fn pbc<L, C>(
+        &self,
+        comparator: CType,
+        rhs: i64,
+        literals: L,
+        coefficients: C,
+    ) -> LngResult<EncodedFormula>
     where
         L: Into<Box<[Literal]>>,
         C: Into<Box<[i64]>>,
@@ -992,14 +1039,25 @@ impl FormulaFactory {
         let l = literals.into();
         let c = coefficients.into();
         if l.len() != c.len() {
-            return Err(FormulaError::NoPbc { lits: l.len(), coeffs: c.len() }.into());
+            return Err(FormulaError::NoPbc {
+                lits: l.len(),
+                coeffs: c.len(),
+            }
+            .into());
         }
         if l.is_empty() {
             Ok(self.constant(evaluate_trivial_pb_constraint(comparator, rhs)))
         } else if is_lit_cc(comparator, rhs, &l, &c) {
-            Ok(self.construct_cc_unsafe(comparator, rhs, l.iter().map(|&lit| lit.variable()).collect()))
+            Ok(self.construct_cc_unsafe(
+                comparator,
+                rhs,
+                l.iter().map(|&lit| lit.variable()).collect(),
+            ))
         } else {
-            Ok(EncodedFormula::from(self.pbcs.get_or_insert(PbConstraint::new(l, c, comparator, rhs), FormulaType::Pbc)))
+            Ok(EncodedFormula::from(self.pbcs.get_or_insert(
+                PbConstraint::new(l, c, comparator, rhs),
+                FormulaType::Pbc,
+            )))
         }
     }
 
@@ -1108,8 +1166,12 @@ impl FormulaFactory {
         match formula.unpack(self) {
             Formula::Pbc(pbc) => pbc.evaluate(assignment),
             Formula::Cc(cc) => cc.evaluate(assignment),
-            Formula::Equiv((left, right)) => self.evaluate(left, assignment) == self.evaluate(right, assignment),
-            Formula::Impl((left, right)) => !self.evaluate(left, assignment) || self.evaluate(right, assignment),
+            Formula::Equiv((left, right)) => {
+                self.evaluate(left, assignment) == self.evaluate(right, assignment)
+            }
+            Formula::Impl((left, right)) => {
+                !self.evaluate(left, assignment) || self.evaluate(right, assignment)
+            }
             Formula::Or(mut ops) => ops.any(|op| self.evaluate(op, assignment)),
             Formula::And(mut ops) => ops.all(|op| self.evaluate(op, assignment)),
             Formula::Not(op) => !self.evaluate(op, assignment),
@@ -1179,7 +1241,11 @@ impl FormulaFactory {
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute(&self, formula: EncodedFormula, substitution: &Substitution) -> LngResult<EncodedFormula> {
+    pub fn substitute(
+        &self,
+        formula: EncodedFormula,
+        substitution: &Substitution,
+    ) -> LngResult<EncodedFormula> {
         transformations::substitute(formula, substitution, self)
     }
 
@@ -1207,7 +1273,12 @@ impl FormulaFactory {
     ///
     /// assert_eq!(substituted.to_string(&f), "(c => d) & b");
     /// ```
-    pub fn substitute_var(&self, formula: EncodedFormula, variable: Variable, substitute: EncodedFormula) -> LngResult<EncodedFormula> {
+    pub fn substitute_var(
+        &self,
+        formula: EncodedFormula,
+        variable: Variable,
+        substitute: EncodedFormula,
+    ) -> LngResult<EncodedFormula> {
         let mut substitution = HashMap::new();
         substitution.insert(variable, substitute);
         self.substitute(formula, &substitution)
@@ -1353,18 +1424,27 @@ impl FormulaFactory {
         &self.variables[index]
     }
 
-    fn construct_cc_unsafe(&self, comparator: CType, rhs: i64, variables: Box<[Variable]>) -> EncodedFormula {
+    fn construct_cc_unsafe(
+        &self,
+        comparator: CType,
+        rhs: i64,
+        variables: Box<[Variable]>,
+    ) -> EncodedFormula {
         if variables.is_empty() {
             self.constant(evaluate_trivial_pb_constraint(comparator, rhs))
         } else {
             let (comp, r): (CType, u32) = if rhs >= 0 {
-                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)] //Value is greate-equal 0
+                #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+                //Value is greate-equal 0
                 (comparator, rhs as u32)
             } else {
                 assert_eq!(comparator, GT);
                 (GE, 0)
             };
-            let cc = self.ccs.get_or_insert(CardinalityConstraint::new(variables, comp, r), FormulaType::Cc);
+            let cc = self.ccs.get_or_insert(
+                CardinalityConstraint::new(variables, comp, r),
+                FormulaType::Cc,
+            );
             EncodedFormula::from(cc)
         }
     }
@@ -1381,10 +1461,19 @@ impl FormulaFactory {
             reduced_set64: HashSet::default(),
             is_cnf: true,
         };
-        if self.filter_flatten(ops, op_type, &mut filter_result) { Some(filter_result) } else { None }
+        if self.filter_flatten(ops, op_type, &mut filter_result) {
+            Some(filter_result)
+        } else {
+            None
+        }
     }
 
-    fn filter_flatten<E, Ops>(&self, ops: Ops, op_type: FormulaType, result: &mut FilterResult) -> bool
+    fn filter_flatten<E, Ops>(
+        &self,
+        ops: Ops,
+        op_type: FormulaType,
+        result: &mut FilterResult,
+    ) -> bool
     where
         E: Borrow<EncodedFormula>,
         Ops: IntoIterator<Item = E>,
@@ -1414,7 +1503,11 @@ impl FormulaFactory {
                     if op_type == FormulaType::And {
                         return false;
                     }
-                } else if self.contains_complement(&result.reduced_set32, &result.reduced_set64, owned) {
+                } else if self.contains_complement(
+                    &result.reduced_set32,
+                    &result.reduced_set64,
+                    owned,
+                ) {
                     return false;
                 } else {
                     let op_encoded = owned.encoding;
@@ -1422,7 +1515,9 @@ impl FormulaFactory {
                         is_large = true;
                     }
                     if is_large {
-                        if !result.reduced_set32.contains(&op_encoded.as_32()) && result.reduced_set64.insert(op_encoded) {
+                        if !result.reduced_set32.contains(&op_encoded.as_32())
+                            && result.reduced_set64.insert(op_encoded)
+                        {
                             result.reduced64.push(op_encoded);
                         }
                     } else if result.reduced_set32.insert(op_encoded.as_32()) {
@@ -1456,7 +1551,10 @@ impl FormulaFactory {
                 set32.contains(&enc.as_32()) || set64.contains(enc)
             }
             Not(op) => set32.contains(&op.encoding.as_32()) || set64.contains(&op.encoding),
-            _ => self.nots.lookup(formula).is_some_and(|not| set32.contains(&not.as_32()) || set64.contains(&not)),
+            _ => self
+                .nots
+                .lookup(formula)
+                .is_some_and(|not| set32.contains(&not.as_32()) || set64.contains(&not)),
         }
     }
 }
@@ -1472,7 +1570,9 @@ const fn evaluate_trivial_pb_constraint(comparator: CType, rhs: i64) -> bool {
 }
 
 fn is_lit_cc(comparator: CType, rhs: i64, literals: &[Literal], coefficients: &[i64]) -> bool {
-    literals.iter().all(Literal::phase) && coefficients.iter().all(|&c| c == 1) && is_cc(comparator, rhs)
+    literals.iter().all(Literal::phase)
+        && coefficients.iter().all(|&c| c == 1)
+        && is_cc(comparator, rhs)
 }
 
 fn is_cc(comparator: CType, rhs: i64) -> bool {
@@ -1484,5 +1584,7 @@ fn is_cc(comparator: CType, rhs: i64) -> bool {
 }
 
 fn generate_random_id() -> String {
-    (0..FF_ID_LENGTH).map(|_| fastrand::alphanumeric().to_uppercase().to_string()).collect::<String>()
+    (0..FF_ID_LENGTH)
+        .map(|_| fastrand::alphanumeric().to_uppercase().to_string())
+        .collect::<String>()
 }

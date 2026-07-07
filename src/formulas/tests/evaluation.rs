@@ -5,7 +5,11 @@ mod evaluation_tests {
 
     fn ass(ff: &F) -> Assignment {
         Assignment::from_variables(
-            &[ff.A.as_variable().unwrap(), ff.B.as_variable().unwrap(), ff.C.as_variable().unwrap()],
+            &[
+                ff.A.as_variable().unwrap(),
+                ff.B.as_variable().unwrap(),
+                ff.C.as_variable().unwrap(),
+            ],
             &[ff.X.as_variable().unwrap(), ff.Y.as_variable().unwrap()],
         )
     }

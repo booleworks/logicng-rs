@@ -4,7 +4,10 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, NaryIterator};
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 
 pub fn factorization_cnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<EncodedFormula> {
-    factorization_cnf_with_handler(formula, f, &mut NopHandler {}).map(|r| r.result().expect("without handler a result is always present"))
+    factorization_cnf_with_handler(formula, f, &mut NopHandler {}).map(|r| {
+        r.result()
+            .expect("without handler a result is always present")
+    })
 }
 
 pub fn factorization_cnf_with_handler(
@@ -13,7 +16,9 @@ pub fn factorization_cnf_with_handler(
     handler: &mut dyn ComputationHandler,
 ) -> LngResult<CancelableResult<EncodedFormula>> {
     if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Factorization)) {
-        return Ok(CancelableResult::Canceled(LngEvent::ComputationStarted(LngComputation::Factorization)));
+        return Ok(CancelableResult::Canceled(LngEvent::ComputationStarted(
+            LngComputation::Factorization,
+        )));
     }
     if f.config.caches.factorization_cnf {
         apply_rec(formula, f, handler, &mut None)
@@ -178,11 +183,31 @@ mod tests {
         test_cnf("a & b => x | y", "~a | ~b | x | y");
         test_cnf("a <=> b", "(a | ~b) & (~a | b)");
         test_cnf("~a <=> ~b", "(~a | b) & (a | ~b)");
-        assert!(factorization_cnf(f.parse("a => b").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~a => ~b").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("a & b => x | y").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("a <=> b").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~a <=> b").unwrap(), f).unwrap().is_cnf(f));
+        assert!(
+            factorization_cnf(f.parse("a => b").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~a => ~b").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("a & b => x | y").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("a <=> b").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~a <=> b").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
     }
 
     #[test]
@@ -190,17 +215,55 @@ mod tests {
         let f = &FormulaFactory::new();
         test_cnf("a & b", "a & b");
         test_cnf("x | y", "x | y");
-        test_cnf("~(a | b) & c & ~(x & ~y) & (w => z)", "~a & ~b & c & (~x | y) & (~w | z)");
-        test_cnf("~(a & b) | c | ~(x | ~y)", "(~a | ~b | c | ~x) & (~a  | ~b | c | y)");
+        test_cnf(
+            "~(a | b) & c & ~(x & ~y) & (w => z)",
+            "~a & ~b & c & (~x | y) & (~w | z)",
+        );
+        test_cnf(
+            "~(a & b) | c | ~(x | ~y)",
+            "(~a | ~b | c | ~x) & (~a  | ~b | c | y)",
+        );
         test_cnf("a | b | (~x & ~y)", "(a | b | ~x) & (a | b | ~y)");
-        assert!(factorization_cnf(f.parse("a & b").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("x | y").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("a | b | (~x & ~y)").unwrap(), f).unwrap().is_cnf(f));
-        assert!(factorization_cnf(f.parse("a | b | (~x & ~y)").unwrap(), f).unwrap().is_cnf(f));
+        assert!(
+            factorization_cnf(f.parse("a & b").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("x | y").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~(a | b) & c & ~(x & ~y) & (w => z)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("~(a & b) | c | ~(x | ~y)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("a | b | (~x & ~y)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
+        assert!(
+            factorization_cnf(f.parse("a | b | (~x & ~y)").unwrap(), f)
+                .unwrap()
+                .is_cnf(f)
+        );
     }
 
     #[test]
@@ -210,7 +273,10 @@ mod tests {
         test_cnf("~(a2 => b2)", "a2 & ~b2");
         test_cnf("~(~(a2 | b2) => ~(x2 | y2))", "~a2 & ~b2 & (x2 | y2)");
         test_cnf("~(a2 <=> b2)", "(~a2 | ~b2) & (a2 | b2)");
-        test_cnf("~(~(a2 | b2) <=> ~(x2 | y2))", "(a2 | b2 | x2 | y2) & (~a2 | ~x2) & (~a2 | ~y2) & (~b2 | ~x2) & (~b2 | ~y2)");
+        test_cnf(
+            "~(~(a2 | b2) <=> ~(x2 | y2))",
+            "(a2 | b2 | x2 | y2) & (~a2 | ~x2) & (~a2 | ~y2) & (~b2 | ~x2) & (~b2 | ~y2)",
+        );
         test_cnf("~(a2 & b2 & ~x2 & ~y2)", "~a2 | ~b2 | x2 | y2");
         test_cnf("~(a2 | b2 | ~x2 | ~y2)", "~a2 & ~b2 & x2 & y2");
         test_cnf("~(a2 | b2 | ~x2 | ~y2)", "~a2 & ~b2 & x2 & y2");
@@ -220,7 +286,9 @@ mod tests {
     fn test_with_handler() {
         let f = &FormulaFactory::new();
 
-        let formula = f.parse("(~(~(a | b) => ~(x | y))) & ((a | x) => ~(b | y))").unwrap();
+        let formula = f
+            .parse("(~(~(a | b) => ~(x | y))) & ((a | x) => ~(b | y))")
+            .unwrap();
         let mut handler = AdvancedFactorizationHandler::new(Some(100), Some(2));
         let result = factorization_cnf_with_handler(formula, f, &mut handler).unwrap();
         assert!(result.is_canceled());
@@ -246,7 +314,10 @@ mod tests {
         let file_name = "resources/formulas/large_formula.txt";
         let reader = BufReader::new(File::open(file_name).unwrap());
         let f = &FormulaFactory::new();
-        let formulas: Vec<EncodedFormula> = reader.lines().map(|l| f.parse(&l.unwrap()).unwrap()).collect();
+        let formulas: Vec<EncodedFormula> = reader
+            .lines()
+            .map(|l| f.parse(&l.unwrap()).unwrap())
+            .collect();
         let formula = f.and(formulas);
         let start = Instant::now();
         let cnf = factorization_cnf(formula, f).unwrap();
@@ -256,6 +327,9 @@ mod tests {
 
     fn test_cnf(original: &str, expected: &str) {
         let f = &FormulaFactory::new();
-        assert_eq!(factorization_cnf(f.parse(original).unwrap(), f).unwrap(), f.parse(expected).unwrap());
+        assert_eq!(
+            factorization_cnf(f.parse(original).unwrap(), f).unwrap(),
+            f.parse(expected).unwrap()
+        );
     }
 }

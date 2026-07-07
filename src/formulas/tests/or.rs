@@ -98,9 +98,18 @@ mod or_test {
         assert_eq!(ff.OR1.to_string(f), "x | y");
         assert_eq!(ff.OR2.to_string(f), "~x | ~y");
         assert_eq!(ff.OR3.to_string(f), "a & b | ~a & ~b");
-        assert_eq!(f.or([ff.A, ff.B, ff.NX, ff.NY]).to_string(f), "a | b | ~x | ~y");
-        assert_eq!(f.or([ff.IMP1, ff.IMP2]).to_string(f), "(a => b) | (~a => ~b)");
-        assert_eq!(f.or([ff.EQ1, ff.EQ2]).to_string(f), "(a <=> b) | (~a <=> ~b)");
+        assert_eq!(
+            f.or([ff.A, ff.B, ff.NX, ff.NY]).to_string(f),
+            "a | b | ~x | ~y"
+        );
+        assert_eq!(
+            f.or([ff.IMP1, ff.IMP2]).to_string(f),
+            "(a => b) | (~a => ~b)"
+        );
+        assert_eq!(
+            f.or([ff.EQ1, ff.EQ2]).to_string(f),
+            "(a <=> b) | (~a <=> ~b)"
+        );
     }
 
     #[test]
@@ -110,7 +119,10 @@ mod or_test {
         assert_eq!(f.or([ff.X, ff.Y]), ff.OR1);
         assert_eq!(f.or([ff.AND1, ff.AND2]), ff.OR3);
         assert_eq!(ff.OR2, ff.OR2);
-        assert_eq!(f.or([ff.NX, ff.A, ff.NB, ff.AND1]), f.or([ff.A, ff.NB, ff.AND1, ff.NX]));
+        assert_eq!(
+            f.or([ff.NX, ff.A, ff.NB, ff.AND1]),
+            f.or([ff.A, ff.NB, ff.AND1, ff.NX])
+        );
         assert_ne!(ff.OR2, ff.OR1);
         assert_ne!(f.or([ff.A, ff.B, ff.C]), ff.OR1);
     }

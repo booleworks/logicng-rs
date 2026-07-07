@@ -12,16 +12,24 @@ fn configs() -> Vec<CcConfig> {
     vec![
         CcConfig::new().amo_encoder(AmoEncoder::Pure),
         CcConfig::new().amo_encoder(AmoEncoder::Ladder),
-        CcConfig::new().amo_encoder(AmoEncoder::Product { recursive_bound: CcConfig::DEFAULT_PRODUCT_RECURSIVE_BOUND }),
+        CcConfig::new().amo_encoder(AmoEncoder::Product {
+            recursive_bound: CcConfig::DEFAULT_PRODUCT_RECURSIVE_BOUND,
+        }),
         CcConfig::new().amo_encoder(AmoEncoder::Binary),
-        CcConfig::new().amo_encoder(AmoEncoder::Nested { group_size: CcConfig::DEFAULT_NESTING_GROUP_SIZE }),
+        CcConfig::new().amo_encoder(AmoEncoder::Nested {
+            group_size: CcConfig::DEFAULT_NESTING_GROUP_SIZE,
+        }),
         CcConfig::new().amo_encoder(AmoEncoder::Commander { group_size: 3 }),
         CcConfig::new().amo_encoder(AmoEncoder::Commander { group_size: 7 }),
         CcConfig::new().amo_encoder(AmoEncoder::Bimander { group_size: Half }),
         CcConfig::new().amo_encoder(AmoEncoder::Bimander { group_size: Sqrt }),
-        CcConfig::new().amo_encoder(AmoEncoder::Bimander { group_size: Fixed(2) }),
+        CcConfig::new().amo_encoder(AmoEncoder::Bimander {
+            group_size: Fixed(2),
+        }),
         CcConfig::new().amo_encoder(AmoEncoder::Nested { group_size: 5 }),
-        CcConfig::new().amo_encoder(AmoEncoder::Product { recursive_bound: 10 }),
+        CcConfig::new().amo_encoder(AmoEncoder::Product {
+            recursive_bound: 10,
+        }),
         CcConfig::new().amo_encoder(AmoEncoder::Best),
     ]
 }
@@ -44,7 +52,12 @@ fn test_exo_1() {
         let var = f.variable("v0").as_variable().unwrap();
         let cc = f.cc(EQ, 1, &([var]) as &[Variable]).unwrap();
         assert_eq!(f.nnf_of(cc).unwrap(), f.variable("v0"));
-        assert_eq!(CcEncoder::new(config).encode(&cc.as_cc(&f).unwrap(), &f).unwrap(), vec![f.variable("v0")]);
+        assert_eq!(
+            CcEncoder::new(config)
+                .encode(&cc.as_cc(&f).unwrap(), &f)
+                .unwrap(),
+            vec![f.variable("v0")]
+        );
     }
 }
 
@@ -62,13 +75,20 @@ fn test_exo_k() -> LngResult<()> {
 }
 
 fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
-    let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
+    let problem_lits: Box<[Variable]> = (0..num_lits)
+        .map(|i| f.variable(format!("v{i}")).as_variable().unwrap())
+        .collect();
     let mut solver = MiniSat::new();
     let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
     solver.add(cc, f)?;
     assert_eq!(solver.sat(), True);
-    let models =
-        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_lits).max_models(12000)).unwrap();
+    let models = enumerate_models_with_config(
+        &mut solver,
+        &ModelEnumerationConfig::default()
+            .variables(problem_lits)
+            .max_models(12000),
+    )
+    .unwrap();
     assert_eq!(models.len(), num_lits);
     for model in models {
         assert_eq!(model.pos().len(), 1);

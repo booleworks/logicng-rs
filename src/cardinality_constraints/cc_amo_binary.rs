@@ -1,4 +1,9 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::cast_possible_wrap)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_wrap
+)]
 
 use crate::datastructures::EncodingResult;
 use crate::formulas::{AuxVarType, Literal, Variable};
@@ -10,7 +15,9 @@ pub fn build_amo_binary<R: EncodingResult>(result: &mut R, vars: &[Variable]) {
     let number_of_bits = (vars.len() as f64).log2().ceil() as u32;
     let two_pow_n_bits = 2u64.pow(number_of_bits);
     let k = ((two_pow_n_bits - vars.len() as u64) * 2) as isize;
-    let bits: Vec<Literal> = (0..number_of_bits).map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true)).collect();
+    let bits: Vec<Literal> = (0..number_of_bits)
+        .map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true))
+        .collect();
 
     let mut gray_code: isize;
     let mut next_gray: isize;

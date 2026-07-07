@@ -31,12 +31,19 @@ impl<'a> DTree {
     pub fn to_string(self, df: &DTreeFactory, f: &crate::formulas::FormulaFactory) -> String {
         match self {
             Self::Leaf(n) => {
-                let leafs: Vec<String> = df.leafs[n as usize].iter().map(|&lit| lit.to_string(f)).collect();
+                let leafs: Vec<String> = df.leafs[n as usize]
+                    .iter()
+                    .map(|&lit| lit.to_string(f))
+                    .collect();
                 format!("Leaf{{{}}}", leafs.join(", "))
             }
             Self::Node(n) => {
                 let (left, right) = df.children(n);
-                format!("Node[{}, {}]", left.to_string(df, f), right.to_string(df, f))
+                format!(
+                    "Node[{}, {}]",
+                    left.to_string(df, f),
+                    right.to_string(df, f)
+                )
             }
         }
     }

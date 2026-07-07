@@ -17,12 +17,18 @@ pub struct SimpleCache<T: Hash + Eq + Clone + Debug> {
 
 impl<T: Hash + Eq + Clone + Debug> SimpleCache<T> {
     pub fn new() -> Self {
-        Self { vec: AppendOnlyVec::new(), reverse_map: DashMap::with_capacity(CACHE_INITIAL_CAPACITY) }
+        Self {
+            vec: AppendOnlyVec::new(),
+            reverse_map: DashMap::with_capacity(CACHE_INITIAL_CAPACITY),
+        }
     }
 
     #[allow(clippy::cast_possible_truncation)]
     pub fn get(&self, index: FormulaEncoding) -> &T {
-        assert!(index.is_large_cache(), "SimpleCache does not optimize for small formulas!");
+        assert!(
+            index.is_large_cache(),
+            "SimpleCache does not optimize for small formulas!"
+        );
         &self.vec[index.index() as usize]
     }
 

@@ -9,13 +9,15 @@ use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 use crate::knowledge_compilation::bdd::BddError;
 use crate::knowledge_compilation::bdd::bdd_construction::{
-    and, bdd_high, bdd_low, bdd_var, equivalence, exists, for_all, implication, ith_var, nith_var, not, or,
+    and, bdd_high, bdd_low, bdd_var, equivalence, exists, for_all, implication, ith_var, nith_var,
+    not, or,
 };
 use crate::knowledge_compilation::bdd::bdd_kernel::{BDD_FALSE, BDD_TRUE, BddKernel};
 use crate::knowledge_compilation::bdd::bdd_model_enumeration::enumerate_all_models;
 use crate::knowledge_compilation::bdd::bdd_normalform::normal_form;
 use crate::knowledge_compilation::bdd::bdd_operations::{
-    all_nodes, full_sat_one, node_count, path_count_one, path_count_zero, sat_count, sat_one, sat_one_set, var_profile,
+    all_nodes, full_sat_one, node_count, path_count_one, path_count_zero, sat_count, sat_one,
+    sat_one_set, var_profile,
 };
 
 use super::bdd_construction::restrict;
@@ -34,7 +36,11 @@ impl Bdd {
     ///
     /// Returns an error if the formula cannot be transformed as needed, or if
     /// the kernel has no free variables left for variables in the formula.
-    pub fn from_formula(formula: EncodedFormula, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
+    pub fn from_formula(
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+        kernel: &mut BddKernel,
+    ) -> LngResult<Self> {
         let rec = build_rec(formula, f, kernel, &mut NopHandler::new())?;
         let node = rec.result().expect("nop handler can never abort");
         Ok(Self { index: node })
@@ -54,12 +60,16 @@ impl Bdd {
         handler: &mut dyn ComputationHandler,
     ) -> LngResult<CancelableResult<Self>> {
         if !handler.should_resume(LngEvent::ComputationStarted(LngComputation::Bdd)) {
-            return Ok(CancelableResult::Canceled(LngEvent::ComputationStarted(LngComputation::Bdd)));
+            return Ok(CancelableResult::Canceled(LngEvent::ComputationStarted(
+                LngComputation::Bdd,
+            )));
         }
         let rec = build_rec(formula, f, kernel, handler)?;
         match rec {
             CancelableResult::Ok(index) => Ok(CancelableResult::Ok(Self { index })),
-            CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => Ok(CancelableResult::Canceled(e)),
+            CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+                Ok(CancelableResult::Canceled(e))
+            }
         }
     }
 
@@ -134,7 +144,11 @@ impl Bdd {
     ///
     /// Returns an error if one of the projected variables is not known to the
     /// kernel or an enumerated model references an unknown variable index.
-    pub fn enumerate_all_models_projected(&self, variables: &[Variable], kernel: &mut BddKernel) -> LngResult<Vec<Model>> {
+    pub fn enumerate_all_models_projected(
+        &self,
+        variables: &[Variable],
+        kernel: &mut BddKernel,
+    ) -> LngResult<Vec<Model>> {
         enumerate_all_models(self.index, Some(variables), kernel)
     }
 
@@ -186,7 +200,9 @@ impl Bdd {
         let var_profile = var_profile(self.index, kernel);
         let mut profile = BTreeMap::new();
         for (idx, count) in var_profile.iter().enumerate() {
-            let var = kernel.get_variable_for_index(idx).ok_or(BddError::InvalidVarNum { var_num: idx })?;
+            let var = kernel
+                .get_variable_for_index(idx)
+                .ok_or(BddError::InvalidVarNum { var_num: idx })?;
             profile.insert(var, *count);
         }
         Ok(profile)
@@ -199,7 +215,11 @@ impl Bdd {
     ///
     /// Returns an error if the BDD references an unknown variable or node
     /// index.
-    pub fn to_formula(&self, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<EncodedFormula> {
+    pub fn to_formula(
+        &self,
+        f: &FormulaFactory,
+        kernel: &mut BddKernel,
+    ) -> LngResult<EncodedFormula> {
         to_formula_rec(self.index, f, kernel)
     }
 
@@ -211,9 +231,16 @@ impl Bdd {
     /// kernel, if the kernel has no free variables left, or if an intermediate
     /// BDD node index is invalid.
     #[must_use]
-    pub fn restrict(&self, restriction: &[Literal], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
+    pub fn restrict(
+        &self,
+        restriction: &[Literal],
+        f: &FormulaFactory,
+        kernel: &mut BddKernel,
+    ) -> LngResult<Self> {
         let var_bdd = bdd_from_literals(restriction, f, kernel)?;
-        Ok(Self { index: restrict(self.index, var_bdd, kernel) })
+        Ok(Self {
+            index: restrict(self.index, var_bdd, kernel),
+        })
     }
 
     /// Existential quantifier elimination for a given set of variables.
@@ -224,9 +251,16 @@ impl Bdd {
     /// the kernel has no free variables left, or if an intermediate BDD node
     /// index is invalid.
     #[must_use]
-    pub fn exists(&self, variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
+    pub fn exists(
+        &self,
+        variables: &[Variable],
+        f: &FormulaFactory,
+        kernel: &mut BddKernel,
+    ) -> LngResult<Self> {
         let var_bdd = bdd_from_variables(variables, f, kernel)?;
-        Ok(Self { index: exists(self.index, var_bdd, kernel) })
+        Ok(Self {
+            index: exists(self.index, var_bdd, kernel),
+        })
     }
 
     /// Universal quantifier elimination for a given set of variables.
@@ -237,9 +271,16 @@ impl Bdd {
     /// the kernel has no free variables left, or if an intermediate BDD node
     /// index is invalid.
     #[must_use]
-    pub fn for_all(&self, variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<Self> {
+    pub fn for_all(
+        &self,
+        variables: &[Variable],
+        f: &FormulaFactory,
+        kernel: &mut BddKernel,
+    ) -> LngResult<Self> {
         let var_bdd = bdd_from_variables(variables, f, kernel)?;
-        Ok(Self { index: for_all(self.index, var_bdd, kernel) })
+        Ok(Self {
+            index: for_all(self.index, var_bdd, kernel),
+        })
     }
 
     /// Returns all the variables this BDD depends on.
@@ -276,15 +317,24 @@ fn build_rec(
         True => Ok(CancelableResult::Ok(BDD_TRUE)),
         Lit(lit) => handle_literal(kernel, lit),
         Not(op) => handle_not(f, kernel, handler, op),
-        Impl((left, right)) | Equiv((left, right)) => handle_binary(formula, f, kernel, handler, left, right),
+        Impl((left, right)) | Equiv((left, right)) => {
+            handle_binary(formula, f, kernel, handler, left, right)
+        }
         And(_) | Or(_) => handle_nary(formula, f, kernel, handler),
         Cc(_) | Pbc(_) => build_rec(f.nnf_of(formula)?, f, kernel, handler),
     }
 }
 
-fn handle_literal(kernel: &mut BddKernel, lit: Literal) -> Result<CancelableResult<usize>, crate::errors::LngError> {
+fn handle_literal(
+    kernel: &mut BddKernel,
+    lit: Literal,
+) -> Result<CancelableResult<usize>, crate::errors::LngError> {
     let idx = kernel.get_or_add_var_index(lit.variable())?;
-    if lit.phase() { Ok(CancelableResult::Ok(ith_var(idx, kernel)?)) } else { Ok(CancelableResult::Ok(nith_var(idx, kernel)?)) }
+    if lit.phase() {
+        Ok(CancelableResult::Ok(ith_var(idx, kernel)?))
+    } else {
+        Ok(CancelableResult::Ok(nith_var(idx, kernel)?))
+    }
 }
 
 fn handle_not(
@@ -320,14 +370,22 @@ fn handle_binary(
 ) -> Result<CancelableResult<usize>, crate::errors::LngError> {
     let left = match build_rec(left, f, kernel, handler)? {
         CancelableResult::Ok(left) => left,
-        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => return Ok(CancelableResult::Canceled(c)),
+        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => {
+            return Ok(CancelableResult::Canceled(c));
+        }
     };
     let right = match build_rec(right, f, kernel, handler)? {
         CancelableResult::Ok(right) => right,
-        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => return Ok(CancelableResult::Canceled(c)),
+        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => {
+            return Ok(CancelableResult::Canceled(c));
+        }
     };
 
-    let binary_bdd = if formula.is_impl() { implication(left, right, kernel) } else { equivalence(left, right, kernel) };
+    let binary_bdd = if formula.is_impl() {
+        implication(left, right, kernel)
+    } else {
+        equivalence(left, right, kernel)
+    };
     let res = kernel.add_ref(binary_bdd, handler);
 
     match res {
@@ -349,7 +407,9 @@ fn handle_nary(
     let operands = formula.operands(f);
     let mut res = match build_rec(operands[0], f, kernel, handler)? {
         CancelableResult::Ok(r) => r,
-        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => return Ok(CancelableResult::Canceled(c)),
+        CancelableResult::Canceled(c) | CancelableResult::Partial(_, c) => {
+            return Ok(CancelableResult::Canceled(c));
+        }
     };
     for op in &operands[1..operands.len()] {
         let operand_bdd = match build_rec(*op, f, kernel, handler)? {
@@ -360,7 +420,11 @@ fn handle_nary(
             }
         };
         let previous_bdd = res;
-        let nary_bdd = if formula.is_and() { and(res, operand_bdd, kernel) } else { or(res, operand_bdd, kernel) };
+        let nary_bdd = if formula.is_and() {
+            and(res, operand_bdd, kernel)
+        } else {
+            or(res, operand_bdd, kernel)
+        };
         res = match kernel.add_ref(nary_bdd, handler) {
             Ok(r) => {
                 kernel.del_ref(previous_bdd);
@@ -402,28 +466,43 @@ fn create_model(model_bdd: usize, kernel: &mut BddKernel) -> LngResult<Option<Mo
     Ok(Some(Model::new(pos, neg)))
 }
 
-fn bdd_from_variables(variables: &[Variable], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<usize> {
+fn bdd_from_variables(
+    variables: &[Variable],
+    f: &FormulaFactory,
+    kernel: &mut BddKernel,
+) -> LngResult<usize> {
     let formula = f.and(variables.iter().map(|x| EncodedFormula::from(*x)));
     let rec = build_rec(formula, f, kernel, &mut NopHandler::new())?;
     let node = rec.result().expect("nop handler can never abort");
     Ok(node)
 }
 
-fn bdd_from_literals(literals: &[Literal], f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<usize> {
+fn bdd_from_literals(
+    literals: &[Literal],
+    f: &FormulaFactory,
+    kernel: &mut BddKernel,
+) -> LngResult<usize> {
     let formula = f.and(literals.iter().map(|x| EncodedFormula::from(*x)));
     let rec = build_rec(formula, f, kernel, &mut NopHandler::new())?;
     let node = rec.result().expect("nop handler can never abort");
     Ok(node)
 }
 
-fn to_formula_rec(index: usize, f: &FormulaFactory, kernel: &mut BddKernel) -> LngResult<EncodedFormula> {
+fn to_formula_rec(
+    index: usize,
+    f: &FormulaFactory,
+    kernel: &mut BddKernel,
+) -> LngResult<EncodedFormula> {
     if index == BDD_FALSE {
         return Ok(f.falsum());
     } else if index == BDD_TRUE {
         return Ok(f.verum());
     }
     let var_index = bdd_var(index, kernel)?;
-    let node_variable = *kernel.idx2var.get(&var_index).ok_or(BddError::InvalidVarNum { var_num: var_index })?;
+    let node_variable = *kernel
+        .idx2var
+        .get(&var_index)
+        .ok_or(BddError::InvalidVarNum { var_num: var_index })?;
     let rec1 = to_formula_rec(bdd_high(index, kernel)?, f, kernel)?;
     let op1 = f.and([node_variable.into(), rec1]);
     let rec2 = to_formula_rec(bdd_low(index, kernel)?, f, kernel)?;

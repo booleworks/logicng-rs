@@ -35,7 +35,9 @@ fn compute_tseitin(formula: EncodedFormula, f: &FormulaFactory, state: &mut Tsei
         match formula.formula_type() {
             FormulaType::Lit(_) => {
                 state.formula.insert(formula, formula);
-                state.variable.insert(formula, formula.as_literal().unwrap());
+                state
+                    .variable
+                    .insert(formula, formula.as_literal().unwrap());
             }
             FormulaType::And | FormulaType::Or => {
                 let num_ops = formula.number_of_operands(f);
@@ -47,14 +49,28 @@ fn compute_tseitin(formula: EncodedFormula, f: &FormulaFactory, state: &mut Tsei
                 let mut neg_operands = Vec::with_capacity(num_ops);
                 if formula.is_and() {
                     neg_operands.push(ts_literal);
-                    handle_nary(formula, f, &mut nops, &mut operands, &mut neg_operands, state);
+                    handle_nary(
+                        formula,
+                        f,
+                        &mut nops,
+                        &mut operands,
+                        &mut neg_operands,
+                        state,
+                    );
                     for operand in &operands {
                         nops.push(f.or([neg_ts_literal, *operand]));
                     }
                     nops.push(f.or(&neg_operands));
                 } else {
                     operands.push(neg_ts_literal);
-                    handle_nary(formula, f, &mut nops, &mut operands, &mut neg_operands, state);
+                    handle_nary(
+                        formula,
+                        f,
+                        &mut nops,
+                        &mut operands,
+                        &mut neg_operands,
+                        state,
+                    );
                     for operand in &neg_operands {
                         nops.push(f.or([ts_literal, *operand]));
                     }
@@ -93,7 +109,9 @@ mod tests {
     use std::fs::read_to_string;
 
     use crate::formulas::{EncodedFormula, FormulaFactory};
-    use crate::operations::transformations::cnf::tseitin::{TseitinState, tseitin_cnf_with_boundary};
+    use crate::operations::transformations::cnf::tseitin::{
+        TseitinState, tseitin_cnf_with_boundary,
+    };
 
     #[test]
     fn test() {

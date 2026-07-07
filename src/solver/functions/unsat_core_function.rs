@@ -17,7 +17,10 @@ use std::collections::HashMap;
 /// Returns an error if proof generation is disabled, the solver has not been
 /// solved yet, the formula is satisfiable, or the last computation used
 /// assumptions.
-pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) -> LngResult<UnsatCore<B>> {
+pub fn compute_unsat_core<B: PartialEq>(
+    solver: &MiniSat<B>,
+    f: &FormulaFactory,
+) -> LngResult<UnsatCore<B>> {
     if !solver.config.proof_generation {
         return Err(SolverError::ProofGenerationRequired.into());
     }
@@ -54,7 +57,12 @@ pub fn compute_unsat_core<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory)
             result
                 .unsat_core
                 .iter()
-                .map(|c| clause2propositions.get(&get_formula_for_vector(solver, c, f)).unwrap().clone())
+                .map(|c| {
+                    clause2propositions
+                        .get(&get_formula_for_vector(solver, c, f))
+                        .unwrap()
+                        .clone()
+                })
                 .dedup()
                 .collect(),
             false,
@@ -87,10 +95,18 @@ fn handle_trivial_case<B: PartialEq>(solver: &MiniSat<B>, f: &FormulaFactory) ->
     panic!("Should be a trivial unsat core, but did not find one.");
 }
 
-fn get_formula_for_vector<B>(solver: &MiniSat<B>, vector: &Vec<isize>, f: &FormulaFactory) -> EncodedFormula {
+fn get_formula_for_vector<B>(
+    solver: &MiniSat<B>,
+    vector: &Vec<isize>,
+    f: &FormulaFactory,
+) -> EncodedFormula {
     let mut literals = Vec::with_capacity(vector.len());
     for &lit in vector {
-        let var = *solver.underlying_solver.idx2name.get(&MsVar(lit.unsigned_abs() - 1)).unwrap();
+        let var = *solver
+            .underlying_solver
+            .idx2name
+            .get(&MsVar(lit.unsigned_abs() - 1))
+            .unwrap();
         literals.push(Literal::new(var, lit > 0).into());
     }
     f.or(&literals)

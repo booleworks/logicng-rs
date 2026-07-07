@@ -5,7 +5,9 @@ use std::error::Error;
 
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::functions::{BackboneType, ModelEnumerationConfig, enumerate_models_with_config};
+use logicng::solver::functions::{
+    BackboneType, ModelEnumerationConfig, enumerate_models_with_config,
+};
 use logicng::solver::minisat::MiniSat;
 
 use crate::trallocator::Trallocator;
@@ -23,8 +25,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     GLOBAL.reset();
     let f = FormulaFactory::new();
     let strings = [
-        "v697", "v43", "v30", "v183", "v222", "v1", "v202", "v111", "v77", "v690", "v711", "v331", "v311", "v42", "v12", "v173", "v63",
-        "v773", "v500", "v401", "v501", "v502", "v503",
+        "v697", "v43", "v30", "v183", "v222", "v1", "v202", "v111", "v77", "v690", "v711", "v331",
+        "v311", "v42", "v12", "v173", "v63", "v773", "v500", "v401", "v501", "v502", "v503",
     ];
     let vars = strings.map(|v| f.var(v));
 
@@ -39,11 +41,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     solver.sat();
     GLOBAL.print_memory("solve");
     let t4 = std::time::Instant::now();
-    let models = enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(vars)).unwrap();
+    let models = enumerate_models_with_config(
+        &mut solver,
+        &ModelEnumerationConfig::default().variables(vars),
+    )
+    .unwrap();
     GLOBAL.print_memory("model enumeration");
     let t5 = std::time::Instant::now();
-    let bb =
-        solver.underlying_solver.compute_backbone(Vec::from_iter(formula.variables(&f).iter().copied()), BackboneType::PositiveAndNegative);
+    let bb = solver.underlying_solver.compute_backbone(
+        Vec::from_iter(formula.variables(&f).iter().copied()),
+        BackboneType::PositiveAndNegative,
+    );
     GLOBAL.print_memory("backbone");
     let t6 = std::time::Instant::now();
     println!("{}", models.len());

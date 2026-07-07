@@ -25,7 +25,13 @@ fn main() {
 }
 
 fn read_result() -> HashMap<String, bool> {
-    let path = format!("{}/{}/{}/{}", env!("CARGO_MANIFEST_DIR"), "resources", "sat", "results.txt");
+    let path = format!(
+        "{}/{}/{}/{}",
+        env!("CARGO_MANIFEST_DIR"),
+        "resources",
+        "sat",
+        "results.txt"
+    );
     let file = File::open(PathBuf::from(path)).expect("Could not open result file");
     let mut result: HashMap<String, bool> = HashMap::new();
     for line in BufReader::new(file).lines() {
@@ -52,13 +58,28 @@ fn test_file(file: DimacsFile, expected: bool) {
         solver.add_clause(
             clause
                 .iter()
-                .map(|v| mk_lit(solver.idx_for_variable(Variable::from_index(v.unsigned_abs() as u64)).unwrap(), v.is_negative()))
+                .map(|v| {
+                    mk_lit(
+                        solver
+                            .idx_for_variable(Variable::from_index(v.unsigned_abs() as u64))
+                            .unwrap(),
+                        v.is_negative(),
+                    )
+                })
                 .collect(),
             None,
         );
     }
     let result = solver.solve();
-    println!("{:?}{}", result, if (result == True) == expected { "" } else { "  <-- ERROR" });
+    println!(
+        "{:?}{}",
+        result,
+        if (result == True) == expected {
+            ""
+        } else {
+            "  <-- ERROR"
+        }
+    );
     if expected != (result == True) {
         panic!("unexpected result!");
     }
@@ -68,7 +89,13 @@ fn read_files(path: &Path) -> Result<Vec<DimacsFile>, Error> {
     let mut files: Vec<DimacsFile> = Vec::new();
     for file in path.read_dir()? {
         let file = file?.path();
-        if file.is_file() && file.extension().map(|s| s.to_str().unwrap_or("")).unwrap_or("") == "cnf" {
+        if file.is_file()
+            && file
+                .extension()
+                .map(|s| s.to_str().unwrap_or(""))
+                .unwrap_or("")
+                == "cnf"
+        {
             files.push(read_single_file(&file)?);
         }
     }
@@ -76,7 +103,10 @@ fn read_files(path: &Path) -> Result<Vec<DimacsFile>, Error> {
 }
 
 fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
-    println!("Reading file {}", path.file_name().unwrap().to_str().unwrap());
+    println!(
+        "Reading file {}",
+        path.file_name().unwrap().to_str().unwrap()
+    );
     let file = File::open(path)?;
     let mut clauses: Vec<Vec<isize>> = Vec::new();
     let mut max_var: usize = 0;
@@ -90,13 +120,19 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
                         clauses.reserve(split[3].parse().unwrap());
                         max_var = split[2].parse().unwrap();
                     }
-                    _ => clauses.push(Vec::<isize>::from_iter(split[0..split.len() - 1].iter().map(|x| x.parse().unwrap()))),
+                    _ => clauses.push(Vec::<isize>::from_iter(
+                        split[0..split.len() - 1].iter().map(|x| x.parse().unwrap()),
+                    )),
                 }
             }
             _ => (),
         }
     }
-    Ok(DimacsFile { name: path.file_name().unwrap().to_str().unwrap().into(), clauses, max_var })
+    Ok(DimacsFile {
+        name: path.file_name().unwrap().to_str().unwrap().into(),
+        clauses,
+        max_var,
+    })
 }
 
 struct DimacsFile {

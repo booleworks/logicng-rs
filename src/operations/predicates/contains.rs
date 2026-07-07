@@ -86,8 +86,13 @@ pub fn contains_node(formula: EncodedFormula, node: EncodedFormula, f: &FormulaF
         }
 
         let result = match current.unpack(f) {
-            Cc(cc) => cc.variables.iter().any(|v| EncodedFormula::from(*v) == node),
-            Pbc(pbc) => pbc.literals.iter().any(|l| EncodedFormula::from(*l) == node || EncodedFormula::from(l.variable()) == node),
+            Cc(cc) => cc
+                .variables
+                .iter()
+                .any(|v| EncodedFormula::from(*v) == node),
+            Pbc(pbc) => pbc.literals.iter().any(|l| {
+                EncodedFormula::from(*l) == node || EncodedFormula::from(l.variable()) == node
+            }),
             _ => {
                 for &op in &*current.operands(f) {
                     if seen.insert(op) {

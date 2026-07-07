@@ -34,7 +34,10 @@ impl ImplicationCache {
         }
     }
 
-    pub fn get_or_insert(&self, (left, right): (EncodedFormula, EncodedFormula)) -> FormulaEncoding {
+    pub fn get_or_insert(
+        &self,
+        (left, right): (EncodedFormula, EncodedFormula),
+    ) -> FormulaEncoding {
         if left.encoding.is_large() || right.encoding.is_large() {
             let encoded = (left.encoding, right.encoding);
             *self.reverse_map64.entry(encoded).or_insert_with(|| {

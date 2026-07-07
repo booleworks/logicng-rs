@@ -68,7 +68,9 @@ pub fn bdd_cnf_with_handler(
     let bdd = Bdd::from_formula_with_handler(formula, f, &mut kernel, handler)?;
     match bdd {
         CancelableResult::Ok(b) => Ok(CancelableResult::Ok(b.cnf(f, &mut kernel)?)),
-        CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => Ok(CancelableResult::Canceled(e)),
+        CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+            Ok(CancelableResult::Canceled(e))
+        }
     }
 }
 

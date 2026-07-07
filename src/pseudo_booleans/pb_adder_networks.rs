@@ -3,7 +3,12 @@ use std::iter::repeat_n;
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 
-pub fn encode_adder_networks(lits: &[Literal], coeffs: &[usize], rhs: usize, f: &FormulaFactory) -> Vec<EncodedFormula> {
+pub fn encode_adder_networks(
+    lits: &[Literal],
+    coeffs: &[usize],
+    rhs: usize,
+    f: &FormulaFactory,
+) -> Vec<EncodedFormula> {
     let mut formula: Vec<EncodedFormula> = Vec::new();
     let nb = ld_int(rhs);
     let mut result: Vec<Option<Literal>> = repeat_n(None, nb).collect();
@@ -23,7 +28,11 @@ pub fn encode_adder_networks(lits: &[Literal], coeffs: &[usize], rhs: usize, f: 
 }
 
 #[allow(clippy::many_single_char_names)]
-fn adder_tree(buckets: &mut Vec<VecDeque<Literal>>, result: &mut Vec<Option<Literal>>, f: &FormulaFactory) -> Vec<EncodedFormula> {
+fn adder_tree(
+    buckets: &mut Vec<VecDeque<Literal>>,
+    result: &mut Vec<Option<Literal>>,
+    f: &FormulaFactory,
+) -> Vec<EncodedFormula> {
     let mut formula = Vec::new();
     let mut i = 0;
     while i < buckets.len() {
@@ -63,7 +72,12 @@ fn adder_tree(buckets: &mut Vec<VecDeque<Literal>>, result: &mut Vec<Option<Lite
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_sum(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
+fn fa_sum(
+    a: Literal,
+    b: Literal,
+    c: Literal,
+    f: &FormulaFactory,
+) -> (Literal, Vec<EncodedFormula>) {
     let x = f.new_pb_variable().pos_lit();
     (
         x,
@@ -81,7 +95,12 @@ fn fa_sum(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, V
 }
 
 #[allow(clippy::many_single_char_names)]
-fn fa_carry(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
+fn fa_carry(
+    a: Literal,
+    b: Literal,
+    c: Literal,
+    f: &FormulaFactory,
+) -> (Literal, Vec<EncodedFormula>) {
     let x = f.new_pb_variable().pos_lit();
     (
         x,
@@ -96,7 +115,14 @@ fn fa_carry(a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> (Literal,
     )
 }
 
-fn fa_extra(xs: Literal, xc: Literal, a: Literal, b: Literal, c: Literal, f: &FormulaFactory) -> Vec<EncodedFormula> {
+fn fa_extra(
+    xs: Literal,
+    xc: Literal,
+    a: Literal,
+    b: Literal,
+    c: Literal,
+    f: &FormulaFactory,
+) -> Vec<EncodedFormula> {
     vec![
         f.clause([xc.negate(), xs.negate(), a]),
         f.clause([xc.negate(), xs.negate(), b]),
@@ -122,10 +148,21 @@ fn ha_sum(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFo
 
 fn ha_carry(a: Literal, b: Literal, f: &FormulaFactory) -> (Literal, Vec<EncodedFormula>) {
     let x = f.new_pb_variable().pos_lit();
-    (x, vec![f.clause([a, x.negate()]), f.clause([b, x.negate()]), f.clause([a.negate(), b.negate(), x])])
+    (
+        x,
+        vec![
+            f.clause([a, x.negate()]),
+            f.clause([b, x.negate()]),
+            f.clause([a.negate(), b.negate(), x]),
+        ],
+    )
 }
 
-fn less_than_or_equal(xs: &[Option<Literal>], rhs: usize, f: &FormulaFactory) -> Vec<EncodedFormula> {
+fn less_than_or_equal(
+    xs: &[Option<Literal>],
+    rhs: usize,
+    f: &FormulaFactory,
+) -> Vec<EncodedFormula> {
     let mut result = Vec::new();
     for i in 0..xs.len() {
         let xi = xs.get(i).unwrap();

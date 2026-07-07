@@ -37,7 +37,10 @@ pub struct BackboneConfig {
 impl BackboneConfig {
     /// Construct a new configuration with the given variables.
     pub fn new(variables: Vec<Variable>) -> Self {
-        Self { variables, backbone_type: PositiveAndNegative }
+        Self {
+            variables,
+            backbone_type: PositiveAndNegative,
+        }
     }
 
     /// Returns the type of the backbone.
@@ -49,9 +52,14 @@ impl BackboneConfig {
 
     /// Computes the backbone based on a solver and the configuration.
     pub fn compute_backbone(self, solver: &mut MiniSat) -> Backbone {
-        let state_before_backbone =
-            if solver.underlying_solver.config.incremental { Some(solver.save_state().expect("we are in incremental mode")) } else { None };
-        let backbone = solver.underlying_solver.compute_backbone(self.variables, self.backbone_type);
+        let state_before_backbone = if solver.underlying_solver.config.incremental {
+            Some(solver.save_state().expect("we are in incremental mode"))
+        } else {
+            None
+        };
+        let backbone = solver
+            .underlying_solver
+            .compute_backbone(self.variables, self.backbone_type);
         if let Some(state) = state_before_backbone {
             let _ = solver.load_state(&state); // we created the state
         }

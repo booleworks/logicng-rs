@@ -26,7 +26,11 @@ fn sort_ordering(formula: EncodedFormula, f: &FormulaFactory, reverse: bool) -> 
     list.sort_by(|o1, o2| {
         let occ_comp = o1.1.cmp(o2.1);
         if occ_comp != Ordering::Equal {
-            return if reverse { occ_comp.reverse() } else { occ_comp };
+            return if reverse {
+                occ_comp.reverse()
+            } else {
+                occ_comp
+            };
         }
         let index1 = dfs_ordering.iter().position(|x| x == o1.0).unwrap();
         let index2 = dfs_ordering.iter().position(|x| x == o2.0).unwrap();
@@ -54,33 +58,95 @@ mod tests {
         assert!(min_to_max_ordering(f.parse("$false").unwrap(), &f).is_empty());
         assert_eq!(min_to_max_ordering(f.parse("A").unwrap(), &f), vec![va]);
         assert_eq!(min_to_max_ordering(f.parse("~A").unwrap(), &f), vec![va]);
-        assert_eq!(min_to_max_ordering(f.parse("A => ~B").unwrap(), &f), vec![va, vb]);
-        assert_eq!(min_to_max_ordering(f.parse("A <=> ~B").unwrap(), &f), vec![va, vb]);
-        assert_eq!(min_to_max_ordering(f.parse("~(A <=> ~B)").unwrap(), &f), vec![va, vb]);
-        assert_eq!(min_to_max_ordering(f.parse("A | ~C | B").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(min_to_max_ordering(f.parse("A & ~B & C").unwrap(), &f), vec![va, vb, vc]);
-        assert_eq!(min_to_max_ordering(f.parse("A + C + B < 2").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(min_to_max_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f), vec![vc, vb, va]);
+        assert_eq!(
+            min_to_max_ordering(f.parse("A => ~B").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("A <=> ~B").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("~(A <=> ~B)").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("A | ~C | B").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("A & ~B & C").unwrap(), &f),
+            vec![va, vb, vc]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("A + C + B < 2").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            min_to_max_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f),
+            vec![vc, vb, va]
+        );
 
         assert!(max_to_min_ordering(f.parse("$true").unwrap(), &f).is_empty());
         assert!(max_to_min_ordering(f.parse("$false").unwrap(), &f).is_empty());
         assert_eq!(max_to_min_ordering(f.parse("A").unwrap(), &f), vec![va]);
         assert_eq!(max_to_min_ordering(f.parse("~A").unwrap(), &f), vec![va]);
-        assert_eq!(max_to_min_ordering(f.parse("A => ~B").unwrap(), &f), vec![va, vb]);
-        assert_eq!(max_to_min_ordering(f.parse("A <=> ~B").unwrap(), &f), vec![va, vb]);
-        assert_eq!(max_to_min_ordering(f.parse("~(A <=> ~B)").unwrap(), &f), vec![va, vb]);
-        assert_eq!(max_to_min_ordering(f.parse("A | ~C | B").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(max_to_min_ordering(f.parse("A & ~B & C").unwrap(), &f), vec![va, vb, vc]);
-        assert_eq!(max_to_min_ordering(f.parse("A + C + B < 2").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(max_to_min_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f), vec![vc, vb, va]);
+        assert_eq!(
+            max_to_min_ordering(f.parse("A => ~B").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("A <=> ~B").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("~(A <=> ~B)").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("A | ~C | B").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("A & ~B & C").unwrap(), &f),
+            vec![va, vb, vc]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("A + C + B < 2").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            max_to_min_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f),
+            vec![vc, vb, va]
+        );
     }
 
     #[test]
     fn test_complex_formula() {
         let f = FormulaFactory::new();
-        let formula = f.parse("(A => ~B) & ((A & C) | (D & ~C)) & (A | Y | X) & (Y <=> (X | (W + A + F < 1)))").unwrap();
-        let ordering = vec![f.var("B"), f.var("D"), f.var("W"), f.var("F"), f.var("C"), f.var("Y"), f.var("X"), f.var("A")];
-        let rev_ordering = vec![f.var("A"), f.var("C"), f.var("Y"), f.var("X"), f.var("B"), f.var("D"), f.var("W"), f.var("F")];
+        let formula = f
+            .parse("(A => ~B) & ((A & C) | (D & ~C)) & (A | Y | X) & (Y <=> (X | (W + A + F < 1)))")
+            .unwrap();
+        let ordering = vec![
+            f.var("B"),
+            f.var("D"),
+            f.var("W"),
+            f.var("F"),
+            f.var("C"),
+            f.var("Y"),
+            f.var("X"),
+            f.var("A"),
+        ];
+        let rev_ordering = vec![
+            f.var("A"),
+            f.var("C"),
+            f.var("Y"),
+            f.var("X"),
+            f.var("B"),
+            f.var("D"),
+            f.var("W"),
+            f.var("F"),
+        ];
 
         assert_eq!(min_to_max_ordering(formula, &f), ordering);
         assert_eq!(max_to_min_ordering(formula, &f), rev_ordering);

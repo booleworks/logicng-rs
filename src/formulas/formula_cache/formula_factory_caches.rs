@@ -414,7 +414,8 @@ mod test {
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f)?;
+            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization)
+                .transform(formula1, &f)?;
             assert!(f.caches.factorization_cnf.len() > 0);
 
             Ok(())
@@ -427,7 +428,8 @@ mod test {
 
             let formula1 = "~(b => ~a)".to_formula(&f);
 
-            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization).transform(formula1, &f)?;
+            transformations::CnfEncoder::new(transformations::CnfAlgorithm::Factorization)
+                .transform(formula1, &f)?;
             assert_eq!(f.caches.factorization_cnf.len(), 0);
 
             Ok(())

@@ -10,7 +10,10 @@ pub struct LngHeap {
 
 impl LngHeap {
     pub fn new() -> Self {
-        Self { heap: Vec::with_capacity(1000), indices: Vec::with_capacity(1000) }
+        Self {
+            heap: Vec::with_capacity(1000),
+            indices: Vec::with_capacity(1000),
+        }
     }
 
     pub fn empty(&self) -> bool {
@@ -95,7 +98,9 @@ impl LngHeap {
         while Self::left(p) < self.heap.len() {
             let p_right = Self::right(p);
             let p_left = Self::left(p);
-            let child = if p_right < self.heap.len() && activities[self.heap[p_right].0] > activities[self.heap[p_left].0] {
+            let child = if p_right < self.heap.len()
+                && activities[self.heap[p_right].0] > activities[self.heap[p_left].0]
+            {
                 p_right
             } else {
                 p_left

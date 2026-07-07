@@ -59,19 +59,31 @@ pub struct BddStatistics {
 
 impl Operand {
     pub const fn and() -> Self {
-        Self { op_code: OPCODE_AND, truth_table: [0, 0, 0, 1] }
+        Self {
+            op_code: OPCODE_AND,
+            truth_table: [0, 0, 0, 1],
+        }
     }
 
     pub const fn or() -> Self {
-        Self { op_code: OPCODE_OR, truth_table: [0, 1, 1, 1] }
+        Self {
+            op_code: OPCODE_OR,
+            truth_table: [0, 1, 1, 1],
+        }
     }
 
     pub const fn imp() -> Self {
-        Self { op_code: OPCODE_IMP, truth_table: [1, 1, 0, 1] }
+        Self {
+            op_code: OPCODE_IMP,
+            truth_table: [1, 1, 0, 1],
+        }
     }
 
     pub const fn equiv() -> Self {
-        Self { op_code: OPCODE_EQUIV, truth_table: [1, 0, 0, 1] }
+        Self {
+            op_code: OPCODE_EQUIV,
+            truth_table: [1, 0, 0, 1],
+        }
     }
 }
 
@@ -115,7 +127,11 @@ impl BddKernel {
     ///
     /// Returns an error if the requested number of variables exceeds the BDD
     /// kernel limit.
-    pub fn new_with_num_vars(num_vars: usize, node_size: usize, cache_size: usize) -> LngResult<Self> {
+    pub fn new_with_num_vars(
+        num_vars: usize,
+        node_size: usize,
+        cache_size: usize,
+    ) -> LngResult<Self> {
         if num_vars > MAXVAR {
             return Err(BddError::InvalidNumberOfVars { num_vars }.into());
         }
@@ -151,7 +167,14 @@ impl BddKernel {
         };
 
         for n in 0..computed_node_size {
-            kernel.nodes.push(Node { refcou: 0, level: 0, low: None, high: 0, hash: 0, next: n + 1 });
+            kernel.nodes.push(Node {
+                refcou: 0,
+                level: 0,
+                low: None,
+                high: 0,
+                hash: 0,
+                next: n + 1,
+            });
         }
 
         kernel.set_next(kernel.nodesize - 1, 0);
@@ -186,7 +209,11 @@ impl BddKernel {
     ///
     /// Returns an error if the ordering contains more variables than the BDD
     /// kernel supports.
-    pub fn new_with_var_ordering(ordering: &[Variable], node_size: usize, cache_size: usize) -> LngResult<Self> {
+    pub fn new_with_var_ordering(
+        ordering: &[Variable],
+        node_size: usize,
+        cache_size: usize,
+    ) -> LngResult<Self> {
         let mut kernel = Self::new_with_num_vars(ordering.len(), node_size, cache_size)?;
         for &var in ordering {
             kernel.get_or_add_var_index(var)?;
@@ -216,7 +243,11 @@ impl BddKernel {
         self.apply_rec(l, r, op)
     }
 
-    pub(super) fn add_ref(&mut self, root: usize, handler: &mut dyn ComputationHandler) -> Result<usize, LngEvent> {
+    pub(super) fn add_ref(
+        &mut self,
+        root: usize,
+        handler: &mut dyn ComputationHandler,
+    ) -> Result<usize, LngEvent> {
         if !handler.should_resume(LngEvent::BddNewRefAdded) {
             return Err(LngEvent::BddNewRefAdded);
         }
@@ -224,7 +255,10 @@ impl BddKernel {
             return Ok(root);
         }
         assert!(root < self.nodesize, "Not a valid BDD root node: {root}");
-        assert!(self.low(root).is_some(), "Not a valid BDD root node: {root}");
+        assert!(
+            self.low(root).is_some(),
+            "Not a valid BDD root node: {root}"
+        );
         self.inc_ref(root);
         Ok(root)
     }
@@ -233,9 +267,15 @@ impl BddKernel {
         if root < 2 {
             return;
         }
-        assert!(root < self.nodesize, "Cannot dereference a variable > varnum");
+        assert!(
+            root < self.nodesize,
+            "Cannot dereference a variable > varnum"
+        );
         assert!(self.low(root).is_some(), "Cannot dereference variable -1");
-        assert!(self.has_ref(root), "Cannot dereference a variable which has no reference");
+        assert!(
+            self.has_ref(root),
+            "Cannot dereference a variable which has no reference"
+        );
         self.dec_ref(root);
     }
 
@@ -362,7 +402,8 @@ impl BddKernel {
             }
         };
         self.pop_ref(2);
-        self.applycache.set_with_res(search_hash, (l, r, op.op_code), res);
+        self.applycache
+            .set_with_res(search_hash, (l, r, op.op_code), res);
         res
     }
 
@@ -461,7 +502,10 @@ impl BddKernel {
                 self.node_resize(true);
                 hash = self.nodehash(level, low, high);
             }
-            assert_ne!(self.freepos, 0, "Cannot allocate more space for more nodes.");
+            assert_ne!(
+                self.freepos, 0,
+                "Cannot allocate more space for more nodes."
+            );
         }
         res = self.freepos;
         self.freepos = self.next(self.freepos);
@@ -543,7 +587,14 @@ impl BddKernel {
             }
         }
         for n in oldsize..self.nodesize {
-            self.nodes.push(Node { refcou: 0, level: 0, low: None, high: 0, hash: 0, next: n + 1 });
+            self.nodes.push(Node {
+                refcou: 0,
+                level: 0,
+                low: None,
+                high: 0,
+                hash: 0,
+                next: n + 1,
+            });
         }
         self.set_next(self.nodesize - 1, self.freepos);
         self.freepos = oldsize;
@@ -597,7 +648,9 @@ pub(super) const fn is_zero(n: usize) -> bool {
 }
 
 pub(super) fn pair(a: usize, b: usize) -> usize {
-    ((Wrapping(a) + Wrapping(b)) * (Wrapping(a) + Wrapping(b) + Wrapping(1)) / Wrapping(2) + Wrapping(a)).0
+    ((Wrapping(a) + Wrapping(b)) * (Wrapping(a) + Wrapping(b) + Wrapping(1)) / Wrapping(2)
+        + Wrapping(a))
+    .0
 }
 
 pub(super) fn triple(a: usize, b: usize, c: usize) -> usize {

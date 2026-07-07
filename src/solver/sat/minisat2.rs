@@ -41,7 +41,9 @@ use crate::solver::functions::BackboneType;
 use crate::solver::functions::BackboneType::{OnlyNegative, OnlyPositive, PositiveAndNegative};
 use crate::solver::minisat_config::MiniSatConfig;
 use crate::solver::sat::minisat2::Tristate::{False, True, Undef};
-use crate::solver::sat::minisat2_datastructures::{ClauseMinimization, ClauseRef, MsLit, MsVar, MsWatcher, ProofInformation, Tristate};
+use crate::solver::sat::minisat2_datastructures::{
+    ClauseMinimization, ClauseRef, MsLit, MsVar, MsWatcher, ProofInformation, Tristate,
+};
 
 fn watch_equality(w1: &MsWatcher, w2: &MsWatcher) -> bool {
     w1.clause_ref == w2.clause_ref
@@ -239,8 +241,12 @@ impl<B> MiniSat2Solver<B> {
     /// Adds a clause to this solver.
     pub fn add_clause(&mut self, mut ps: Vec<MsLit>, proposition: Option<Proposition<B>>) -> bool {
         if self.proof_generation {
-            let pg_clause = ps.iter().map(|&p| (var(p).0 as isize + 1) * (-2 * isize::from(sign(p)) + 1)).collect();
-            self.pg_original_clauses.push(ProofInformation::new(pg_clause, proposition));
+            let pg_clause = ps
+                .iter()
+                .map(|&p| (var(p).0 as isize + 1) * (-2 * isize::from(sign(p)) + 1))
+                .collect();
+            self.pg_original_clauses
+                .push(ProofInformation::new(pg_clause, proposition));
         }
         if !self.ok {
             return false;
@@ -324,8 +330,14 @@ impl<B> MiniSat2Solver<B> {
         let clause = (**clause_ref).borrow();
         let lit0 = clause.get(0);
         let lit1 = clause.get(1);
-        self.watches[not(lit0).0].push(MsWatcher { clause_ref: Rc::clone(clause_ref), blocking_literal: Some(lit1) });
-        self.watches[not(lit1).0].push(MsWatcher { clause_ref: Rc::clone(clause_ref), blocking_literal: Some(lit0) });
+        self.watches[not(lit0).0].push(MsWatcher {
+            clause_ref: Rc::clone(clause_ref),
+            blocking_literal: Some(lit1),
+        });
+        self.watches[not(lit1).0].push(MsWatcher {
+            clause_ref: Rc::clone(clause_ref),
+            blocking_literal: Some(lit0),
+        });
         if clause.learnt {
             self.learnts_literals += clause.len();
         } else {
@@ -355,7 +367,10 @@ impl<B> MiniSat2Solver<B> {
                     (&mut ws[i_ind].clause_ref.clone(), blocker, blocker_val)
                 };
                 if blocker_value == True {
-                    self.watches[p.0][j_ind] = MsWatcher { clause_ref: clause_ref.clone(), blocking_literal: Some(blocker) };
+                    self.watches[p.0][j_ind] = MsWatcher {
+                        clause_ref: clause_ref.clone(),
+                        blocking_literal: Some(blocker),
+                    };
                     j_ind += 1;
                     i_ind += 1;
                     continue;
@@ -375,7 +390,10 @@ impl<B> MiniSat2Solver<B> {
                 };
                 i_ind += 1;
                 let first_val = self.value(first);
-                let w = MsWatcher { clause_ref: clause_ref.clone(), blocking_literal: Some(first) };
+                let w = MsWatcher {
+                    clause_ref: clause_ref.clone(),
+                    blocking_literal: Some(first),
+                };
                 if first != blocker && first_val == True {
                     self.watches[p.0][j_ind] = w;
                     j_ind += 1;
@@ -515,7 +533,9 @@ impl<B> MiniSat2Solver<B> {
                     if self.decision_level() == 0 && !self.simplify() {
                         return False;
                     }
-                    if (self.learnts.len() as isize - self.n_assigns() as isize) as f64 >= self.max_learnts {
+                    if (self.learnts.len() as isize - self.n_assigns() as isize) as f64
+                        >= self.max_learnts
+                    {
                         self.reduce_db();
                     }
                 }
@@ -688,7 +708,8 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn pick_branch_lit(&mut self) -> Option<MsLit> {
-        if !self.selection_order.is_empty() && self.selection_order_idx < self.selection_order.len() {
+        if !self.selection_order.is_empty() && self.selection_order_idx < self.selection_order.len()
+        {
             while self.selection_order_idx < self.selection_order.len() {
                 let lit = self.selection_order[self.selection_order_idx];
                 self.selection_order_idx += 1;
@@ -698,7 +719,10 @@ impl<B> MiniSat2Solver<B> {
             }
         }
         let mut next: Option<MsVar> = None;
-        while next.is_none() || self.vars[next.unwrap().0].assignment != Undef || !self.vars[next.unwrap().0].decision {
+        while next.is_none()
+            || self.vars[next.unwrap().0].assignment != Undef
+            || !self.vars[next.unwrap().0].decision
+        {
             if self.order_heap.empty() {
                 return None;
             } else {
@@ -720,7 +744,9 @@ impl<B> MiniSat2Solver<B> {
                 j = 1;
                 for i in 1..out_learnt.len() {
                     let i_lit = out_learnt[i];
-                    if self.reason(i_lit).is_none() || !self.lit_redundant(i_lit, abstract_level, &mut analyze_to_clear) {
+                    if self.reason(i_lit).is_none()
+                        || !self.lit_redundant(i_lit, abstract_level, &mut analyze_to_clear)
+                    {
                         out_learnt[j] = i_lit;
                         j += 1;
                     }
@@ -769,7 +795,12 @@ impl<B> MiniSat2Solver<B> {
         }
     }
 
-    fn lit_redundant(&mut self, p: MsLit, abstract_levels: usize, analyze_to_clear: &mut Vec<MsLit>) -> bool {
+    fn lit_redundant(
+        &mut self,
+        p: MsLit,
+        abstract_levels: usize,
+        analyze_to_clear: &mut Vec<MsLit>,
+    ) -> bool {
         let mut analyze_stack = Vec::<MsLit>::with_capacity(analyze_to_clear.len());
         analyze_stack.push(p);
         let top = analyze_to_clear.len();
@@ -781,7 +812,9 @@ impl<B> MiniSat2Solver<B> {
                 let q_var = var(q);
                 let q_variable = self.v(q);
                 if !self.seen[q_var.0] && q_variable.level_greater_zero() {
-                    if self.reason(q).is_some() && (self.abstract_level(q_var) & abstract_levels) != 0 {
+                    if self.reason(q).is_some()
+                        && (self.abstract_level(q_var) & abstract_levels) != 0
+                    {
                         self.seen[q_var.0] = true;
                         analyze_stack.push(q);
                         analyze_to_clear.push(q);
@@ -836,7 +869,9 @@ impl<B> MiniSat2Solver<B> {
             let remove = {
                 let c_ref = &self.learnts[i];
                 let c = (**c_ref).borrow();
-                c.len() > 2 && !self.locked(c_ref) && (i < self.learnts.len() / 2 || c.activity < extra_lim)
+                c.len() > 2
+                    && !self.locked(c_ref)
+                    && (i < self.learnts.len() / 2 || c.activity < extra_lim)
             };
             if remove {
                 self.remove_clause(true, i);
@@ -865,7 +900,8 @@ impl<B> MiniSat2Solver<B> {
     fn remove_satisfied_gen<R, RMUT>(&mut self, learnt: bool, remove_vec: R, remove_vec_mut: RMUT)
     where
         R: Fn(&Self) -> &Vec<ClauseRef>,
-        RMUT: Fn(&mut Self) -> &mut Vec<ClauseRef>, {
+        RMUT: Fn(&mut Self) -> &mut Vec<ClauseRef>,
+    {
         let mut j = 0;
         for i in 0..remove_vec(self).len() {
             let satisfied = {
@@ -912,7 +948,11 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn remove_clause(&mut self, learnt: bool, index: usize) {
-        let clause_ref = if learnt { &self.learnts[index] } else { &self.clauses[index] };
+        let clause_ref = if learnt {
+            &self.learnts[index]
+        } else {
+            &self.clauses[index]
+        };
         if self.proof_generation {
             let c = (**clause_ref).borrow();
             let mut vec = Vec::<isize>::with_capacity(c.len());
@@ -931,12 +971,30 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn detach_clause(&mut self, learnt: bool, index: usize) {
-        let clause_ref = if learnt { &self.learnts[index] } else { &self.clauses[index] };
+        let clause_ref = if learnt {
+            &self.learnts[index]
+        } else {
+            &self.clauses[index]
+        };
         let c = (**clause_ref).borrow();
         let c_0 = c.get(0);
         let c_1 = c.get(1);
-        remove_elem(&mut self.watches[not(c_0).0], &MsWatcher { clause_ref: clause_ref.clone(), blocking_literal: None }, watch_equality);
-        remove_elem(&mut self.watches[not(c_1).0], &MsWatcher { clause_ref: clause_ref.clone(), blocking_literal: None }, watch_equality);
+        remove_elem(
+            &mut self.watches[not(c_0).0],
+            &MsWatcher {
+                clause_ref: clause_ref.clone(),
+                blocking_literal: None,
+            },
+            watch_equality,
+        );
+        remove_elem(
+            &mut self.watches[not(c_1).0],
+            &MsWatcher {
+                clause_ref: clause_ref.clone(),
+                blocking_literal: None,
+            },
+            watch_equality,
+        );
         debug_assert!(learnt == c.learnt);
         if learnt {
             self.learnts_literals -= c.len();
@@ -998,7 +1056,11 @@ impl<B> MiniSat2Solver<B> {
         for i in start..end {
             best_i = i;
             for j in (i + 1)..end {
-                if Self::compare_learnt_clauses(&(*self.learnts[j]).borrow(), &(*self.learnts[best_i]).borrow()) == Less {
+                if Self::compare_learnt_clauses(
+                    &(*self.learnts[j]).borrow(),
+                    &(*self.learnts[best_i]).borrow(),
+                ) == Less
+                {
                     best_i = j;
                 }
             }
@@ -1012,8 +1074,17 @@ impl<B> MiniSat2Solver<B> {
         Self::compare_learnt_clauses_2(x.len(), x.activity, y.len(), y.activity)
     }
 
-    fn compare_learnt_clauses_2(x_len: usize, x_activity: f64, y_len: usize, y_activity: f64) -> Ordering {
-        if x_len > 2 && (y_len == 2 || x_activity < y_activity) { Less } else { Greater }
+    fn compare_learnt_clauses_2(
+        x_len: usize,
+        x_activity: f64,
+        y_len: usize,
+        y_activity: f64,
+    ) -> Ordering {
+        if x_len > 2 && (y_len == 2 || x_activity < y_activity) {
+            Less
+        } else {
+            Greater
+        }
     }
 
     fn locked(&self, clause_ref: &ClauseRef) -> bool {
@@ -1041,7 +1112,10 @@ impl<B> MiniSat2Solver<B> {
             let ws = self.watches.get(i).unwrap();
             for (j, w) in ws.iter().enumerate() {
                 let watched_clause = (w.clause_ref).borrow();
-                assert!(watched_clause.get(0) == watch || watched_clause.get(1) == watch, "Watch {i}, {j} does not watch {watch:?}");
+                assert!(
+                    watched_clause.get(0) == watch || watched_clause.get(1) == watch,
+                    "Watch {i}, {j} does not watch {watch:?}"
+                );
             }
         }
     }
@@ -1050,14 +1124,19 @@ impl<B> MiniSat2Solver<B> {
     fn print_watch_info(&self) {
         for i in 0..self.watches.len() {
             let ws = self.watches.get(i).unwrap();
-            println!("Watches for {i}:{}", if ws.is_empty() { " empty" } else { "" });
+            println!(
+                "Watches for {i}:{}",
+                if ws.is_empty() { " empty" } else { "" }
+            );
             for j in 0..ws.len() {
                 let watch = ws.get(j).unwrap();
                 let clause = (*watch.clause_ref).borrow();
                 println!(
                     "  Learnt: {}, Blocker: {}, ClauseRef: {:?}, Clause: {:?}",
                     clause.learnt,
-                    watch.blocking_literal.map_or(String::new(), |b| b.0.to_string()),
+                    watch
+                        .blocking_literal
+                        .map_or(String::new(), |b| b.0.to_string()),
                     watch.clause_ref,
                     clause.data
                 );
@@ -1074,7 +1153,10 @@ impl<B> MiniSat2Solver<B> {
         self.learnts = Vec::with_capacity(LNG_VEC_INIT_SIZE);
         self.watches = Vec::with_capacity(LNG_VEC_INIT_SIZE);
         self.vars = Vec::with_capacity(LNG_VEC_INIT_SIZE);
-        self.order_heap = LngHeap { heap: Vec::with_capacity(LNG_VEC_INIT_SIZE), indices: Vec::with_capacity(LNG_VEC_INIT_SIZE) };
+        self.order_heap = LngHeap {
+            heap: Vec::with_capacity(LNG_VEC_INIT_SIZE),
+            indices: Vec::with_capacity(LNG_VEC_INIT_SIZE),
+        };
         self.trail = Vec::with_capacity(LNG_VEC_INIT_SIZE);
         self.trail_lim = Vec::with_capacity(LNG_VEC_INIT_SIZE);
         self.var_activities = Vec::with_capacity(LNG_VEC_INIT_SIZE);
@@ -1105,18 +1187,41 @@ impl<B> MiniSat2Solver<B> {
     }
 
     pub(crate) fn save_state(&self) -> [usize; 7] {
-        assert!(self.config.incremental, "Cannot save a state when the incremental mode is deactivated");
-        let (pg_clauses, pg_proof) = if self.proof_generation { (self.pg_original_clauses.len(), self.pg_proof.len()) } else { (0, 0) };
-        [usize::from(self.ok), self.vars.len(), self.clauses.len(), self.learnts.len(), self.unit_clauses.len(), pg_clauses, pg_proof]
+        assert!(
+            self.config.incremental,
+            "Cannot save a state when the incremental mode is deactivated"
+        );
+        let (pg_clauses, pg_proof) = if self.proof_generation {
+            (self.pg_original_clauses.len(), self.pg_proof.len())
+        } else {
+            (0, 0)
+        };
+        [
+            usize::from(self.ok),
+            self.vars.len(),
+            self.clauses.len(),
+            self.learnts.len(),
+            self.unit_clauses.len(),
+            pg_clauses,
+            pg_proof,
+        ]
     }
 
     pub(crate) fn load_state(&mut self, state: [usize; 7]) {
-        assert!(self.config.incremental, "Cannot load a state when the incremental mode is deactivated");
+        assert!(
+            self.config.incremental,
+            "Cannot load a state when the incremental mode is deactivated"
+        );
         self.complete_backtrack();
         self.ok = state[0] > 0;
         let new_vars_size = min(state[1], self.vars.len());
         for i in (new_vars_size..self.vars.len()).rev() {
-            self.order_heap.remove(self.name2idx.remove(&self.idx2name.remove(&MsVar(i)).unwrap()).unwrap(), &self.var_activities);
+            self.order_heap.remove(
+                self.name2idx
+                    .remove(&self.idx2name.remove(&MsVar(i)).unwrap())
+                    .unwrap(),
+                &self.var_activities,
+            );
         }
         self.vars.truncate(new_vars_size);
         self.var_activities.truncate(new_vars_size);
@@ -1145,7 +1250,8 @@ impl<B> MiniSat2Solver<B> {
         }
 
         if self.proof_generation {
-            self.pg_original_clauses.truncate(min(state[5], self.pg_original_clauses.len()));
+            self.pg_original_clauses
+                .truncate(min(state[5], self.pg_original_clauses.len()));
             self.pg_proof.truncate(min(state[6], self.pg_proof.len()));
         }
     }
@@ -1170,14 +1276,26 @@ impl<B> MiniSat2Solver<B> {
 
     /// Returns the unit propagated literals on level zero.
     pub fn up_zero_literals(&self) -> Vec<MsLit> {
-        self.trail.iter().take_while(|&&lit| !self.v(lit).level_greater_zero()).copied().collect()
+        self.trail
+            .iter()
+            .take_while(|&&lit| !self.v(lit).level_greater_zero())
+            .copied()
+            .collect()
     }
 
     /// Computes the backbone on this solver.
-    pub fn compute_backbone(&mut self, variables: Vec<Variable>, backbone_type: BackboneType) -> Backbone {
+    pub fn compute_backbone(
+        &mut self,
+        variables: Vec<Variable>,
+        backbone_type: BackboneType,
+    ) -> Backbone {
         if self.solve() == True {
             self.computing_backbone = true;
-            let relevant_var_indices = variables.iter().filter_map(|v| self.name2idx.get(v)).copied().collect::<Vec<MsVar>>();
+            let relevant_var_indices = variables
+                .iter()
+                .filter_map(|v| self.name2idx.get(v))
+                .copied()
+                .collect::<Vec<MsVar>>();
             let mut state = self.init_backbone_ds();
             self.backbone_impl(&mut state, &relevant_var_indices, backbone_type);
             let backbone = self.build_backbone(&state, variables, backbone_type);
@@ -1189,10 +1307,19 @@ impl<B> MiniSat2Solver<B> {
     }
 
     fn init_backbone_ds(&mut self) -> BackboneComputationState {
-        BackboneComputationState { candidates: vec![], assumptions: vec![], map: vec![Undef; self.vars.len()] }
+        BackboneComputationState {
+            candidates: vec![],
+            assumptions: vec![],
+            map: vec![Undef; self.vars.len()],
+        }
     }
 
-    fn backbone_impl(&mut self, state: &mut BackboneComputationState, variables: &Vec<MsVar>, backbone_type: BackboneType) {
+    fn backbone_impl(
+        &mut self,
+        state: &mut BackboneComputationState,
+        variables: &Vec<MsVar>,
+        backbone_type: BackboneType,
+    ) {
         self.create_initial_candidates(state, variables, backbone_type);
         while let Some(lit) = state.candidates.pop() {
             state.assumptions.push(not(lit));
@@ -1206,14 +1333,20 @@ impl<B> MiniSat2Solver<B> {
         }
     }
 
-    fn create_initial_candidates(&mut self, state: &mut BackboneComputationState, variables: &Vec<MsVar>, backbone_type: BackboneType) {
+    fn create_initial_candidates(
+        &mut self,
+        state: &mut BackboneComputationState,
+        variables: &Vec<MsVar>,
+        backbone_type: BackboneType,
+    ) {
         for &var in variables {
             let model_phase = self.model[var.0];
             let lit = mk_lit(var, !model_phase);
             if self.vars[var.0].level == Some(0) {
                 state.add_backbone_literal(lit);
             } else if backbone_type.matches_phase(model_phase)
-                && (!self.config.bb_initial_ubcheck_for_rotatable_literals || !self.is_rotatable(lit))
+                && (!self.config.bb_initial_ubcheck_for_rotatable_literals
+                    || !self.is_rotatable(lit))
             {
                 state.candidates.push(lit);
             }
@@ -1227,7 +1360,8 @@ impl<B> MiniSat2Solver<B> {
             let var = var(lit);
             if self.vars[var.0].level == Some(0) {
                 new_backbone_lits.push(lit);
-            } else if !(self.config.bb_check_for_complement_model_literals && self.model[var.0] == sign(lit)
+            } else if !(self.config.bb_check_for_complement_model_literals
+                && self.model[var.0] == sign(lit)
                 || self.config.bb_check_for_rotatable_literals && self.is_rotatable(lit))
             {
                 new_candidates.push(lit);
@@ -1239,10 +1373,27 @@ impl<B> MiniSat2Solver<B> {
         state.candidates = new_candidates;
     }
 
-    fn build_backbone(&self, state: &BackboneComputationState, variables: Vec<Variable>, backbone_type: BackboneType) -> Backbone {
-        let mut pos = if backbone_type == OnlyNegative { None } else { Some(BTreeSet::new()) };
-        let mut neg = if backbone_type == OnlyPositive { None } else { Some(BTreeSet::new()) };
-        let mut opt = if backbone_type == PositiveAndNegative { Some(BTreeSet::new()) } else { None };
+    fn build_backbone(
+        &self,
+        state: &BackboneComputationState,
+        variables: Vec<Variable>,
+        backbone_type: BackboneType,
+    ) -> Backbone {
+        let mut pos = if backbone_type == OnlyNegative {
+            None
+        } else {
+            Some(BTreeSet::new())
+        };
+        let mut neg = if backbone_type == OnlyPositive {
+            None
+        } else {
+            Some(BTreeSet::new())
+        };
+        let mut opt = if backbone_type == PositiveAndNegative {
+            Some(BTreeSet::new())
+        } else {
+            None
+        };
         for var in variables {
             if let Some(&ms_var) = self.name2idx.get(&var) {
                 match state.map.get(ms_var.0).unwrap() {
@@ -1275,17 +1426,25 @@ impl<B> MiniSat2Solver<B> {
             return false;
         }
         // A rotatable literal MUST NOT be unit
-        !self.watches[not(lit).0].iter().any(|watcher| self.is_unit(lit, &(*watcher.clause_ref).borrow()))
+        !self.watches[not(lit).0]
+            .iter()
+            .any(|watcher| self.is_unit(lit, &(*watcher.clause_ref).borrow()))
     }
 
     fn is_unit(&self, lit: MsLit, clause: &MsClause) -> bool {
-        !clause.data.iter().any(|&clause_lit| lit != clause_lit && self.model[var(clause_lit).0] != sign(clause_lit))
+        !clause.data.iter().any(|&clause_lit| {
+            lit != clause_lit && self.model[var(clause_lit).0] != sign(clause_lit)
+        })
     }
 
     pub(crate) fn set_selection_order(&mut self, selection_order: &[Literal]) {
         self.selection_order = selection_order
             .iter()
-            .filter_map(|lit| self.name2idx.get(&lit.variable()).map(|ms_var| mk_lit(*ms_var, !lit.phase())))
+            .filter_map(|lit| {
+                self.name2idx
+                    .get(&lit.variable())
+                    .map(|ms_var| mk_lit(*ms_var, !lit.phase()))
+            })
             .collect();
     }
 

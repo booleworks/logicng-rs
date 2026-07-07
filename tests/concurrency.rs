@@ -20,7 +20,10 @@ fn parsing_test() {
 
 fn parse_files(thread_count: usize, f: &Arc<FormulaFactory>) {
     let paths = Arc::new(
-        fs::read_dir("./resources/formula_suite_1").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec(),
+        fs::read_dir("./resources/formula_suite_1")
+            .unwrap()
+            .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+            .collect_vec(),
     );
     let counter = Arc::new(AtomicUsize::new(0));
     let mut threads = Vec::with_capacity(thread_count);

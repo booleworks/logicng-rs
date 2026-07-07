@@ -28,26 +28,86 @@ fn test_assume() -> LngResult<()> {
         s.add("d => e".to_formula(f), f)?;
         s.add("e => f".to_formula(f), f)?;
 
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", false)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", true)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", true)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", false)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", false)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", false)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", false)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", false)])), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", false)])), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions1)), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions2)), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions3)), True);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions4)), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions5)), False);
-        assert_eq!(s.sat_with(&SatBuilder::new().assumptions(&assumptions6)), False);
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", false)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", true)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", true)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", false)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", false)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", false)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", false)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", false)])),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", false)])),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions1)),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions2)),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions3)),
+            True
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions4)),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions5)),
+            False
+        );
+        assert_eq!(
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions6)),
+            False
+        );
     }
 
     Ok(())

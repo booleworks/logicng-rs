@@ -33,9 +33,15 @@ pub struct DrupResult {
 pub fn drup_compute(original_problem: Vec<Vec<isize>>, proof: Vec<Vec<isize>>) -> DrupResult {
     let mut s = Solver::new(original_problem, proof);
     if s.parse() {
-        DrupResult { trivial_unsat: false, unsat_core: s.verify() }
+        DrupResult {
+            trivial_unsat: false,
+            unsat_core: s.verify(),
+        }
     } else {
-        DrupResult { trivial_unsat: true, unsat_core: vec![] }
+        DrupResult {
+            trivial_unsat: true,
+            unsat_core: vec![],
+        }
     }
 }
 
@@ -63,7 +69,11 @@ struct Solver {
 
 impl Solver {
     fn new(original_problem: Vec<Vec<isize>>, proof: Vec<Vec<isize>>) -> Self {
-        let n_vars = original_problem.iter().map(|vector| vector.iter().map(|&i| i.abs()).max().unwrap_or(0)).max().unwrap_or(0) as usize;
+        let n_vars = original_problem
+            .iter()
+            .map(|vector| vector.iter().map(|&i| i.abs()).max().unwrap_or(0))
+            .max()
+            .unwrap_or(0) as usize;
         let n_clauses = original_problem.len();
         let mut wlist = Vec::with_capacity(2 * n_vars + 3);
         (0..(2 * n_vars + 3)).for_each(|_| wlist.push(Vec::with_capacity(LNG_VEC_INIT_SIZE)));
@@ -128,7 +138,12 @@ impl Solver {
             let hash = get_hash(&mut marks, mark, &buffer);
             if del {
                 if self.delete {
-                    let match_clause = self.match_clause(hash_table.get_mut(&hash).unwrap(), &marks, mark, &buffer);
+                    let match_clause = self.match_clause(
+                        hash_table.get_mut(&hash).unwrap(),
+                        &marks,
+                        mark,
+                        &buffer,
+                    );
                     hash_table.get_mut(&hash).unwrap().pop();
                     self.adlist.push((match_clause << 1) + 1);
                 }
@@ -142,7 +157,9 @@ impl Solver {
             self.db.extend_from_slice(&buffer);
             self.db.push(0);
 
-            let vec = hash_table.entry(hash).or_insert_with(|| Vec::<isize>::with_capacity(LNG_VEC_INIT_SIZE));
+            let vec = hash_table
+                .entry(hash)
+                .or_insert_with(|| Vec::<isize>::with_capacity(LNG_VEC_INIT_SIZE));
             vec.push(clause_ptr);
 
             self.adlist.push(clause_ptr << 1);
@@ -152,13 +169,21 @@ impl Solver {
                 self.adlemmas = self.adlist.len() as isize - 1;
             }
             if n_zeros > 0 {
-                if buffer.is_empty() || (buffer.len() == 1 && self.internal_false[index(self.db[clause_ptr as usize])] != 0) {
+                if buffer.is_empty()
+                    || (buffer.len() == 1
+                        && self.internal_false[index(self.db[clause_ptr as usize])] != 0)
+                {
                     return false;
                 } else if buffer.len() == 1 {
                     let cls = self.db[clause_ptr as usize];
                     if self.internal_false[index(-cls)] == 0 {
                         self.reason[cls.unsigned_abs()] = clause_ptr + 1;
-                        assign(cls, &mut self.internal_false, &mut self.false_stack, &mut self.assigned_ptr);
+                        assign(
+                            cls,
+                            &mut self.internal_false,
+                            &mut self.false_stack,
+                            &mut self.assigned_ptr,
+                        );
                     }
                 } else {
                     add_watch(clause_ptr, 0, &self.db, &mut self.wlist);
@@ -218,7 +243,8 @@ impl Solver {
                     }
                     if self.internal_false[index(lit)] == 0 {
                         if buffer.len() <= 1 {
-                            self.db[(lemmas_ptr - 1) as usize] = self.db[clause_ptr as usize + buffer.len()];
+                            self.db[(lemmas_ptr - 1) as usize] =
+                                self.db[clause_ptr as usize + buffer.len()];
                             self.db[clause_ptr as usize + buffer.len()] = lit;
                         }
                         buffer.push(lit);
@@ -239,7 +265,12 @@ impl Solver {
                 assert!(!buffer.is_empty(), "Conflict claimed, but not detected");
 
                 if buffer.len() == 1 {
-                    assign(buffer[0], &mut self.internal_false, &mut self.false_stack, &mut self.assigned_ptr);
+                    assign(
+                        buffer[0],
+                        &mut self.internal_false,
+                        &mut self.false_stack,
+                        &mut self.assigned_ptr,
+                    );
                     self.reason[buffer[0].unsigned_abs()] = clause_ptr + 1;
                     self.forced_ptr = self.processed_ptr;
                     if !self.propagate() {
@@ -300,7 +331,8 @@ impl Solver {
                     if flag && buffer.len() == 1 {
                         loop {
                             self.forced_ptr -= 1;
-                            self.internal_false[index(self.false_stack[self.forced_ptr as usize])] = 0;
+                            self.internal_false
+                                [index(self.false_stack[self.forced_ptr as usize])] = 0;
                             if self.false_stack[self.forced_ptr as usize] == -buffer[0] {
                                 break;
                             }
@@ -311,7 +343,12 @@ impl Solver {
 
                     if (time & 1) != 0 {
                         for &b in &buffer {
-                            assign(-b, &mut self.internal_false, &mut self.false_stack, &mut self.assigned_ptr);
+                            assign(
+                                -b,
+                                &mut self.internal_false,
+                                &mut self.false_stack,
+                                &mut self.assigned_ptr,
+                            );
                             self.reason[b.unsigned_abs()] = 0;
                         }
                         assert!(!self.propagate(), "Formula is SAT");
@@ -373,7 +410,13 @@ impl Solver {
         self.core
     }
 
-    fn match_clause(&self, clause_list: &mut [isize], marks: &[isize], mark: isize, input: &[isize]) -> isize {
+    fn match_clause(
+        &self,
+        clause_list: &mut [isize],
+        marks: &[isize],
+        mark: isize,
+        input: &[isize],
+    ) -> isize {
         for i in 0..clause_list.len() {
             let mut match_size = 0;
             let mut aborted = false;
@@ -438,7 +481,10 @@ impl Solver {
                             self.db[(clause_ptr + 1) as usize] = self.db[(clause_ptr + i) as usize];
                             self.db[(clause_ptr + i) as usize] = lit; // Swap literals
                             let to_push = self.wlist[watch_lit][watch_ptr];
-                            self.wlist.get_mut(index(self.db[(clause_ptr + 1) as usize])).unwrap().push(to_push); // Add the watch to the list of clause[1]
+                            self.wlist
+                                .get_mut(index(self.db[(clause_ptr + 1) as usize]))
+                                .unwrap()
+                                .push(to_push); // Add the watch to the list of clause[1]
                             let to_set = *self.wlist.get_mut(index(lit)).unwrap().last().unwrap();
                             self.wlist.get_mut(watch_lit).unwrap()[watch_ptr] = to_set; // Remove pointer
                             self.wlist.get_mut(index(lit)).unwrap().pop();
@@ -454,8 +500,14 @@ impl Solver {
                         if self.internal_false[index(self.db[clause_ptr as usize])] == 0 {
                             // If the other watched literal is falsified,
                             // A unit clause is found, and the reason is set
-                            assign(self.db[clause_ptr as usize], &mut self.internal_false, &mut self.false_stack, &mut self.assigned_ptr);
-                            self.reason[self.db[clause_ptr as usize].unsigned_abs()] = clause_ptr + 1;
+                            assign(
+                                self.db[clause_ptr as usize],
+                                &mut self.internal_false,
+                                &mut self.false_stack,
+                                &mut self.assigned_ptr,
+                            );
+                            self.reason[self.db[clause_ptr as usize].unsigned_abs()] =
+                                clause_ptr + 1;
                             if check == 0 {
                                 start[0] -= 1;
                                 last_lit = lit;
@@ -508,7 +560,10 @@ impl Solver {
     }
 
     fn mark_watch(&mut self, clause_ptr: isize, idx: isize, offset: isize) {
-        let watch = self.wlist.get_mut(index(self.db[(clause_ptr + idx) as usize])).unwrap();
+        let watch = self
+            .wlist
+            .get_mut(index(self.db[(clause_ptr + idx) as usize]))
+            .unwrap();
         let clause = self.db[(clause_ptr - offset - 1) as usize];
         let mut watch_ptr = 0;
         loop {
@@ -523,7 +578,11 @@ impl Solver {
 }
 
 const fn index(lit: isize) -> usize {
-    if lit > 0 { lit as usize * 2 } else { ((-lit * 2) ^ 1) as usize }
+    if lit > 0 {
+        lit as usize * 2
+    } else {
+        ((-lit * 2) ^ 1) as usize
+    }
 }
 
 fn get_hash(marks: &mut [isize], mark: isize, input: &Vec<isize>) -> isize {
@@ -536,10 +595,17 @@ fn get_hash(marks: &mut [isize], mark: isize, input: &Vec<isize>) -> isize {
         prod *= elem;
         marks[index(elem)] = mark;
     }
-    ((Wrapping(1023) * sum + prod) ^ ((Wrapping(31) * xor) % BIGINIT)).0.abs()
+    ((Wrapping(1023) * sum + prod) ^ ((Wrapping(31) * xor) % BIGINIT))
+        .0
+        .abs()
 }
 
-fn assign(a: isize, internal_false: &mut [isize], false_stack: &mut [isize], assigned_ptr: &mut isize) {
+fn assign(
+    a: isize,
+    internal_false: &mut [isize],
+    false_stack: &mut [isize],
+    assigned_ptr: &mut isize,
+) {
     internal_false[index(-a)] = 1;
     false_stack[*assigned_ptr as usize] = -a;
     *assigned_ptr += 1;

@@ -60,7 +60,10 @@ impl PbConfig {
     /// Sets the support for single bits in the binary merge encoding. The
     /// default value is `false`.
     #[must_use]
-    pub const fn binary_merge_no_support_for_single_bit(mut self, binary_merge_no_support_for_single_bit: bool) -> Self {
+    pub const fn binary_merge_no_support_for_single_bit(
+        mut self,
+        binary_merge_no_support_for_single_bit: bool,
+    ) -> Self {
         self.binary_merge_no_support_for_single_bit = binary_merge_no_support_for_single_bit;
         self
     }

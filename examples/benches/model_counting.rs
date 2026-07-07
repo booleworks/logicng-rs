@@ -6,7 +6,9 @@ use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
 use logicng::knowledge_compilation::dnnf::{compile_dnnf, count};
-use logicng::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion};
+use logicng::operations::transformations::{
+    AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion,
+};
 
 /// Test for parallel model counting with DNNF compilation
 /// on a multi-threading formula factory.
@@ -19,7 +21,10 @@ pub fn main() {
 pub fn parallel(thread_count: usize) {
     let f = Arc::new(FormulaFactory::new());
     let paths = Arc::new(
-        fs::read_dir("./resources/formula_suite_1").unwrap().map(|p| String::from(p.unwrap().path().to_str().unwrap())).collect_vec(),
+        fs::read_dir("./resources/formula_suite_1")
+            .unwrap()
+            .map(|p| String::from(p.unwrap().path().to_str().unwrap()))
+            .collect_vec(),
     );
 
     let start = std::time::Instant::now();
@@ -38,7 +43,8 @@ pub fn parallel(thread_count: usize) {
                 let formula = read_formula(&paths_l[c], &f_l).unwrap();
                 let expanded = pure_expansion(formula, &f_l).unwrap();
                 let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
-                    AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
+                    AdvancedFactorizationConfig::default()
+                        .fallback_algorithm(CnfAlgorithm::Tseitin),
                 ));
                 let cnf_formula = cnf_encoder.transform(expanded, &f_l).unwrap();
                 let dnnf = compile_dnnf(cnf_formula, &f_l).unwrap();
@@ -50,5 +56,8 @@ pub fn parallel(thread_count: usize) {
     for thread in threads {
         thread.join().expect("thread failed!");
     }
-    println!("Model counting, {thread_count} Threads: {}s", start.elapsed().as_secs_f64());
+    println!(
+        "Model counting, {thread_count} Threads: {}s",
+        start.elapsed().as_secs_f64()
+    );
 }

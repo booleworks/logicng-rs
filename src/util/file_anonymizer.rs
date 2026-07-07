@@ -35,7 +35,11 @@ pub fn anonymize_file(path: &Path, export_path: &Path, var_prefix: &str) -> LngR
 ///
 /// Returns an error if either path is not valid UTF-8, if the input file cannot
 /// be read or parsed, or if the output file cannot be written.
-pub fn anonymize_file_with_anonymizer(path: &Path, export_path: &Path, anonymizer: &mut Anonymizer) -> LngResult<()> {
+pub fn anonymize_file_with_anonymizer(
+    path: &Path,
+    export_path: &Path,
+    anonymizer: &mut Anonymizer,
+) -> LngResult<()> {
     let formula = read_formula(path_to_str(path)?, anonymizer.factory)?;
     let transformed = anonymizer.anonymize(formula);
     write_formula(path_to_str(export_path)?, transformed, anonymizer.factory)

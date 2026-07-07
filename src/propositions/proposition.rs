@@ -17,19 +17,28 @@ pub struct Proposition<T> {
 
 impl<T> Clone for Proposition<T> {
     fn clone(&self) -> Self {
-        Self { formula: self.formula, backpack: self.backpack.as_ref().map(Rc::clone) }
+        Self {
+            formula: self.formula,
+            backpack: self.backpack.as_ref().map(Rc::clone),
+        }
     }
 }
 
 impl<T> Proposition<T> {
     /// Constructs a new proposition for a formula.
     pub const fn new(formula: EncodedFormula) -> Self {
-        Self { formula, backpack: None }
+        Self {
+            formula,
+            backpack: None,
+        }
     }
 
     /// Constructs a new proposition for a formula with an associated value (backpack).
     pub fn with_backpack(formula: EncodedFormula, backpack: T) -> Self {
-        Self { formula, backpack: Some(Rc::new(backpack)) }
+        Self {
+            formula,
+            backpack: Some(Rc::new(backpack)),
+        }
     }
 
     /// Update the backpack of this proposition.

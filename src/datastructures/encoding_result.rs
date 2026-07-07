@@ -74,7 +74,10 @@ impl<'a> EncodingResultFF<'a> {
     /// let result = encoding_result.result;
     /// ```
     pub const fn new(f: &'a FormulaFactory) -> Self {
-        Self { f, result: Vec::new() }
+        Self {
+            f,
+            result: Vec::new(),
+        }
     }
 
     /// Reference to the [`FormulaFactory`] used to build the clauses and
@@ -138,8 +141,16 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     /// let mut encoding_result = EncodingResultSatSolver::new(&mut solver, None, &f);
     /// // ...
     /// ```
-    pub fn new(solver: &'s mut MiniSat<B>, proposition: Option<Proposition<B>>, f: &'f FormulaFactory) -> Self {
-        Self { solver, proposition, f }
+    pub fn new(
+        solver: &'s mut MiniSat<B>,
+        proposition: Option<Proposition<B>>,
+        f: &'f FormulaFactory,
+    ) -> Self {
+        Self {
+            solver,
+            proposition,
+            f,
+        }
     }
 
     /// Reference to the [`FormulaFactory`] used to create the auxiliary
@@ -175,6 +186,8 @@ impl<B: Clone> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
         for lit in lits {
             exported_lits.push(self.solver.add_literal(lit));
         }
-        self.solver.underlying_solver.add_clause(exported_lits, self.proposition.clone());
+        self.solver
+            .underlying_solver
+            .add_clause(exported_lits, self.proposition.clone());
     }
 }

@@ -87,14 +87,19 @@ impl<R> CancelableResult<R> {
     }
 
     /// Chains another cancelable computation if a result is available.
-    pub fn and_then<T, F: FnOnce(R) -> CancelableResult<T>>(self, transformations: F) -> CancelableResult<T> {
+    pub fn and_then<T, F: FnOnce(R) -> CancelableResult<T>>(
+        self,
+        transformations: F,
+    ) -> CancelableResult<T> {
         match self {
             CancelableResult::Ok(r) => transformations(r),
             CancelableResult::Canceled(lng_event) => CancelableResult::Canceled(lng_event),
             CancelableResult::Partial(r, lng_event) => match transformations(r) {
                 CancelableResult::Ok(r2) => CancelableResult::Partial(r2, lng_event),
                 CancelableResult::Canceled(lng_event2) => CancelableResult::Canceled(lng_event2),
-                CancelableResult::Partial(r2, lng_event2) => CancelableResult::Partial(r2, lng_event2),
+                CancelableResult::Partial(r2, lng_event2) => {
+                    CancelableResult::Partial(r2, lng_event2)
+                }
             },
         }
     }
@@ -106,9 +111,15 @@ impl<T> CancelableResult<CancelableResult<T>> {
         match self {
             CancelableResult::Ok(r) => r,
             CancelableResult::Canceled(lng_event) => CancelableResult::Canceled(lng_event),
-            CancelableResult::Partial(CancelableResult::Partial(r, lng_event), _) => CancelableResult::Partial(r, lng_event),
-            CancelableResult::Partial(CancelableResult::Ok(r), lng_event) => CancelableResult::Partial(r, lng_event),
-            CancelableResult::Partial(CancelableResult::Canceled(lng_event), _) => CancelableResult::Canceled(lng_event),
+            CancelableResult::Partial(CancelableResult::Partial(r, lng_event), _) => {
+                CancelableResult::Partial(r, lng_event)
+            }
+            CancelableResult::Partial(CancelableResult::Ok(r), lng_event) => {
+                CancelableResult::Partial(r, lng_event)
+            }
+            CancelableResult::Partial(CancelableResult::Canceled(lng_event), _) => {
+                CancelableResult::Canceled(lng_event)
+            }
         }
     }
 }

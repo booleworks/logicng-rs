@@ -27,7 +27,11 @@ const PRINT_MEMORY: bool = true;
 fn main() {
     GLOBAL.reset();
     GLOBAL.print_memory("Initial state");
-    for file_name in ["large_formula.txt", "large_formula2.txt", "large_formula2-split.txt"] {
+    for file_name in [
+        "large_formula.txt",
+        "large_formula2.txt",
+        "large_formula2-split.txt",
+    ] {
         let f = &FormulaFactory::new();
         GLOBAL.print_memory(&format!("[{file_name}] FF created"));
 
@@ -54,7 +58,8 @@ fn main() {
         }
 
         for _ in 0..1 {
-            let mut minisat = MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
+            let mut minisat =
+                MiniSat::from_config(MiniSatConfig::default().cnf_method(FullPgOnSolver));
             let start = Instant::now();
             let _ = minisat.add(formula, f);
             println!("{:?}", minisat.sat());
@@ -73,7 +78,9 @@ fn main() {
         GLOBAL.print_memory(&format!("[{file_name}] Tseitin created"));
 
         let start = Instant::now();
-        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum).transform(formula, f).unwrap();
+        let _cnf = CnfEncoder::new(CnfAlgorithm::PlaistedGreenbaum)
+            .transform(formula, f)
+            .unwrap();
         if PRINT_PERFORMANCE {
             println!("[{}] PG CNF: {:?}", file_name, start.elapsed());
         }

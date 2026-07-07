@@ -39,7 +39,9 @@ fn test_alk() -> LngResult<()> {
 }
 
 fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) -> LngResult<()> {
-    let problem_vars: Box<[Variable]> = (0..num_lits).map(|i| f.variable(format!("v{i}")).as_variable().unwrap()).collect();
+    let problem_vars: Box<[Variable]> = (0..num_lits)
+        .map(|i| f.variable(format!("v{i}")).as_variable().unwrap())
+        .collect();
     let cc = f.cc(CType::GE, rhs, problem_vars.clone()).unwrap();
     let mut solver = MiniSat::new();
     solver.add(cc, f)?;
@@ -48,8 +50,13 @@ fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) -> LngRes
     } else {
         assert_eq!(solver.sat(), True);
     }
-    let models =
-        enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default().variables(problem_vars).max_models(12000)).unwrap();
+    let models = enumerate_models_with_config(
+        &mut solver,
+        &ModelEnumerationConfig::default()
+            .variables(problem_vars)
+            .max_models(12000),
+    )
+    .unwrap();
     assert_eq!(models.len() as u64, expected);
 
     Ok(())

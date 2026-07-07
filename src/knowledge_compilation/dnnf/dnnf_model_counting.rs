@@ -17,7 +17,11 @@ pub fn count(dnnf: &DnnfFormula, f: &FormulaFactory) -> BigUint {
     simple_result * factor
 }
 
-fn count_rec(dnnf: EncodedFormula, f: &FormulaFactory, cache: &mut OperationCache<BigUint>) -> BigUint {
+fn count_rec(
+    dnnf: EncodedFormula,
+    f: &FormulaFactory,
+    cache: &mut OperationCache<BigUint>,
+) -> BigUint {
     if dnnf.is_falsum() {
         0_u32.to_biguint().unwrap()
     } else if dnnf.precedence() >= LIT_PRECEDENCE {
@@ -28,7 +32,8 @@ fn count_rec(dnnf: EncodedFormula, f: &FormulaFactory, cache: &mut OperationCach
                 Formula::And(ops) => ops.map(|op| count_rec(op, f, cache)).product(),
                 Formula::Or(ops) => {
                     let vars = dnnf.variables(f).len();
-                    ops.map(|op| handle_or_op(op, vars, f, cache)).sum::<BigUint>()
+                    ops.map(|op| handle_or_op(op, vars, f, cache))
+                        .sum::<BigUint>()
                 }
                 _ => panic_unexpected_formula_type(dnnf, Some(f)),
             };
@@ -38,9 +43,17 @@ fn count_rec(dnnf: EncodedFormula, f: &FormulaFactory, cache: &mut OperationCach
     }
 }
 
-fn handle_or_op(op: EncodedFormula, all_variables: usize, f: &FormulaFactory, cache: &mut OperationCache<BigUint>) -> BigUint {
+fn handle_or_op(
+    op: EncodedFormula,
+    all_variables: usize,
+    f: &FormulaFactory,
+    cache: &mut OperationCache<BigUint>,
+) -> BigUint {
     let op_count = count_rec(op, f, cache);
     let op_vars = op.variables(f).len();
-    let factor = 2.to_biguint().unwrap().pow((all_variables - op_vars) as u32);
+    let factor = 2
+        .to_biguint()
+        .unwrap()
+        .pow((all_variables - op_vars) as u32);
     factor * op_count
 }

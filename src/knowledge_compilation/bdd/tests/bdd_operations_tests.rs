@@ -71,7 +71,9 @@ mod tests {
         assert!(model_and.contains_pos(vb));
         assert!(model_and.contains_neg(vc));
 
-        assert!(Assignment::from(b.FORMULA.model(&mut k).unwrap().unwrap()).contains_neg(f.var("A")));
+        assert!(
+            Assignment::from(b.FORMULA.model(&mut k).unwrap().unwrap()).contains_neg(f.var("A"))
+        );
 
         let model_cc = Assignment::from(b.CC.model(&mut k).unwrap().unwrap());
         assert!(model_cc.contains_neg(va));
@@ -92,39 +94,91 @@ mod tests {
         let ab = vec![va, vb];
         let abc = vec![va, vb, vc];
 
-        assert!(b.FALSE.model_for_variables(true, &Vec::new(), &f, &mut k).unwrap().is_none());
-        assert!(b.TRUE.model_for_variables(true, &Vec::new(), &f, &mut k).unwrap().unwrap().is_empty());
+        assert!(
+            b.FALSE
+                .model_for_variables(true, &Vec::new(), &f, &mut k)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            b.TRUE
+                .model_for_variables(true, &Vec::new(), &f, &mut k)
+                .unwrap()
+                .unwrap()
+                .is_empty()
+        );
 
-        let model_var = Assignment::from(b.VAR.model_for_variables(true, &ab, &f, &mut k).unwrap().unwrap());
+        let model_var = Assignment::from(
+            b.VAR
+                .model_for_variables(true, &ab, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_var.contains_pos(va));
         assert!(model_var.contains_pos(vb));
 
-        let model_lit = Assignment::from(b.LIT.model_for_variables(false, &abc, &f, &mut k).unwrap().unwrap());
+        let model_lit = Assignment::from(
+            b.LIT
+                .model_for_variables(false, &abc, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_lit.contains_neg(va));
         assert!(model_lit.contains_neg(vb));
         assert!(model_lit.contains_neg(vc));
 
-        let model_impl = Assignment::from(b.IMPL.model_for_variables(true, &ab, &f, &mut k).unwrap().unwrap());
+        let model_impl = Assignment::from(
+            b.IMPL
+                .model_for_variables(true, &ab, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_impl.contains_neg(va));
         assert!(model_impl.contains_pos(vb));
 
-        let model_equiv = Assignment::from(b.EQUIV.model_for_variables(true, &Vec::new(), &f, &mut k).unwrap().unwrap());
+        let model_equiv = Assignment::from(
+            b.EQUIV
+                .model_for_variables(true, &Vec::new(), &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_equiv.contains_neg(va));
         assert!(model_equiv.contains_pos(vb));
 
-        let model_or = Assignment::from(b.OR.model_for_variables(true, &ab, &f, &mut k).unwrap().unwrap());
+        let model_or = Assignment::from(
+            b.OR.model_for_variables(true, &ab, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_or.contains_neg(va));
         assert!(model_or.contains_neg(vb));
         assert!(model_or.contains_neg(vc));
 
-        let model_and = Assignment::from(b.AND.model_for_variables(true, &abc, &f, &mut k).unwrap().unwrap());
+        let model_and = Assignment::from(
+            b.AND
+                .model_for_variables(true, &abc, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_and.contains_pos(va));
         assert!(model_and.contains_pos(vb));
         assert!(model_and.contains_neg(vc));
 
-        assert!(Assignment::from(b.FORMULA.model_for_variables(false, &ab, &f, &mut k).unwrap().unwrap()).contains_neg(f.var("A")));
+        assert!(
+            Assignment::from(
+                b.FORMULA
+                    .model_for_variables(false, &ab, &f, &mut k)
+                    .unwrap()
+                    .unwrap()
+            )
+            .contains_neg(f.var("A"))
+        );
 
-        let model_cc = Assignment::from(b.CC.model_for_variables(true, &abc, &f, &mut k).unwrap().unwrap());
+        let model_cc = Assignment::from(
+            b.CC.model_for_variables(true, &abc, &f, &mut k)
+                .unwrap()
+                .unwrap(),
+        );
         assert!(model_cc.contains_neg(va));
         assert!(model_cc.contains_neg(vb));
         assert!(model_cc.contains_pos(vc));
@@ -243,7 +297,12 @@ mod tests {
 
         let ab = vec![va, vb];
 
-        assert!(b.FALSE.enumerate_all_models_projected(&ab, &mut k).unwrap().is_empty());
+        assert!(
+            b.FALSE
+                .enumerate_all_models_projected(&ab, &mut k)
+                .unwrap()
+                .is_empty()
+        );
 
         let models_true = b.TRUE.enumerate_all_models_projected(&ab, &mut k).unwrap();
         assert_eq!(models_true.len(), 4);
@@ -273,7 +332,10 @@ mod tests {
         assert_eq!(models_and.len(), 1);
         verify_models(b.AND_F, models_and, &f);
 
-        let models_formula = b.FORMULA.enumerate_all_models_projected(&ab, &mut k).unwrap();
+        let models_formula = b
+            .FORMULA
+            .enumerate_all_models_projected(&ab, &mut k)
+            .unwrap();
         assert_eq!(models_formula.len(), 4);
         verify_models(b.FORMULA_F, models_formula, &f);
 
@@ -318,23 +380,41 @@ mod tests {
         let b = B::new();
         let mut k = b.K;
         assert_eq!(b.FALSE.number_of_terms_dnf(&mut k), 0.to_biguint().unwrap());
-        assert_eq!(b.FALSE.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
+        assert_eq!(
+            b.FALSE.number_of_clauses_cnf(&mut k),
+            1.to_biguint().unwrap()
+        );
         assert_eq!(b.TRUE.number_of_terms_dnf(&mut k), 1.to_biguint().unwrap());
-        assert_eq!(b.TRUE.number_of_clauses_cnf(&mut k), 0.to_biguint().unwrap());
+        assert_eq!(
+            b.TRUE.number_of_clauses_cnf(&mut k),
+            0.to_biguint().unwrap()
+        );
         assert_eq!(b.VAR.number_of_terms_dnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.VAR.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.LIT.number_of_terms_dnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.LIT.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.IMPL.number_of_terms_dnf(&mut k), 2.to_biguint().unwrap());
-        assert_eq!(b.IMPL.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
+        assert_eq!(
+            b.IMPL.number_of_clauses_cnf(&mut k),
+            1.to_biguint().unwrap()
+        );
         assert_eq!(b.EQUIV.number_of_terms_dnf(&mut k), 2.to_biguint().unwrap());
-        assert_eq!(b.EQUIV.number_of_clauses_cnf(&mut k), 2.to_biguint().unwrap());
+        assert_eq!(
+            b.EQUIV.number_of_clauses_cnf(&mut k),
+            2.to_biguint().unwrap()
+        );
         assert_eq!(b.OR.number_of_terms_dnf(&mut k), 3.to_biguint().unwrap());
         assert_eq!(b.OR.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.AND.number_of_terms_dnf(&mut k), 1.to_biguint().unwrap());
         assert_eq!(b.AND.number_of_clauses_cnf(&mut k), 3.to_biguint().unwrap());
-        assert_eq!(b.FORMULA.number_of_terms_dnf(&mut k), 2.to_biguint().unwrap());
-        assert_eq!(b.FORMULA.number_of_clauses_cnf(&mut k), 1.to_biguint().unwrap());
+        assert_eq!(
+            b.FORMULA.number_of_terms_dnf(&mut k),
+            2.to_biguint().unwrap()
+        );
+        assert_eq!(
+            b.FORMULA.number_of_clauses_cnf(&mut k),
+            1.to_biguint().unwrap()
+        );
         assert_eq!(b.CC.number_of_terms_dnf(&mut k), 3.to_biguint().unwrap());
         assert_eq!(b.CC.number_of_clauses_cnf(&mut k), 4.to_biguint().unwrap());
     }
@@ -349,11 +429,27 @@ mod tests {
         assert_eq!(b.VAR.cnf(&f, &mut k).unwrap(), f.variable("A"));
         assert_eq!(b.LIT.cnf(&f, &mut k).unwrap(), f.literal("A", false));
         assert_eq!(b.IMPL.cnf(&f, &mut k).unwrap(), f.parse("~A | ~B").unwrap());
-        assert_eq!(b.EQUIV.cnf(&f, &mut k).unwrap(), f.parse("(A | B) & (~A | ~B)").unwrap());
-        assert_eq!(b.OR.cnf(&f, &mut k).unwrap(), f.parse("A | B | ~C").unwrap());
-        assert_eq!(b.AND.cnf(&f, &mut k).unwrap(), f.parse("A & (~A | B) & (~A | ~B | ~C)").unwrap());
-        assert_eq!(b.FORMULA.cnf(&f, &mut k).unwrap(), f.parse("~A | ~C").unwrap());
-        assert_eq!(b.CC.cnf(&f, &mut k).unwrap(), f.parse("(A | B | C) & (A | ~B | ~C) & (~A | B | ~C) & (~A | ~B)").unwrap());
+        assert_eq!(
+            b.EQUIV.cnf(&f, &mut k).unwrap(),
+            f.parse("(A | B) & (~A | ~B)").unwrap()
+        );
+        assert_eq!(
+            b.OR.cnf(&f, &mut k).unwrap(),
+            f.parse("A | B | ~C").unwrap()
+        );
+        assert_eq!(
+            b.AND.cnf(&f, &mut k).unwrap(),
+            f.parse("A & (~A | B) & (~A | ~B | ~C)").unwrap()
+        );
+        assert_eq!(
+            b.FORMULA.cnf(&f, &mut k).unwrap(),
+            f.parse("~A | ~C").unwrap()
+        );
+        assert_eq!(
+            b.CC.cnf(&f, &mut k).unwrap(),
+            f.parse("(A | B | C) & (A | ~B | ~C) & (~A | B | ~C) & (~A | ~B)")
+                .unwrap()
+        );
     }
 
     #[test]
@@ -365,12 +461,30 @@ mod tests {
         assert_eq!(b.TRUE.dnf(&f, &mut k).unwrap(), f.verum());
         assert_eq!(b.VAR.dnf(&f, &mut k).unwrap(), f.variable("A"));
         assert_eq!(b.LIT.dnf(&f, &mut k).unwrap(), f.literal("A", false));
-        assert_eq!(b.IMPL.dnf(&f, &mut k).unwrap(), f.parse("~A | A & ~B").unwrap());
-        assert_eq!(b.EQUIV.dnf(&f, &mut k).unwrap(), f.parse("~A & B | A & ~B").unwrap());
-        assert_eq!(b.OR.dnf(&f, &mut k).unwrap(), f.parse("~A & ~B & ~C | ~A & B | A").unwrap());
-        assert_eq!(b.AND.dnf(&f, &mut k).unwrap(), f.parse("A & B & ~C").unwrap());
-        assert_eq!(b.FORMULA.dnf(&f, &mut k).unwrap(), f.parse("~A | A & ~C").unwrap());
-        assert_eq!(b.CC.dnf(&f, &mut k).unwrap(), f.parse("~A & ~B & C | ~A & B & ~C | A & ~B & ~C").unwrap());
+        assert_eq!(
+            b.IMPL.dnf(&f, &mut k).unwrap(),
+            f.parse("~A | A & ~B").unwrap()
+        );
+        assert_eq!(
+            b.EQUIV.dnf(&f, &mut k).unwrap(),
+            f.parse("~A & B | A & ~B").unwrap()
+        );
+        assert_eq!(
+            b.OR.dnf(&f, &mut k).unwrap(),
+            f.parse("~A & ~B & ~C | ~A & B | A").unwrap()
+        );
+        assert_eq!(
+            b.AND.dnf(&f, &mut k).unwrap(),
+            f.parse("A & B & ~C").unwrap()
+        );
+        assert_eq!(
+            b.FORMULA.dnf(&f, &mut k).unwrap(),
+            f.parse("~A | A & ~C").unwrap()
+        );
+        assert_eq!(
+            b.CC.dnf(&f, &mut k).unwrap(),
+            f.parse("~A & ~B & C | ~A & B & ~C | A & ~B & ~C").unwrap()
+        );
     }
 
     #[test]
@@ -383,37 +497,100 @@ mod tests {
         let vb = f.var("B");
         let vc = f.var("C");
 
-        assert_eq!(b.FALSE.variable_profile(&mut k).unwrap().get(&va).unwrap(), &0);
-        assert_eq!(b.FALSE.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &0);
-        assert_eq!(b.FALSE.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.FALSE.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.FALSE.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.FALSE.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
-        assert_eq!(b.TRUE.variable_profile(&mut k).unwrap().get(&va).unwrap(), &0);
-        assert_eq!(b.TRUE.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &0);
-        assert_eq!(b.TRUE.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.TRUE.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.TRUE.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.TRUE.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
-        assert_eq!(b.VAR.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
-        assert_eq!(b.VAR.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &0);
-        assert_eq!(b.VAR.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.VAR.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.VAR.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.VAR.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
-        assert_eq!(b.LIT.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
-        assert_eq!(b.LIT.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &0);
-        assert_eq!(b.LIT.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.LIT.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.LIT.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &0
+        );
+        assert_eq!(
+            b.LIT.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
-        assert_eq!(b.IMPL.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
-        assert_eq!(b.IMPL.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &1);
-        assert_eq!(b.IMPL.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.IMPL.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.IMPL.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.IMPL.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
-        assert_eq!(b.EQUIV.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
-        assert_eq!(b.EQUIV.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &2);
-        assert_eq!(b.EQUIV.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &0);
+        assert_eq!(
+            b.EQUIV.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.EQUIV.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &2
+        );
+        assert_eq!(
+            b.EQUIV.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &0
+        );
 
         assert_eq!(b.OR.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
         assert_eq!(b.OR.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &1);
         assert_eq!(b.OR.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &1);
 
-        assert_eq!(b.AND.variable_profile(&mut k).unwrap().get(&va).unwrap(), &1);
-        assert_eq!(b.AND.variable_profile(&mut k).unwrap().get(&vb).unwrap(), &1);
-        assert_eq!(b.AND.variable_profile(&mut k).unwrap().get(&vc).unwrap(), &1);
+        assert_eq!(
+            b.AND.variable_profile(&mut k).unwrap().get(&va).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.AND.variable_profile(&mut k).unwrap().get(&vb).unwrap(),
+            &1
+        );
+        assert_eq!(
+            b.AND.variable_profile(&mut k).unwrap().get(&vc).unwrap(),
+            &1
+        );
     }
 
     #[test]
@@ -425,12 +602,30 @@ mod tests {
         assert_eq!(b.TRUE.to_formula(&f, &mut k).unwrap(), f.verum());
         assert_eq!(b.VAR.to_formula(&f, &mut k).unwrap(), f.variable("A"));
         assert_eq!(b.LIT.to_formula(&f, &mut k).unwrap(), f.literal("A", false));
-        assert_eq!(b.IMPL.to_formula(&f, &mut k).unwrap(), f.parse("~A | A & ~B").unwrap());
-        assert_eq!(b.EQUIV.to_formula(&f, &mut k).unwrap(), f.parse("~A & B | A & ~B").unwrap());
-        assert_eq!(b.OR.to_formula(&f, &mut k).unwrap(), f.parse("A | ~A & (B | ~B & ~C)").unwrap());
-        assert_eq!(b.AND.to_formula(&f, &mut k).unwrap(), f.parse("A & B & ~C").unwrap());
-        assert_eq!(b.FORMULA.to_formula(&f, &mut k).unwrap(), f.parse("A & ~C | ~A").unwrap());
-        assert_eq!(b.CC.to_formula(&f, &mut k).unwrap(), f.parse("A & ~B & ~C | ~A & (B & ~C | ~B & C)").unwrap());
+        assert_eq!(
+            b.IMPL.to_formula(&f, &mut k).unwrap(),
+            f.parse("~A | A & ~B").unwrap()
+        );
+        assert_eq!(
+            b.EQUIV.to_formula(&f, &mut k).unwrap(),
+            f.parse("~A & B | A & ~B").unwrap()
+        );
+        assert_eq!(
+            b.OR.to_formula(&f, &mut k).unwrap(),
+            f.parse("A | ~A & (B | ~B & ~C)").unwrap()
+        );
+        assert_eq!(
+            b.AND.to_formula(&f, &mut k).unwrap(),
+            f.parse("A & B & ~C").unwrap()
+        );
+        assert_eq!(
+            b.FORMULA.to_formula(&f, &mut k).unwrap(),
+            f.parse("A & ~C | ~A").unwrap()
+        );
+        assert_eq!(
+            b.CC.to_formula(&f, &mut k).unwrap(),
+            f.parse("A & ~B & ~C | ~A & (B & ~C | ~B & C)").unwrap()
+        );
     }
 
     #[test]
@@ -592,17 +787,22 @@ mod tests {
     fn test_with_handler() {
         let f = FormulaFactory::new();
         let mut k = BddKernel::new_with_num_vars(20, 200, 2000).unwrap();
-        let mut rnd = FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(20)).unwrap();
+        let mut rnd =
+            FormulaRandomizer::new(FormulaRandomizerConfig::default_with_num_vars(20)).unwrap();
         let formula = rnd.formula(&f, 5);
 
         let mut handler_50 = NumberOfNodesBddHandler::new(40);
         let mut handler_5000 = NumberOfNodesBddHandler::new(5000);
 
         let bdd_err = Bdd::from_formula_with_handler(formula, &f, &mut k, &mut handler_50).unwrap();
-        let bdd_ok = Bdd::from_formula_with_handler(formula, &f, &mut k, &mut handler_5000).unwrap();
+        let bdd_ok =
+            Bdd::from_formula_with_handler(formula, &f, &mut k, &mut handler_5000).unwrap();
 
         assert!(bdd_err.is_canceled());
-        assert!(matches!(bdd_err.cancel_cause().unwrap(), LngEvent::BddNewRefAdded));
+        assert!(matches!(
+            bdd_err.cancel_cause().unwrap(),
+            LngEvent::BddNewRefAdded
+        ));
         assert!(bdd_ok.is_success());
     }
 

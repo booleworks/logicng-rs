@@ -12,7 +12,11 @@ impl NumberOfNodesBddHandler {
     /// Constructs a new handler, which stops the execution if a certain number
     /// of nodes is exceeded.
     pub const fn new(bound: usize) -> Self {
-        Self { bound, count: 0, canceled: false }
+        Self {
+            bound,
+            count: 0,
+            canceled: false,
+        }
     }
 }
 

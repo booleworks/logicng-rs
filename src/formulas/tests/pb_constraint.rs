@@ -8,7 +8,8 @@ mod pb_constraint_tests {
     #[test]
     fn test_illegal_pb() {
         let f = &FormulaFactory::new();
-        let lits: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let coeffs: Box<[i64]> = Box::new([3, -2, 7, 2]);
         assert!(f.pbc(EQ, 3, lits, coeffs).is_err());
     }
@@ -23,15 +24,31 @@ mod pb_constraint_tests {
         let formula = f.pbc(GE, 4_294_967_295, vec![], vec![]).unwrap();
         assert!(formula.is_falsum());
 
-        let formula = f.cc(GE, 4_294_967_295, vec![f.var("a"), f.var("b")]).unwrap();
+        let formula = f
+            .cc(GE, 4_294_967_295, vec![f.var("a"), f.var("b")])
+            .unwrap();
         assert!(formula.is_cc());
         assert_eq!(formula.as_cc(&f).unwrap().rhs, 4_294_967_295);
 
-        let formula = f.pbc(GT, 4_294_967_295, vec![f.lit("a", true), f.lit("b", true)], vec![1, 1]).unwrap();
+        let formula = f
+            .pbc(
+                GT,
+                4_294_967_295,
+                vec![f.lit("a", true), f.lit("b", true)],
+                vec![1, 1],
+            )
+            .unwrap();
         assert!(formula.is_cc());
         assert_eq!(formula.as_cc(&f).unwrap().rhs, 4_294_967_295);
 
-        let formula = f.pbc(GT, 4_294_967_295, vec![f.lit("a", true), f.lit("b", true)], vec![2, 1]).unwrap();
+        let formula = f
+            .pbc(
+                GT,
+                4_294_967_295,
+                vec![f.lit("a", true), f.lit("b", true)],
+                vec![2, 1],
+            )
+            .unwrap();
         assert!(formula.is_pbc());
         assert_eq!(formula.as_pbc(&f).unwrap().rhs, 4_294_967_295);
     }
@@ -44,7 +61,8 @@ mod pb_constraint_tests {
         let vars1: Box<[Variable]> = Box::new([f.var("a")]);
         let lits1: Box<[Literal]> = Box::new([f.lit("a", true)]);
         let vars2: Box<[Variable]> = Box::new([f.var("a"), f.var("b"), f.var("c")]);
-        let lits2: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits2: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let coeffs1: Box<[i64]> = Box::new([3]);
         let coeffs2: Box<[i64]> = Box::new([3, -2, 7]);
 
@@ -124,41 +142,149 @@ mod pb_constraint_tests {
         let coeffs1: Box<[i64]> = Box::new([1, 1]);
         let coeffs2: Box<[i64]> = Box::new([-1, 1]);
 
-        assert!(f.pbc(LE, 4, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(LT, 4, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(GE, 4, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(GT, 4, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(EQ, 4, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
+        assert!(
+            f.pbc(LE, 4, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(LT, 4, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(GE, 4, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(GT, 4, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(EQ, 4, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
 
         // Corner cases
-        assert!(f.pbc(LE, 0, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(LT, 1, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(GE, 0, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(GT, -1, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(f.pbc(EQ, 0, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
+        assert!(
+            f.pbc(LE, 0, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(LT, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(GE, 0, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(GT, -1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            f.pbc(EQ, 0, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
 
-        assert!(!f.pbc(LE, -1, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(LT, 0, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GE, -1, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GT, -2, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(EQ, -1, lits1.clone(), coeffs1.clone()).unwrap().is_cc());
+        assert!(
+            !f.pbc(LE, -1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(LT, 0, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GE, -1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GT, -2, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(EQ, -1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
 
-        assert!(!f.pbc(LE, 4, lits1.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(LT, 4, lits1.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GE, 4, lits1.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GT, 4, lits1.clone(), coeffs2.clone()).unwrap().is_cc());
+        assert!(
+            !f.pbc(LE, 4, lits1.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(LT, 4, lits1.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GE, 4, lits1.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GT, 4, lits1.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
         assert!(!f.pbc(EQ, 4, lits1, coeffs2.clone()).unwrap().is_cc());
 
-        assert!(!f.pbc(LE, 4, lits2.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(LT, 4, lits2.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GE, 4, lits2.clone(), coeffs1.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GT, 4, lits2.clone(), coeffs1.clone()).unwrap().is_cc());
+        assert!(
+            !f.pbc(LE, 4, lits2.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(LT, 4, lits2.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GE, 4, lits2.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GT, 4, lits2.clone(), coeffs1.clone())
+                .unwrap()
+                .is_cc()
+        );
         assert!(!f.pbc(EQ, 4, lits2.clone(), coeffs1).unwrap().is_cc());
 
-        assert!(!f.pbc(LE, 4, lits2.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(LT, 4, lits2.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GE, 4, lits2.clone(), coeffs2.clone()).unwrap().is_cc());
-        assert!(!f.pbc(GT, 4, lits2.clone(), coeffs2.clone()).unwrap().is_cc());
+        assert!(
+            !f.pbc(LE, 4, lits2.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(LT, 4, lits2.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GE, 4, lits2.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
+        assert!(
+            !f.pbc(GT, 4, lits2.clone(), coeffs2.clone())
+                .unwrap()
+                .is_cc()
+        );
         assert!(!f.pbc(EQ, 4, lits2, coeffs2).unwrap().is_cc());
     }
 
@@ -168,12 +294,48 @@ mod pb_constraint_tests {
         let lits1: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", true)]);
         let coeffs1: Box<[i64]> = Box::new([1, 1]);
 
-        assert!(f.pbc(LE, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_amo());
-        assert!(f.pbc(LT, 2, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_amo());
-        assert!(!f.pbc(LT, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_amo());
-        assert!(!f.pbc(GE, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_amo());
-        assert!(!f.pbc(GT, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_amo());
-        assert!(!f.pbc(EQ, 1, lits1, coeffs1).unwrap().as_cc(f).unwrap().is_amo());
+        assert!(
+            f.pbc(LE, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
+        assert!(
+            f.pbc(LT, 2, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
+        assert!(
+            !f.pbc(LT, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
+        assert!(
+            !f.pbc(GE, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
+        assert!(
+            !f.pbc(GT, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
+        assert!(
+            !f.pbc(EQ, 1, lits1, coeffs1)
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_amo()
+        );
     }
 
     #[test]
@@ -182,12 +344,48 @@ mod pb_constraint_tests {
         let lits1: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", true)]);
         let coeffs1: Box<[i64]> = Box::new([1, 1]);
 
-        assert!(!f.pbc(LE, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_exo());
-        assert!(!f.pbc(LT, 2, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_exo());
-        assert!(!f.pbc(LT, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_exo());
-        assert!(!f.pbc(GE, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_exo());
-        assert!(!f.pbc(GT, 1, lits1.clone(), coeffs1.clone()).unwrap().as_cc(f).unwrap().is_exo());
-        assert!(f.pbc(EQ, 1, lits1, coeffs1).unwrap().as_cc(f).unwrap().is_exo());
+        assert!(
+            !f.pbc(LE, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
+        assert!(
+            !f.pbc(LT, 2, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
+        assert!(
+            !f.pbc(LT, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
+        assert!(
+            !f.pbc(GE, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
+        assert!(
+            !f.pbc(GT, 1, lits1.clone(), coeffs1.clone())
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
+        assert!(
+            f.pbc(EQ, 1, lits1, coeffs1)
+                .unwrap()
+                .as_cc(f)
+                .unwrap()
+                .is_exo()
+        );
     }
 
     #[test]
@@ -222,7 +420,9 @@ mod pb_constraint_tests {
     fn test_variables() {
         let f = &FormulaFactory::new();
         let vars1 = vec![f.var("a")].into_iter().collect::<BTreeSet<Variable>>();
-        let vars2 = vec![f.var("a"), f.var("b"), f.var("c")].into_iter().collect::<BTreeSet<Variable>>();
+        let vars2 = vec![f.var("a"), f.var("b"), f.var("c")]
+            .into_iter()
+            .collect::<BTreeSet<Variable>>();
         let (pb1, pb2, cc1, cc2, amo1, amo2, exo1, exo2) = generate_formulas(f);
         assert_eq!(*pb1.variables(f), vars1);
         assert_eq!(*pb2.variables(f), vars2);
@@ -332,7 +532,8 @@ mod pb_constraint_tests {
     #[test]
     fn test_evaluate() {
         let f = &FormulaFactory::new();
-        let lits: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let vars: Box<[Variable]> = lits.iter().map(Literal::variable).collect();
         let coeffs: Box<[i64]> = Box::new([2, -2, 3]);
         let a1 = Assignment::from_variables(&[f.var("a"), f.var("b")], &[f.var("c")]);
@@ -373,7 +574,8 @@ mod pb_constraint_tests {
     #[test]
     fn test_restrict() {
         let f = &FormulaFactory::new();
-        let lits: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let lits_a1: Box<[Literal]> = Box::new([f.lit("b", false), f.lit("c", true)]);
         let lits_a2: Box<[Literal]> = Box::new([f.lit("c", true)]);
         let coeffs: Box<[i64]> = Box::new([2, -2, 3]);
@@ -387,8 +589,14 @@ mod pb_constraint_tests {
         let a3 = Assignment::from_variables(&[f.var("a"), f.var("c")], &[f.var("b")]);
         let a4 = Assignment::from_variables(&[f.var("b")], &[f.var("a"), f.var("c")]);
         let pb1 = f.pbc(EQ, 2, lits, coeffs).unwrap();
-        assert_eq!(f.pbc(EQ, 0, lits_a1, coeffs_a1).unwrap(), f.restrict(pb1, &a1));
-        assert_eq!(f.pbc(EQ, 2, lits_a2, coeffs_a2).unwrap(), f.restrict(pb1, &a2));
+        assert_eq!(
+            f.pbc(EQ, 0, lits_a1, coeffs_a1).unwrap(),
+            f.restrict(pb1, &a1)
+        );
+        assert_eq!(
+            f.pbc(EQ, 2, lits_a2, coeffs_a2).unwrap(),
+            f.restrict(pb1, &a2)
+        );
         assert_eq!(f.falsum(), f.restrict(pb1, &a3));
         assert_eq!(f.falsum(), f.restrict(pb1, &a4));
 
@@ -422,13 +630,22 @@ mod pb_constraint_tests {
     #[test]
     fn test_restrict_inequality() {
         let f = &FormulaFactory::new();
-        let lits: Box<[Literal]> =
-            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true), f.lit("d", true), f.lit("e", true), f.lit("f", false)]);
+        let lits: Box<[Literal]> = Box::new([
+            f.lit("a", true),
+            f.lit("b", false),
+            f.lit("c", true),
+            f.lit("d", true),
+            f.lit("e", true),
+            f.lit("f", false),
+        ]);
         let coeffs: Box<[i64]> = Box::new([70, 50, 201, -3, -24, 1]);
         let pb1 = f.pbc(GE, -24, lits.clone(), coeffs.clone()).unwrap();
         let pb2 = f.pbc(LE, 150, lits, coeffs).unwrap();
         let a1 = Assignment::from_variables(&[f.var("c")], &[f.var("b")]);
-        let a2 = Assignment::from_variables(&[f.var("b"), f.var("d"), f.var("e")], &[f.var("a"), f.var("c")]);
+        let a2 = Assignment::from_variables(
+            &[f.var("b"), f.var("d"), f.var("e")],
+            &[f.var("a"), f.var("c")],
+        );
         let a3 = Assignment::from_variables(&[], &[f.var("c")]);
         assert_eq!(f.verum(), f.restrict(pb1, &a1));
         assert_eq!(f.falsum(), f.restrict(pb2, &a1));
@@ -439,7 +656,8 @@ mod pb_constraint_tests {
     #[test]
     fn test_negation_pbc() {
         let f = &FormulaFactory::new();
-        let lits: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let coeffs: Box<[i64]> = Box::new([2, -2, 3]);
         let pb1 = f.pbc(EQ, 2, lits.clone(), coeffs.clone()).unwrap();
         let pb3 = f.pbc(GE, 1, lits.clone(), coeffs.clone()).unwrap();
@@ -451,10 +669,22 @@ mod pb_constraint_tests {
         let op11 = f.pbc(LT, 2, lits.clone(), coeffs.clone()).unwrap();
         let op12 = f.pbc(GT, 2, lits.clone(), coeffs.clone()).unwrap();
         assert_eq!(f.or([op11, op12]), f.negate(pb1));
-        assert_eq!(f.pbc(LT, 1, lits.clone(), coeffs.clone()).unwrap(), f.negate(pb3));
-        assert_eq!(f.pbc(LE, 0, lits.clone(), coeffs.clone()).unwrap(), f.negate(pb4));
-        assert_eq!(f.pbc(GT, 1, lits.clone(), coeffs.clone()).unwrap(), f.negate(pb5));
-        assert_eq!(f.pbc(GE, 2, lits.clone(), coeffs.clone()).unwrap(), f.negate(pb6));
+        assert_eq!(
+            f.pbc(LT, 1, lits.clone(), coeffs.clone()).unwrap(),
+            f.negate(pb3)
+        );
+        assert_eq!(
+            f.pbc(LE, 0, lits.clone(), coeffs.clone()).unwrap(),
+            f.negate(pb4)
+        );
+        assert_eq!(
+            f.pbc(GT, 1, lits.clone(), coeffs.clone()).unwrap(),
+            f.negate(pb5)
+        );
+        assert_eq!(
+            f.pbc(GE, 2, lits.clone(), coeffs.clone()).unwrap(),
+            f.negate(pb6)
+        );
         let op21 = f.pbc(LT, -2, lits.clone(), coeffs.clone()).unwrap();
         let op22 = f.pbc(GT, -2, lits, coeffs).unwrap();
         assert_eq!(f.or([op21, op22]), f.negate(pb7));
@@ -537,20 +767,76 @@ mod pb_constraint_tests {
         let empty_lits: Box<[Literal]> = Box::new([]);
         let empty_coeffs: Box<[i64]> = Box::new([]);
         let empty_vars: Box<[Variable]> = Box::new([]);
-        assert_eq!(f.verum(), f.pbc(EQ, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(EQ, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(EQ, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(GT, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(GT, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(GT, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(GE, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(GE, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(GE, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(LT, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(LT, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.falsum(), f.pbc(LT, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(LE, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap());
-        assert_eq!(f.verum(), f.pbc(LE, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap());
+        assert_eq!(
+            f.verum(),
+            f.pbc(EQ, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(EQ, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(EQ, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(GT, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(GT, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(GT, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(GE, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(GE, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(GE, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(LT, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(LT, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.falsum(),
+            f.pbc(LT, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(LE, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
+        assert_eq!(
+            f.verum(),
+            f.pbc(LE, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+        );
         assert_eq!(f.falsum(), f.pbc(LE, -1, empty_lits, empty_coeffs).unwrap());
 
         assert_eq!(f.verum(), f.cc(EQ, 0, empty_vars.clone()).unwrap());
@@ -570,41 +856,149 @@ mod pb_constraint_tests {
         let empty_lits: Box<[Literal]> = Box::new([]);
         let empty_coeffs: Box<[i64]> = Box::new([]);
         let empty_vars: Box<[Variable]> = Box::new([]);
-        assert_eq!("$true", f.pbc(EQ, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(EQ, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(EQ, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(GT, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(GT, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(GT, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(GE, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(GE, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(GE, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(LT, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(LT, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(LT, -1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(LE, 0, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.pbc(LE, 1, empty_lits.clone(), empty_coeffs.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.pbc(LE, -1, empty_lits, empty_coeffs).unwrap().to_string(f));
+        assert_eq!(
+            "$true",
+            f.pbc(EQ, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(EQ, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(EQ, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(GT, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(GT, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(GT, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(GE, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(GE, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(GE, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(LT, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(LT, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(LT, -1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(LE, 0, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.pbc(LE, 1, empty_lits.clone(), empty_coeffs.clone())
+                .unwrap()
+                .to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.pbc(LE, -1, empty_lits, empty_coeffs)
+                .unwrap()
+                .to_string(f)
+        );
 
-        assert_eq!("$true", f.cc(EQ, 0, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.cc(EQ, 1, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.cc(GT, 0, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.cc(GT, 1, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.cc(GE, 0, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$false", f.cc(GE, 1, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.cc(LT, 1, empty_vars.clone()).unwrap().to_string(f));
-        assert_eq!("$true", f.cc(LE, 0, empty_vars.clone()).unwrap().to_string(f));
+        assert_eq!(
+            "$true",
+            f.cc(EQ, 0, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.cc(EQ, 1, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.cc(GT, 0, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.cc(GT, 1, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.cc(GE, 0, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$false",
+            f.cc(GE, 1, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.cc(LT, 1, empty_vars.clone()).unwrap().to_string(f)
+        );
+        assert_eq!(
+            "$true",
+            f.cc(LE, 0, empty_vars.clone()).unwrap().to_string(f)
+        );
         assert_eq!("$true", f.cc(LE, 1, empty_vars).unwrap().to_string(f));
     }
 
     fn generate_formulas(
         f: &FormulaFactory,
-    ) -> (EncodedFormula, EncodedFormula, EncodedFormula, EncodedFormula, EncodedFormula, EncodedFormula, EncodedFormula, EncodedFormula)
-    {
+    ) -> (
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+        EncodedFormula,
+    ) {
         let vars1: Box<[Variable]> = Box::new([f.var("a")]);
         let lits1: Box<[Literal]> = Box::new([f.lit("a", true)]);
         let vars2: Box<[Variable]> = Box::new([f.var("a"), f.var("b"), f.var("c")]);
-        let lits2: Box<[Literal]> = Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
+        let lits2: Box<[Literal]> =
+            Box::new([f.lit("a", true), f.lit("b", false), f.lit("c", true)]);
         let coeffs1: Box<[i64]> = Box::new([3_i64]);
         let coeffs2: Box<[i64]> = Box::new([3_i64, -2, 7]);
         let pb1 = f.pbc(LE, 2, lits1, coeffs1).unwrap();

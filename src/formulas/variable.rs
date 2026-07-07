@@ -4,7 +4,9 @@ use std::str::FromStr;
 
 use crate::formulas::formula_cache::formula_encoding::Encoding;
 use crate::formulas::formula_factory::AUX_PREFIX;
-use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, LitType, Literal, StringLiteral};
+use crate::formulas::{
+    EncodedFormula, FormulaFactory, FormulaType, LitType, Literal, StringLiteral,
+};
 
 use super::formula::ToFormula;
 use super::formula_cache::formula_encoding::FormulaEncoding;
@@ -209,7 +211,10 @@ impl Variable {
     /// assert_eq!(var.to_string_lit(&f), StringLiteral::new("a", true));
     /// ```
     pub fn to_string_lit<'a>(&self, f: &'a FormulaFactory) -> StringLiteral<'a> {
-        StringLiteral { name: self.name(f), phase: true }
+        StringLiteral {
+            name: self.name(f),
+            phase: true,
+        }
     }
 
     /// Returns the type of this variable as a [`VarType`].
@@ -261,13 +266,20 @@ impl TryFrom<FormulaEncoding> for Variable {
 
     fn try_from(enc: FormulaEncoding) -> Result<Self, Self::Error> {
         match enc.formula_type() {
-            FormulaType::Lit(LitType::Pos(VarType::Aux(aux_type)) | LitType::Neg(VarType::Aux(aux_type))) => {
-                Ok(Self::Aux(aux_type, enc.index()))
-            }
+            FormulaType::Lit(
+                LitType::Pos(VarType::Aux(aux_type)) | LitType::Neg(VarType::Aux(aux_type)),
+            ) => Ok(Self::Aux(aux_type, enc.index())),
             FormulaType::Lit(LitType::Pos(VarType::FF) | LitType::Neg(VarType::FF)) => {
-                Ok(Self::FF(FormulaEncoding::encode(enc.index(), FormulaType::Lit(LitType::Pos(VarType::FF)), true)))
+                Ok(Self::FF(FormulaEncoding::encode(
+                    enc.index(),
+                    FormulaType::Lit(LitType::Pos(VarType::FF)),
+                    true,
+                )))
             }
-            _ => Err(format!("Cannot convert {:?} to a variable!", enc.formula_type())),
+            _ => Err(format!(
+                "Cannot convert {:?} to a variable!",
+                enc.formula_type()
+            )),
         }
     }
 }

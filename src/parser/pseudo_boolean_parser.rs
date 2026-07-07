@@ -33,7 +33,12 @@ pub fn parse<I: AsRef<str>>(f: &FormulaFactory, input: I) -> LngResult<EncodedFo
                 formula = parse_equivalence(f, x)?;
             }
             Rule::EOI => (),
-            rule => return Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+            rule => {
+                return Err(ParserError::UnexpectedRule {
+                    rule: format!("{rule:?}"),
+                }
+                .into());
+            }
         }
     }
 
@@ -70,7 +75,11 @@ fn parse_disjunction(f: &FormulaFactory, disjunction: Pair<Rule>) -> LngResult<E
         conjs.push(parse_conjunction(f, conjunction)?);
     }
 
-    if conjs.len() > 1 { Ok(f.or(&conjs)) } else { conjs.pop().ok_or(ParserError::UnexpectedEnd.into()) }
+    if conjs.len() > 1 {
+        Ok(f.or(&conjs))
+    } else {
+        conjs.pop().ok_or(ParserError::UnexpectedEnd.into())
+    }
 }
 
 fn parse_conjunction(f: &FormulaFactory, conjunction: Pair<Rule>) -> LngResult<EncodedFormula> {
@@ -81,7 +90,11 @@ fn parse_conjunction(f: &FormulaFactory, conjunction: Pair<Rule>) -> LngResult<E
         lits_vec.push(parse_lit(f, lit)?);
     }
 
-    if lits_vec.len() > 1 { Ok(f.and(&lits_vec)) } else { lits_vec.pop().ok_or(ParserError::UnexpectedEnd.into()) }
+    if lits_vec.len() > 1 {
+        Ok(f.and(&lits_vec))
+    } else {
+        lits_vec.pop().ok_or(ParserError::UnexpectedEnd.into())
+    }
 }
 
 fn parse_lit(f: &FormulaFactory, lit: Pair<Rule>) -> LngResult<EncodedFormula> {
@@ -89,7 +102,10 @@ fn parse_lit(f: &FormulaFactory, lit: Pair<Rule>) -> LngResult<EncodedFormula> {
     match a.as_rule() {
         Rule::comparison => parse_comparison(f, a),
         Rule::simp => parse_simp(f, a),
-        rule => Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+        rule => Err(ParserError::UnexpectedRule {
+            rule: format!("{rule:?}"),
+        }
+        .into()),
     }
 }
 
@@ -106,7 +122,10 @@ fn parse_simp(f: &FormulaFactory, simp: Pair<Rule>) -> LngResult<EncodedFormula>
         Rule::literal => parse_literal(f, x),
         Rule::constant => parse_constant(f, x),
         Rule::equivalence => parse_equivalence(f, x),
-        rule => Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+        rule => Err(ParserError::UnexpectedRule {
+            rule: format!("{rule:?}"),
+        }
+        .into()),
     }?;
 
     if !phase {
@@ -139,7 +158,12 @@ fn parse_comparison(f: &FormulaFactory, comparison: Pair<Rule>) -> LngResult<Enc
             Rule::comp_type => {
                 break operator;
             }
-            rule => return Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+            rule => {
+                return Err(ParserError::UnexpectedRule {
+                    rule: format!("{rule:?}"),
+                }
+                .into());
+            }
         }
     };
 
@@ -149,7 +173,12 @@ fn parse_comparison(f: &FormulaFactory, comparison: Pair<Rule>) -> LngResult<Enc
         Rule::lt => CType::LT,
         Rule::ge => CType::GE,
         Rule::gt => CType::GT,
-        rule => return Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+        rule => {
+            return Err(ParserError::UnexpectedRule {
+                rule: format!("{rule:?}"),
+            }
+            .into());
+        }
     };
     let rhs = parse_i64(next_pair(&mut tokens)?.as_str(), false)?;
     f.pbc(comparator, rhs, literals, coefficients)
@@ -167,7 +196,11 @@ fn parse_mul(f: &FormulaFactory, mul: Pair<Rule>) -> LngResult<(Literal, i64)> {
         1
     };
 
-    let lit = parse_literal(f, x)?.as_literal().ok_or(ParserError::UnexpectedRule { rule: "non-literal in multiplication".into() })?;
+    let lit = parse_literal(f, x)?
+        .as_literal()
+        .ok_or(ParserError::UnexpectedRule {
+            rule: "non-literal in multiplication".into(),
+        })?;
     Ok((lit, coefficient))
 }
 
@@ -187,25 +220,41 @@ fn parse_constant(f: &FormulaFactory, constant: Pair<Rule>) -> LngResult<Encoded
     match con {
         Rule::verum => Ok(f.verum()),
         Rule::falsum => Ok(f.falsum()),
-        rule => Err(ParserError::UnexpectedRule { rule: format!("{rule:?}") }.into()),
+        rule => Err(ParserError::UnexpectedRule {
+            rule: format!("{rule:?}"),
+        }
+        .into()),
     }
 }
 
 fn next_pair<'a, I>(pairs: &mut I) -> LngResult<Pair<'a, Rule>>
-where I: Iterator<Item = Pair<'a, Rule>> {
+where
+    I: Iterator<Item = Pair<'a, Rule>>,
+{
     pairs.next().ok_or(ParserError::UnexpectedEnd.into())
 }
 
 fn parse_i64(value: &str, coefficient: bool) -> LngResult<i64> {
     i64::from_str(value).map_err(|_| {
         if coefficient {
-            ParserError::CoefficientOverflow { value: value.to_string() }.into()
+            ParserError::CoefficientOverflow {
+                value: value.to_string(),
+            }
+            .into()
         } else {
-            ParserError::IntegerOverflow { value: value.to_string() }.into()
+            ParserError::IntegerOverflow {
+                value: value.to_string(),
+            }
+            .into()
         }
     })
 }
 
 fn checked_neg_coefficient(value: i64) -> LngResult<i64> {
-    value.checked_neg().ok_or(ParserError::CoefficientOverflow { value: value.to_string() }.into())
+    value.checked_neg().ok_or(
+        ParserError::CoefficientOverflow {
+            value: value.to_string(),
+        }
+        .into(),
+    )
 }

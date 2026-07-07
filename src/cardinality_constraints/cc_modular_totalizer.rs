@@ -1,4 +1,8 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 
 use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use std::cmp::Ordering;
@@ -17,7 +21,12 @@ struct ModularTotalizerState {
     current_cardinality_rhs: usize,
 }
 
-pub(super) fn build_amk(result: &mut dyn EncodingResult, vars: &[Variable], rhs: usize, with_inc: bool) -> Option<CcIncrementalData> {
+pub(super) fn build_amk(
+    result: &mut dyn EncodingResult,
+    vars: &[Variable],
+    rhs: usize,
+    with_inc: bool,
+) -> Option<CcIncrementalData> {
     let mut state = initialize(result, rhs, vars.len());
     for var in vars {
         state.inlits.push(var.pos_lit());
@@ -33,16 +42,32 @@ pub(super) fn build_amk(result: &mut dyn EncodingResult, vars: &[Variable], rhs:
         state.current_cardinality_rhs,
     ); // yes, `n` and not `rhs`
     assert!(state.inlits.is_empty());
-    encode_output(result, rhs, state.md, &state.cardinality_up_outvars, &state.cardinality_lw_outvars);
+    encode_output(
+        result,
+        rhs,
+        state.md,
+        &state.cardinality_up_outvars,
+        &state.cardinality_lw_outvars,
+    );
     state.current_cardinality_rhs += 1;
     if with_inc {
-        Some(CcIncrementalData::for_amk_modular_totalizer(rhs, state.cardinality_up_outvars, state.cardinality_lw_outvars, state.md))
+        Some(CcIncrementalData::for_amk_modular_totalizer(
+            rhs,
+            state.cardinality_up_outvars,
+            state.cardinality_lw_outvars,
+            state.md,
+        ))
     } else {
         None
     }
 }
 
-pub fn build_alk(result: &mut dyn EncodingResult, vars: &[Variable], rhs: usize, with_inc: bool) -> Option<CcIncrementalData> {
+pub fn build_alk(
+    result: &mut dyn EncodingResult,
+    vars: &[Variable],
+    rhs: usize,
+    with_inc: bool,
+) -> Option<CcIncrementalData> {
     let new_rhs = vars.len() - rhs;
     let mut state = initialize(result, new_rhs, vars.len());
     for var in vars {
@@ -59,7 +84,13 @@ pub fn build_alk(result: &mut dyn EncodingResult, vars: &[Variable], rhs: usize,
         state.current_cardinality_rhs,
     ); // yes, `n` and not `rhs`
     assert!(state.inlits.is_empty());
-    encode_output(result, new_rhs, state.md, &state.cardinality_up_outvars, &state.cardinality_lw_outvars);
+    encode_output(
+        result,
+        new_rhs,
+        state.md,
+        &state.cardinality_up_outvars,
+        &state.cardinality_lw_outvars,
+    );
     state.current_cardinality_rhs += 1;
     if with_inc {
         Some(CcIncrementalData::for_alk_modular_totalizer(
@@ -90,7 +121,15 @@ fn initialize(result: &mut dyn EncodingResult, rhs: usize, n: usize) -> ModularT
     if cardinality_up_outvars.is_empty() {
         cardinality_up_outvars.push(h0.pos_lit());
     }
-    ModularTotalizerState { n, h0, md, cardinality_up_outvars, cardinality_lw_outvars, inlits, current_cardinality_rhs }
+    ModularTotalizerState {
+        n,
+        h0,
+        md,
+        cardinality_up_outvars,
+        cardinality_lw_outvars,
+        inlits,
+        current_cardinality_rhs,
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -122,7 +161,11 @@ fn to_cnf(
         for _ in 0..left {
             lupper.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
         }
-        let limit = if left % md == 0 && split < md - 1 { split } else { md - 1 };
+        let limit = if left % md == 0 && split < md - 1 {
+            split
+        } else {
+            md - 1
+        };
         for _ in 0..limit {
             llower.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
         }
@@ -137,7 +180,11 @@ fn to_cnf(
         for _ in 0..right {
             rupper.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
         }
-        let limit = if right % md == 0 && rhs - split < md - 1 { rhs - split } else { md - 1 };
+        let limit = if right % md == 0 && rhs - split < md - 1 {
+            rhs - split
+        } else {
+            md - 1
+        };
         for _ in 0..limit {
             rlower.push(result.new_auxiliary_variable(AuxVarType::CC).pos_lit());
         }
@@ -150,14 +197,43 @@ fn to_cnf(
         rupper.push(h0);
     }
 
-    adder(result, md, ubvars, lwvars, &rupper, &rlower, &lupper, &llower, h0, current_cardinality_rhs);
+    adder(
+        result,
+        md,
+        ubvars,
+        lwvars,
+        &rupper,
+        &rlower,
+        &lupper,
+        &llower,
+        h0,
+        current_cardinality_rhs,
+    );
     let val = left * md + split - left * md;
     if val > 1 {
-        to_cnf(result, md, &lupper, &llower, val, h0, inlits, current_cardinality_rhs);
+        to_cnf(
+            result,
+            md,
+            &lupper,
+            &llower,
+            val,
+            h0,
+            inlits,
+            current_cardinality_rhs,
+        );
     }
     let val = right * md + rhs - split - right * md;
     if val > 1 {
-        to_cnf(result, md, &rupper, &rlower, val, h0, inlits, current_cardinality_rhs);
+        to_cnf(
+            result,
+            md,
+            &rupper,
+            &rlower,
+            val,
+            h0,
+            inlits,
+            current_cardinality_rhs,
+        );
     }
 }
 
@@ -176,7 +252,11 @@ fn adder(
 ) {
     assert!(!upper.is_empty());
     assert!(lower.len() >= llower.len() && lower.len() >= rlower.len());
-    let carry = if upper[0] == h0 { None } else { Some(result.new_auxiliary_variable(AuxVarType::CC).pos_lit()) };
+    let carry = if upper[0] == h0 {
+        None
+    } else {
+        Some(result.new_auxiliary_variable(AuxVarType::CC).pos_lit())
+    };
     for i in 0..=llower.len() {
         for j in 0..=rlower.len() {
             if i + j > current_cardinality_rhs + 1 && current_cardinality_rhs + 1 < md {
@@ -198,26 +278,52 @@ fn adder(
                         }
                     } else if i != 0 {
                         if let Some(carry) = carry {
-                            result.add_clause(&[llower[i - 1].negate(), rlower[j - 1].negate(), lower[i + j - 1], carry]);
+                            result.add_clause(&[
+                                llower[i - 1].negate(),
+                                rlower[j - 1].negate(),
+                                lower[i + j - 1],
+                                carry,
+                            ]);
                         } else {
                             assert!(i + j - 1 < lower.len());
-                            result.add_clause(&[llower[i - 1].negate(), rlower[j - 1].negate(), lower[i + j - 1]]);
+                            result.add_clause(&[
+                                llower[i - 1].negate(),
+                                rlower[j - 1].negate(),
+                                lower[i + j - 1],
+                            ]);
                         }
                     }
                 }
                 Ordering::Greater => {
                     assert!(i + j > 0);
-                    result.add_clause(&[llower[i - 1].negate(), rlower[j - 1].negate(), lower[(i + j) % md - 1]]);
+                    result.add_clause(&[
+                        llower[i - 1].negate(),
+                        rlower[j - 1].negate(),
+                        lower[(i + j) % md - 1],
+                    ]);
                 }
                 Ordering::Equal => {
                     assert_eq!(i + j, md);
-                    result.add_clause(&[llower[i - 1].negate(), rlower[j - 1].negate(), carry.unwrap()]);
+                    result.add_clause(&[
+                        llower[i - 1].negate(),
+                        rlower[j - 1].negate(),
+                        carry.unwrap(),
+                    ]);
                 }
             }
         }
     }
     if let Some(carry) = carry {
-        final_adder(result, md, upper, lupper, rupper, carry, h0, current_cardinality_rhs);
+        final_adder(
+            result,
+            md,
+            upper,
+            lupper,
+            rupper,
+            carry,
+            h0,
+            current_cardinality_rhs,
+        );
     }
 }
 
@@ -234,14 +340,23 @@ fn final_adder(
 ) {
     for i in 0..=lupper.len() {
         for j in 0..=rupper.len() {
-            let close_mod = current_cardinality_rhs / md + usize::from(!current_cardinality_rhs.is_multiple_of(md));
+            let close_mod = current_cardinality_rhs / md
+                + usize::from(!current_cardinality_rhs.is_multiple_of(md));
             if md * (i + j) > close_mod * md {
                 continue;
             }
             let a = if i == 0 { None } else { Some(lupper[i - 1]) };
             let b = if j == 0 { None } else { Some(rupper[j - 1]) };
-            let c = if i + j != 0 && i + j - 1 < upper.len() { Some(upper[i + j - 1]) } else { None };
-            let d = if i + j < upper.len() { Some(upper[i + j]) } else { None };
+            let c = if i + j != 0 && i + j - 1 < upper.len() {
+                Some(upper[i + j - 1])
+            } else {
+                None
+            };
+            let d = if i + j < upper.len() {
+                Some(upper[i + j])
+            } else {
+                None
+            };
             let a_present = a.is_some() && a.unwrap() != h0;
             let b_present = b.is_some() && b.unwrap() != h0;
             let c_present = c.is_some() && c.unwrap() != h0;

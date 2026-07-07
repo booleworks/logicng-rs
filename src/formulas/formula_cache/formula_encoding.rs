@@ -26,7 +26,11 @@ const ENCODING_PBC: u8 = 0x11;
 const ENCODING_LARGE_CACHE: u8 = 0x20;
 
 const fn header(ty: u8, large_cache: bool) -> u8 {
-    if large_cache { ENCODING_LARGE_CACHE | ty } else { ty }
+    if large_cache {
+        ENCODING_LARGE_CACHE | ty
+    } else {
+        ty
+    }
 }
 
 #[allow(clippy::cast_possible_truncation)]
@@ -78,15 +82,34 @@ impl Encoding for SmallFormulaEncoding {
             Equiv => header(ENCODING_EQUIV, large_cache) as u32 | index_32(index),
             Cc => header(ENCODING_CC, large_cache) as u32 | index_32(index),
             Pbc => header(ENCODING_PBC, large_cache) as u32 | index_32(index),
-            Lit(LitType::Pos(VarType::FF)) => header(ENCODING_POS_FF, large_cache) as u32 | index_32(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::CNF))) => header(ENCODING_POS_AUX_CNF, large_cache) as u32 | index_32(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::CC))) => header(ENCODING_POS_AUX_CC, large_cache) as u32 | index_32(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::PB))) => header(ENCODING_POS_AUX_PB, large_cache) as u32 | index_32(index),
-            Lit(LitType::Neg(VarType::FF)) => header(ENCODING_NEG_FF, large_cache) as u32 | index_32(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::CNF))) => header(ENCODING_NEG_AUX_CNF, large_cache) as u32 | index_32(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::CC))) => header(ENCODING_NEG_AUX_CC, large_cache) as u32 | index_32(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::PB))) => header(ENCODING_NEG_AUX_PB, large_cache) as u32 | index_32(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::TMP)) | LitType::Neg(VarType::Aux(AuxVarType::TMP))) => {
+            Lit(LitType::Pos(VarType::FF)) => {
+                header(ENCODING_POS_FF, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::CNF))) => {
+                header(ENCODING_POS_AUX_CNF, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::CC))) => {
+                header(ENCODING_POS_AUX_CC, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::PB))) => {
+                header(ENCODING_POS_AUX_PB, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Neg(VarType::FF)) => {
+                header(ENCODING_NEG_FF, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::CNF))) => {
+                header(ENCODING_NEG_AUX_CNF, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::CC))) => {
+                header(ENCODING_NEG_AUX_CC, large_cache) as u32 | index_32(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::PB))) => {
+                header(ENCODING_NEG_AUX_PB, large_cache) as u32 | index_32(index)
+            }
+            Lit(
+                LitType::Pos(VarType::Aux(AuxVarType::TMP))
+                | LitType::Neg(VarType::Aux(AuxVarType::TMP)),
+            ) => {
                 panic!("Solver variables or temporary aux variables should not be encoded!")
             }
         };
@@ -166,15 +189,34 @@ impl Encoding for FormulaEncoding {
             Equiv => header(ENCODING_EQUIV, large_cache) as u64 | index_64(index),
             Cc => header(ENCODING_CC, large_cache) as u64 | index_64(index),
             Pbc => header(ENCODING_PBC, large_cache) as u64 | index_64(index),
-            Lit(LitType::Pos(VarType::FF)) => header(ENCODING_POS_FF, large_cache) as u64 | index_64(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::CNF))) => header(ENCODING_POS_AUX_CNF, large_cache) as u64 | index_64(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::CC))) => header(ENCODING_POS_AUX_CC, large_cache) as u64 | index_64(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::PB))) => header(ENCODING_POS_AUX_PB, large_cache) as u64 | index_64(index),
-            Lit(LitType::Neg(VarType::FF)) => header(ENCODING_NEG_FF, large_cache) as u64 | index_64(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::CNF))) => header(ENCODING_NEG_AUX_CNF, large_cache) as u64 | index_64(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::CC))) => header(ENCODING_NEG_AUX_CC, large_cache) as u64 | index_64(index),
-            Lit(LitType::Neg(VarType::Aux(AuxVarType::PB))) => header(ENCODING_NEG_AUX_PB, large_cache) as u64 | index_64(index),
-            Lit(LitType::Pos(VarType::Aux(AuxVarType::TMP)) | LitType::Neg(VarType::Aux(AuxVarType::TMP))) => {
+            Lit(LitType::Pos(VarType::FF)) => {
+                header(ENCODING_POS_FF, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::CNF))) => {
+                header(ENCODING_POS_AUX_CNF, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::CC))) => {
+                header(ENCODING_POS_AUX_CC, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Pos(VarType::Aux(AuxVarType::PB))) => {
+                header(ENCODING_POS_AUX_PB, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Neg(VarType::FF)) => {
+                header(ENCODING_NEG_FF, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::CNF))) => {
+                header(ENCODING_NEG_AUX_CNF, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::CC))) => {
+                header(ENCODING_NEG_AUX_CC, large_cache) as u64 | index_64(index)
+            }
+            Lit(LitType::Neg(VarType::Aux(AuxVarType::PB))) => {
+                header(ENCODING_NEG_AUX_PB, large_cache) as u64 | index_64(index)
+            }
+            Lit(
+                LitType::Pos(VarType::Aux(AuxVarType::TMP))
+                | LitType::Neg(VarType::Aux(AuxVarType::TMP)),
+            ) => {
                 panic!("Solver variables or temporary aux variables should not be encoded!")
             }
         };
@@ -224,10 +266,14 @@ const fn is_64_index(index: u64) -> bool {
 }
 
 pub(super) const fn extend_32(encoding: SmallFormulaEncoding) -> FormulaEncoding {
-    FormulaEncoding { encoding: encoding.encoding as u64 }
+    FormulaEncoding {
+        encoding: encoding.encoding as u64,
+    }
 }
 
 #[allow(clippy::cast_possible_truncation)]
 pub(super) const fn truncate_64(encoding: FormulaEncoding) -> SmallFormulaEncoding {
-    SmallFormulaEncoding { encoding: encoding.encoding as u32 }
+    SmallFormulaEncoding {
+        encoding: encoding.encoding as u32,
+    }
 }

@@ -34,17 +34,28 @@ impl EquivalenceCache {
         }
     }
 
-    pub fn get_or_insert(&self, (left, right): (EncodedFormula, EncodedFormula)) -> FormulaEncoding {
+    pub fn get_or_insert(
+        &self,
+        (left, right): (EncodedFormula, EncodedFormula),
+    ) -> FormulaEncoding {
         if left.encoding.is_large() || right.encoding.is_large() {
             let encoded @ (l, r) = (left.encoding, right.encoding);
-            let key_encoded = if l.encoding < r.encoding { (l, r) } else { (r, l) };
+            let key_encoded = if l.encoding < r.encoding {
+                (l, r)
+            } else {
+                (r, l)
+            };
             *self.reverse_map64.entry(key_encoded).or_insert_with(|| {
                 let index = self.vec64.push(encoded);
                 FormulaEncoding::encode(index as u64, FormulaType::Equiv, true)
             })
         } else {
             let encoded @ (l, r) = (left.encoding.as_32(), right.encoding.as_32());
-            let key_encoded = if l.encoding < r.encoding { (l, r) } else { (r, l) };
+            let key_encoded = if l.encoding < r.encoding {
+                (l, r)
+            } else {
+                (r, l)
+            };
             *self.reverse_map32.entry(key_encoded).or_insert_with(|| {
                 let index = self.vec32.push(encoded);
                 FormulaEncoding::encode(index as u64, FormulaType::Equiv, false)

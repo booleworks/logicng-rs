@@ -1,15 +1,24 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::unused_self)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::unused_self
+)]
 
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder, AmoEncoder, BimanderGroupSize, CcConfig, ExkEncoder};
+use crate::cardinality_constraints::cc_config::{
+    AlkEncoder, AmkEncoder, AmoEncoder, BimanderGroupSize, CcConfig, ExkEncoder,
+};
 use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use crate::cardinality_constraints::error::CcError;
 use crate::datastructures::{EncodingResult, EncodingResultFF};
 use crate::errors::LngResult;
-use crate::formulas::{CType, CardinalityConstraint, EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::formulas::{
+    CType, CardinalityConstraint, EncodedFormula, FormulaFactory, Literal, Variable,
+};
 
 use super::{
-    build_amo_bimander, build_amo_binary, build_amo_commander, build_amo_ladder, build_amo_nested, build_amo_product, build_amo_pure,
-    cc_cardinality_networks, cc_modular_totalizer, cc_totalizer,
+    build_amo_bimander, build_amo_binary, build_amo_commander, build_amo_ladder, build_amo_nested,
+    build_amo_product, build_amo_pure, cc_cardinality_networks, cc_modular_totalizer, cc_totalizer,
 };
 
 /// An encoder for cardinality constraints.
@@ -30,7 +39,11 @@ impl CcEncoder {
     ///
     /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
     /// or if the selected encoder configuration is invalid for the requested encoding.
-    pub fn encode(&self, cc: &CardinalityConstraint, f: &FormulaFactory) -> LngResult<Vec<EncodedFormula>> {
+    pub fn encode(
+        &self,
+        cc: &CardinalityConstraint,
+        f: &FormulaFactory,
+    ) -> LngResult<Vec<EncodedFormula>> {
         let mut result = EncodingResultFF::new(f);
         self.encode_on(&mut result, cc)?;
         Ok(result.result)
@@ -42,7 +55,11 @@ impl CcEncoder {
     ///
     /// Returns an error if the constraint's right-hand side cannot be represented on this architecture
     /// or if the selected encoder configuration is invalid for the requested encoding.
-    pub fn encode_on<R: EncodingResult>(&self, result: &mut R, cc: &CardinalityConstraint) -> LngResult<()> {
+    pub fn encode_on<R: EncodingResult>(
+        &self,
+        result: &mut R,
+        cc: &CardinalityConstraint,
+    ) -> LngResult<()> {
         self.encode_constraint(cc, result)
     }
 
@@ -76,8 +93,15 @@ impl CcEncoder {
         self.encode_incremental_constraint(cc, result)
     }
 
-    fn encode_constraint<R: EncodingResult>(&self, cc: &CardinalityConstraint, result: &mut R) -> LngResult<()> {
-        let rhs = cc.rhs.try_into().map_err(|_| CcError::TooLargeRhs { rhs: cc.rhs as u64 })?;
+    fn encode_constraint<R: EncodingResult>(
+        &self,
+        cc: &CardinalityConstraint,
+        result: &mut R,
+    ) -> LngResult<()> {
+        let rhs = cc
+            .rhs
+            .try_into()
+            .map_err(|_| CcError::TooLargeRhs { rhs: cc.rhs as u64 })?;
         match cc.comparator {
             CType::LE => match cc.rhs {
                 1 => self.amo(result, &cc.variables)?,
@@ -114,7 +138,10 @@ impl CcEncoder {
         cc: &CardinalityConstraint,
         result: &mut dyn EncodingResult,
     ) -> LngResult<Option<CcIncrementalData>> {
-        let rhs = cc.rhs.try_into().map_err(|_| CcError::TooLargeRhs { rhs: cc.rhs as u64 })?;
+        let rhs = cc
+            .rhs
+            .try_into()
+            .map_err(|_| CcError::TooLargeRhs { rhs: cc.rhs as u64 })?;
         match cc.comparator {
             CType::LE => Ok(self.amk(result, &cc.variables, rhs, true)),
             CType::LT => match rhs {
@@ -143,19 +170,31 @@ impl CcEncoder {
                 AmoEncoder::Ladder => build_amo_ladder(result, vars),
                 AmoEncoder::Product { recursive_bound } => {
                     if recursive_bound < 2 {
-                        return Err(CcError::InvalidConfig { param: "Product::recursive_bound", value: recursive_bound }.into());
+                        return Err(CcError::InvalidConfig {
+                            param: "Product::recursive_bound",
+                            value: recursive_bound,
+                        }
+                        .into());
                     }
                     build_amo_product(recursive_bound, result, vars)
                 }
                 AmoEncoder::Nested { group_size } => {
                     if group_size < 2 {
-                        return Err(CcError::InvalidConfig { param: "Nested::group_size", value: group_size }.into());
+                        return Err(CcError::InvalidConfig {
+                            param: "Nested::group_size",
+                            value: group_size,
+                        }
+                        .into());
                     }
                     build_amo_nested(group_size, result, vars)
                 }
                 AmoEncoder::Commander { group_size } => {
                     if group_size < 2 {
-                        return Err(CcError::InvalidConfig { param: "Commander::group_size", value: group_size }.into());
+                        return Err(CcError::InvalidConfig {
+                            param: "Commander::group_size",
+                            value: group_size,
+                        }
+                        .into());
                     }
                     build_amo_commander(group_size, result, vars)
                 }
@@ -164,7 +203,11 @@ impl CcEncoder {
                     let group_size = match group_size {
                         BimanderGroupSize::Fixed(gs) => {
                             if gs < 2 {
-                                return Err(CcError::InvalidConfig { param: "Bimander::group_size", value: gs }.into());
+                                return Err(CcError::InvalidConfig {
+                                    param: "Bimander::group_size",
+                                    value: gs,
+                                }
+                                .into());
                             }
                             gs
                         }
@@ -185,7 +228,13 @@ impl CcEncoder {
         }
     }
 
-    fn amk(&self, result: &mut dyn EncodingResult, vars: &[Variable], rhs: usize, with_inc: bool) -> Option<CcIncrementalData> {
+    fn amk(
+        &self,
+        result: &mut dyn EncodingResult,
+        vars: &[Variable],
+        rhs: usize,
+        with_inc: bool,
+    ) -> Option<CcIncrementalData> {
         if rhs >= vars.len() {
             // there is no constraint
             None
@@ -198,13 +247,23 @@ impl CcEncoder {
         } else {
             match self.config.amk_encoder {
                 AmkEncoder::Totalizer => cc_totalizer::build_amk(result, vars, rhs, with_inc),
-                AmkEncoder::ModularTotalizer | AmkEncoder::Best => cc_modular_totalizer::build_amk(result, vars, rhs, with_inc),
-                AmkEncoder::CardinalityNetwork => cc_cardinality_networks::build_amk(result, vars, rhs, with_inc),
+                AmkEncoder::ModularTotalizer | AmkEncoder::Best => {
+                    cc_modular_totalizer::build_amk(result, vars, rhs, with_inc)
+                }
+                AmkEncoder::CardinalityNetwork => {
+                    cc_cardinality_networks::build_amk(result, vars, rhs, with_inc)
+                }
             }
         }
     }
 
-    fn alk(&self, result: &mut dyn EncodingResult, vars: &[Variable], rhs: usize, with_inc: bool) -> Option<CcIncrementalData> {
+    fn alk(
+        &self,
+        result: &mut dyn EncodingResult,
+        vars: &[Variable],
+        rhs: usize,
+        with_inc: bool,
+    ) -> Option<CcIncrementalData> {
         if rhs > vars.len() {
             result.add_clause(&Vec::new());
             None
@@ -222,8 +281,12 @@ impl CcEncoder {
         } else {
             match self.config.alk_encoder {
                 AlkEncoder::Totalizer => cc_totalizer::build_alk(result, vars, rhs, with_inc),
-                AlkEncoder::ModularTotalizer | AlkEncoder::Best => cc_modular_totalizer::build_alk(result, vars, rhs, with_inc),
-                AlkEncoder::CardinalityNetwork => cc_cardinality_networks::build_alk(result, vars, rhs, with_inc),
+                AlkEncoder::ModularTotalizer | AlkEncoder::Best => {
+                    cc_modular_totalizer::build_alk(result, vars, rhs, with_inc)
+                }
+                AlkEncoder::CardinalityNetwork => {
+                    cc_cardinality_networks::build_alk(result, vars, rhs, with_inc)
+                }
             }
         }
     }
@@ -254,8 +317,12 @@ impl CcEncoder {
             }
         } else {
             match self.config.exk_encoder {
-                ExkEncoder::Totalizer | ExkEncoder::Best => cc_totalizer::build_exk(result, vars, rhs),
-                ExkEncoder::CardinalityNetwork => cc_cardinality_networks::build_exk(result, vars, rhs),
+                ExkEncoder::Totalizer | ExkEncoder::Best => {
+                    cc_totalizer::build_exk(result, vars, rhs)
+                }
+                ExkEncoder::CardinalityNetwork => {
+                    cc_cardinality_networks::build_exk(result, vars, rhs)
+                }
             }
         }
     }

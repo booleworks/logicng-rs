@@ -48,5 +48,8 @@ fn solve(thread_count: usize) {
     for thread in threads {
         thread.join().expect("thread failed!");
     }
-    println!("MiniSat solve, {thread_count} Threads: {}s", start.elapsed().as_secs_f64());
+    println!(
+        "MiniSat solve, {thread_count} Threads: {}s",
+        start.elapsed().as_secs_f64()
+    );
 }

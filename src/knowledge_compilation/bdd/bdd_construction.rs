@@ -148,7 +148,9 @@ fn restrict_rec(r: usize, miscid: usize, kernel: &mut BddKernel) -> usize {
         res = kernel.make_node(kernel.level(r), kernel.read_ref(2), kernel.read_ref(1));
         kernel.pop_ref(2);
     }
-    kernel.misccache.set_with_res(search_hash, (r, 0, miscid), res);
+    kernel
+        .misccache
+        .set_with_res(search_hash, (r, 0, miscid), res);
     res
 }
 
@@ -217,7 +219,9 @@ fn varset2vartable(r: usize, kernel: &mut BddKernel) {
 
 #[cfg(test)]
 mod tests {
-    use crate::knowledge_compilation::bdd::bdd_construction::{bdd_high, bdd_low, bdd_var, ith_var, nith_var};
+    use crate::knowledge_compilation::bdd::bdd_construction::{
+        bdd_high, bdd_low, bdd_var, ith_var, nith_var,
+    };
     use crate::knowledge_compilation::bdd::bdd_kernel::BddKernel;
 
     #[test]

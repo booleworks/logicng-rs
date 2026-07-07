@@ -1,4 +1,9 @@
-#![allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 
 use crate::datastructures::EncodingResult;
 use crate::formulas::{AuxVarType, Literal, Variable};
@@ -6,7 +11,14 @@ use crate::formulas::{AuxVarType, Literal, Variable};
 /// An encoding of at-most-one cardinality constraints using the Bimander
 /// encoding due to Hölldobler and Nguyen.
 pub fn build_amo_bimander<R: EncodingResult>(m: usize, result: &mut R, vars: &[Variable]) {
-    encode_intern(m, result, &vars.iter().map(|var| Literal::new(*var, true)).collect::<Box<[_]>>());
+    encode_intern(
+        m,
+        result,
+        &vars
+            .iter()
+            .map(|var| Literal::new(*var, true))
+            .collect::<Box<[_]>>(),
+    );
 }
 
 fn encode_intern<R: EncodingResult>(m: usize, result: &mut R, vars: &[Literal]) {
@@ -38,7 +50,11 @@ fn encode_intern<R: EncodingResult>(m: usize, result: &mut R, vars: &[Literal]) 
     }
 }
 
-fn initialize_groups<R: EncodingResult>(group_size: usize, result: &mut R, vars: &[Literal]) -> Box<[Vec<Literal>]> {
+fn initialize_groups<R: EncodingResult>(
+    group_size: usize,
+    result: &mut R,
+    vars: &[Literal],
+) -> Box<[Vec<Literal>]> {
     let n = vars.len();
     let mut groups: Vec<Vec<Literal>> = (0..group_size).map(|_| Vec::new()).collect();
 
@@ -60,11 +76,16 @@ fn initialize_groups<R: EncodingResult>(group_size: usize, result: &mut R, vars:
     groups.into()
 }
 
-fn initialize_bits<R: EncodingResult>(m: usize, result: &mut R) -> (Box<[Literal]>, usize, usize, usize) {
+fn initialize_bits<R: EncodingResult>(
+    m: usize,
+    result: &mut R,
+) -> (Box<[Literal]>, usize, usize, usize) {
     let number_of_bits = (m as f64).log2().ceil() as usize;
     let two_pow_n_bits = 2usize.pow(number_of_bits as u32);
     let k = (two_pow_n_bits - m) * 2;
-    let bits = (0..number_of_bits).map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true)).collect();
+    let bits = (0..number_of_bits)
+        .map(|_| Literal::new(result.new_auxiliary_variable(AuxVarType::CC), true))
+        .collect();
     (bits, number_of_bits, two_pow_n_bits, k)
 }
 
@@ -76,8 +97,18 @@ fn encode_naive<R: EncodingResult>(result: &mut R, literals: &[Literal]) {
     }
 }
 
-fn handle_gray_code(result: &mut dyn EncodingResult, group: &[Literal], bit: Literal, gray_code: isize, j: usize) {
-    let b = if (gray_code & (1 << j)) == 0 { bit.negate() } else { bit };
+fn handle_gray_code(
+    result: &mut dyn EncodingResult,
+    group: &[Literal],
+    bit: Literal,
+    gray_code: isize,
+    j: usize,
+) {
+    let b = if (gray_code & (1 << j)) == 0 {
+        bit.negate()
+    } else {
+        bit
+    };
     for p in group {
         result.add_clause(&[p.negate(), b]);
     }

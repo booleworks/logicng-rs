@@ -67,18 +67,44 @@ mod tests {
         assert_eq!(bfs_ordering(f.parse("~A").unwrap(), &f), vec![va]);
         assert_eq!(bfs_ordering(f.parse("A => ~B").unwrap(), &f), vec![va, vb]);
         assert_eq!(bfs_ordering(f.parse("A <=> ~B").unwrap(), &f), vec![va, vb]);
-        assert_eq!(bfs_ordering(f.parse("~(A <=> ~B)").unwrap(), &f), vec![va, vb]);
-        assert_eq!(bfs_ordering(f.parse("A | ~C | B").unwrap(), &f), vec![va, vb, vc]);
-        assert_eq!(bfs_ordering(f.parse("A & ~B & C").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(bfs_ordering(f.parse("A + C + B < 2").unwrap(), &f), vec![va, vc, vb]);
-        assert_eq!(bfs_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f), vec![vc, vb, va]);
+        assert_eq!(
+            bfs_ordering(f.parse("~(A <=> ~B)").unwrap(), &f),
+            vec![va, vb]
+        );
+        assert_eq!(
+            bfs_ordering(f.parse("A | ~C | B").unwrap(), &f),
+            vec![va, vb, vc]
+        );
+        assert_eq!(
+            bfs_ordering(f.parse("A & ~B & C").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            bfs_ordering(f.parse("A + C + B < 2").unwrap(), &f),
+            vec![va, vc, vb]
+        );
+        assert_eq!(
+            bfs_ordering(f.parse("3*C + B + 4*A < 7").unwrap(), &f),
+            vec![vc, vb, va]
+        );
     }
 
     #[test]
     fn test_complex_formula() {
         let f = FormulaFactory::new();
-        let formula = f.parse("(A => ~B) & ((A & C) | (D & ~C)) & (A | Y | X) & (Y <=> (X | (W + A + F < 1)))").unwrap();
-        let ordering = vec![f.var("A"), f.var("Y"), f.var("X"), f.var("B"), f.var("C"), f.var("D"), f.var("W"), f.var("F")];
+        let formula = f
+            .parse("(A => ~B) & ((A & C) | (D & ~C)) & (A | Y | X) & (Y <=> (X | (W + A + F < 1)))")
+            .unwrap();
+        let ordering = vec![
+            f.var("A"),
+            f.var("Y"),
+            f.var("X"),
+            f.var("B"),
+            f.var("C"),
+            f.var("D"),
+            f.var("W"),
+            f.var("F"),
+        ];
 
         assert_eq!(bfs_ordering(formula, &f), ordering);
     }

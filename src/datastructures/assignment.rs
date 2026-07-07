@@ -97,7 +97,10 @@ impl Assignment {
     /// let assignment = Assignment::from_variables(&[a], &[b]);
     /// ```
     pub fn from_variables(pos: &[Variable], neg: &[Variable]) -> Self {
-        Self { pos: pos.iter().copied().collect::<HashSet<Variable>>(), neg: neg.iter().copied().collect::<HashSet<Variable>>() }
+        Self {
+            pos: pos.iter().copied().collect::<HashSet<Variable>>(),
+            neg: neg.iter().copied().collect::<HashSet<Variable>>(),
+        }
     }
 
     /// Converts a literal into an assignment.
@@ -125,9 +128,15 @@ impl Assignment {
     /// ```
     pub fn from_lit(lit: Literal) -> Self {
         if lit.phase() {
-            Self { pos: vec![lit.variable()].into_iter().collect(), neg: HashSet::new() }
+            Self {
+                pos: vec![lit.variable()].into_iter().collect(),
+                neg: HashSet::new(),
+            }
         } else {
-            Self { pos: HashSet::new(), neg: vec![lit.variable()].into_iter().collect() }
+            Self {
+                pos: HashSet::new(),
+                neg: vec![lit.variable()].into_iter().collect(),
+            }
         }
     }
 
@@ -456,7 +465,11 @@ impl Assignment {
     /// assert_eq!(assignment.contains(lit3), false);
     /// ```
     pub fn contains(&self, lit: Literal) -> bool {
-        if lit.phase() { self.pos.contains(&lit.variable()) } else { self.neg.contains(&lit.variable()) }
+        if lit.phase() {
+            self.pos.contains(&lit.variable())
+        } else {
+            self.neg.contains(&lit.variable())
+        }
     }
 
     /// Evaluates the given literals on this assignment.
@@ -490,7 +503,11 @@ impl Assignment {
     /// ```
     pub fn evaluate_lit(&self, lit: Literal) -> bool {
         let var = &lit.variable();
-        if lit.phase() { self.pos.contains(var) } else { self.neg.contains(var) || !self.pos.contains(var) }
+        if lit.phase() {
+            self.pos.contains(var)
+        } else {
+            self.neg.contains(var) || !self.pos.contains(var)
+        }
     }
 
     /// Restricts the given literal in this assignment.
@@ -526,9 +543,17 @@ impl Assignment {
         let var = lit.variable();
         let phase = lit.phase();
         if self.pos.contains(&var) {
-            if phase { EncodedFormula::constant(true) } else { EncodedFormula::constant(false) }
+            if phase {
+                EncodedFormula::constant(true)
+            } else {
+                EncodedFormula::constant(false)
+            }
         } else if self.neg.contains(&var) {
-            if phase { EncodedFormula::constant(false) } else { EncodedFormula::constant(true) }
+            if phase {
+                EncodedFormula::constant(false)
+            } else {
+                EncodedFormula::constant(true)
+            }
         } else {
             lit.into()
         }
@@ -536,7 +561,11 @@ impl Assignment {
 
     /// Creates the blocking clause for this assignment.
     #[allow(clippy::option_if_let_else)] // proposed change does not improve readability
-    pub fn blocking_clause(&self, f: &FormulaFactory, variables: Option<&[Variable]>) -> EncodedFormula {
+    pub fn blocking_clause(
+        &self,
+        f: &FormulaFactory,
+        variables: Option<&[Variable]>,
+    ) -> EncodedFormula {
         let ops = if let Some(variables) = variables {
             variables
                 .iter()
@@ -551,7 +580,11 @@ impl Assignment {
                 })
                 .collect()
         } else {
-            let mut ops: Vec<EncodedFormula> = self.pos.iter().map(|v| EncodedFormula::from(v.neg_lit())).collect();
+            let mut ops: Vec<EncodedFormula> = self
+                .pos
+                .iter()
+                .map(|v| EncodedFormula::from(v.neg_lit()))
+                .collect();
             ops.extend(self.neg.iter().map(|v| EncodedFormula::from(v.pos_lit())));
             ops
         };
@@ -585,8 +618,12 @@ impl Assignment {
     /// ```
     pub fn literals(&self) -> Vec<Literal> {
         let mut result = Vec::with_capacity(self.len());
-        self.pos.iter().for_each(|var| result.push(Literal::Pos(*var)));
-        self.neg.iter().for_each(|var| result.push(Literal::Neg(*var)));
+        self.pos
+            .iter()
+            .for_each(|var| result.push(Literal::Pos(*var)));
+        self.neg
+            .iter()
+            .for_each(|var| result.push(Literal::Neg(*var)));
         result
     }
 
@@ -617,8 +654,12 @@ impl Assignment {
     /// ```
     pub fn string_literals<'a>(&self, f: &'a FormulaFactory) -> Vec<StringLiteral<'a>> {
         let mut result = Vec::with_capacity(self.len());
-        self.pos.iter().for_each(|var| result.push(Literal::Pos(*var).to_string_lit(f)));
-        self.neg.iter().for_each(|var| result.push(Literal::Neg(*var).to_string_lit(f)));
+        self.pos
+            .iter()
+            .for_each(|var| result.push(Literal::Pos(*var).to_string_lit(f)));
+        self.neg
+            .iter()
+            .for_each(|var| result.push(Literal::Neg(*var).to_string_lit(f)));
         result
     }
 
@@ -649,8 +690,20 @@ impl Assignment {
 
 impl Hash for Assignment {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_u64(self.pos.iter().map(|&v| var_hash(v)).sum::<Wrapping<u64>>().0);
-        state.write_u64(self.neg.iter().map(|&v| var_hash(v)).sum::<Wrapping<u64>>().0);
+        state.write_u64(
+            self.pos
+                .iter()
+                .map(|&v| var_hash(v))
+                .sum::<Wrapping<u64>>()
+                .0,
+        );
+        state.write_u64(
+            self.neg
+                .iter()
+                .map(|&v| var_hash(v))
+                .sum::<Wrapping<u64>>()
+                .0,
+        );
     }
 }
 
@@ -664,13 +717,19 @@ impl Eq for Assignment {}
 
 impl<A: AsRef<Assignment>> From<A> for Model {
     fn from(assignment: A) -> Self {
-        Self::new(assignment.as_ref().pos.iter().copied().collect::<Vec<_>>(), assignment.as_ref().neg.iter().copied().collect::<Vec<_>>())
+        Self::new(
+            assignment.as_ref().pos.iter().copied().collect::<Vec<_>>(),
+            assignment.as_ref().neg.iter().copied().collect::<Vec<_>>(),
+        )
     }
 }
 
 impl From<Assignment> for Model {
     fn from(assignment: Assignment) -> Self {
-        Self::new(assignment.pos.into_iter().collect::<Vec<_>>(), assignment.neg.into_iter().collect::<Vec<_>>())
+        Self::new(
+            assignment.pos.into_iter().collect::<Vec<_>>(),
+            assignment.neg.into_iter().collect::<Vec<_>>(),
+        )
     }
 }
 
@@ -686,7 +745,9 @@ fn names_to_indices(names: &[&str], f: &FormulaFactory) -> LngResult<HashSet<Var
         let index = match f.variables.lookup(name) {
             Some(i) => Variable::FF(i),
             None => {
-                return Err(LngError::UnknownVariable { var: name.to_string() });
+                return Err(LngError::UnknownVariable {
+                    var: name.to_string(),
+                });
             }
         };
         result.insert(index);
@@ -705,7 +766,10 @@ mod tests {
         let f = &FormulaFactory::new();
         let vars1 = vars_list("a b c", f);
         let vars2 = vars_list("x y", f);
-        let a1 = Assignment::new(vars1.iter().copied().collect(), vars2.iter().copied().collect());
+        let a1 = Assignment::new(
+            vars1.iter().copied().collect(),
+            vars2.iter().copied().collect(),
+        );
         assert!(a1.contains_pos(f.var("a")));
         assert!(a1.contains_pos(f.var("b")));
         assert!(a1.contains_pos(f.var("c")));
@@ -854,7 +918,10 @@ mod tests {
         let a1 = Assignment::from_variables(&vars1, &vars2);
         assert_eq!("~a | ~b | x | y".to_formula(f), a1.blocking_clause(f, None));
         let bc_vars = vars_list("a x c", f);
-        assert_eq!("~a | x".to_formula(f), a1.blocking_clause(f, Some(&bc_vars)));
+        assert_eq!(
+            "~a | x".to_formula(f),
+            a1.blocking_clause(f, Some(&bc_vars))
+        );
     }
 
     #[test]
@@ -867,8 +934,14 @@ mod tests {
         let a3 = Assignment::from_variables(&[], &vars2);
         let a4 = Assignment::from_variables(&vars1, &vars2);
         assert_eq!("Assignment{pos=[], neg=[]}", a1.to_string(f));
-        assert!(a2.to_string(f) == "Assignment{pos=[a, b], neg=[]}" || a2.to_string(f) == "Assignment{pos=[b, a], neg=[]}");
-        assert!(a3.to_string(f) == "Assignment{pos=[], neg=[x, y]}" || a3.to_string(f) == "Assignment{pos=[], neg=[y, x]}");
+        assert!(
+            a2.to_string(f) == "Assignment{pos=[a, b], neg=[]}"
+                || a2.to_string(f) == "Assignment{pos=[b, a], neg=[]}"
+        );
+        assert!(
+            a3.to_string(f) == "Assignment{pos=[], neg=[x, y]}"
+                || a3.to_string(f) == "Assignment{pos=[], neg=[y, x]}"
+        );
         assert!(
             a4.to_string(f) == "Assignment{pos=[a, b], neg=[x, y]}"
                 || a4.to_string(f) == "Assignment{pos=[b, a], neg=[x, y]}"

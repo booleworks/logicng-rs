@@ -16,8 +16,16 @@ use super::formula_encoding::{Encoding, FormulaEncoding, SmallFormulaEncoding, e
 pub struct NaryFormulaCache {
     vec32: AppendOnlyVec<Box<[SmallFormulaEncoding]>>,
     vec64: AppendOnlyVec<Box<[FormulaEncoding]>>,
-    reverse_map32: DashMap<HashableFormulaSet<SmallFormulaEncoding>, FormulaEncoding, BuildHasherDefault<SimpleHashAdder>>,
-    reverse_map64: DashMap<HashableFormulaSet<FormulaEncoding>, FormulaEncoding, BuildHasherDefault<SimpleHashAdder>>,
+    reverse_map32: DashMap<
+        HashableFormulaSet<SmallFormulaEncoding>,
+        FormulaEncoding,
+        BuildHasherDefault<SimpleHashAdder>,
+    >,
+    reverse_map64: DashMap<
+        HashableFormulaSet<FormulaEncoding>,
+        FormulaEncoding,
+        BuildHasherDefault<SimpleHashAdder>,
+    >,
     representing_type: FormulaType,
 }
 
@@ -26,7 +34,10 @@ impl NaryFormulaCache {
         Self {
             vec32: AppendOnlyVec::new(),
             vec64: AppendOnlyVec::new(),
-            reverse_map32: DashMap::with_capacity_and_hasher(CACHE_INITIAL_CAPACITY, BuildHasherDefault::default()),
+            reverse_map32: DashMap::with_capacity_and_hasher(
+                CACHE_INITIAL_CAPACITY,
+                BuildHasherDefault::default(),
+            ),
             reverse_map64: DashMap::default(),
             representing_type: ty,
         }
@@ -35,9 +46,15 @@ impl NaryFormulaCache {
     #[allow(dead_code, clippy::cast_possible_truncation)]
     pub fn get(&self, index: FormulaEncoding) -> Vec<EncodedFormula> {
         if index.is_large_cache() {
-            self.vec64[index.index() as usize].iter().map(|&encoding| encoding.to_formula()).collect()
+            self.vec64[index.index() as usize]
+                .iter()
+                .map(|&encoding| encoding.to_formula())
+                .collect()
         } else {
-            self.vec32[index.index() as usize].iter().map(|&encoding| encoding.to_formula()).collect()
+            self.vec32[index.index() as usize]
+                .iter()
+                .map(|&encoding| encoding.to_formula())
+                .collect()
         }
     }
 
@@ -119,7 +136,11 @@ impl<'a> NaryIterator<'a> {
             NaryCacheContainer::Encoding32(v) => v.len(),
             NaryCacheContainer::Encoding64(v) => v.len(),
         };
-        NaryIterator { container, len, current_index: 0 }
+        NaryIterator {
+            container,
+            len,
+            current_index: 0,
+        }
     }
 
     /// Returns the length of the iterator.
@@ -154,8 +175,12 @@ impl Iterator for NaryIterator<'_> {
             None
         } else {
             let res = match self.container {
-                NaryCacheContainer::Encoding32(vec) => EncodedFormula::from(extend_32(vec[self.current_index])),
-                NaryCacheContainer::Encoding64(vec) => EncodedFormula::from(vec[self.current_index]),
+                NaryCacheContainer::Encoding32(vec) => {
+                    EncodedFormula::from(extend_32(vec[self.current_index]))
+                }
+                NaryCacheContainer::Encoding64(vec) => {
+                    EncodedFormula::from(vec[self.current_index])
+                }
             };
             self.current_index += 1;
             Some(res)
