@@ -472,8 +472,8 @@ mod partial_weighted_tests {
         let c = MaxSatConfig::default().verbosity(Verbosity::None).bmo(true);
         cs.push(c);
 
-        test_on_files(&Algorithm::LinearSu, &cs, &f, BMO_FILES);
-        test_on_files(&Algorithm::LinearSu, &cs, &f, FILES);
+        test_on_files(&Algorithm::Oll, &cs, &f, BMO_FILES);
+        test_on_files(&Algorithm::Oll, &cs, &f, FILES);
     }
 
     #[test]
