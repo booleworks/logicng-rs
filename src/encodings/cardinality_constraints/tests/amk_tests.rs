@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::cc_config::{AmkEncoder, CcConfig};
+use crate::encodings::cardinality_constraints::cc_config::{AmkEncoder, CcConfig};
 use crate::errors::LngResult;
 use crate::formulas::{CType, FormulaFactory, Variable};
 use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};

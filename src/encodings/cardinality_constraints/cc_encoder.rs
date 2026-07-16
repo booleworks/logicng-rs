@@ -5,11 +5,11 @@
     clippy::unused_self
 )]
 
-use crate::cardinality_constraints::cc_config::{
+use crate::encodings::cardinality_constraints::cc_config::{
     AlkEncoder, AmkEncoder, AmoEncoder, BimanderGroupSize, CcConfig, ExkEncoder,
 };
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
-use crate::cardinality_constraints::error::CcError;
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::error::CcError;
 use crate::datastructures::{EncodingResult, EncodingResultFF};
 use crate::errors::LngResult;
 use crate::formulas::{

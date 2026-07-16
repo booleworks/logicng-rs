@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, PbConstraint};
-use crate::pseudo_booleans::PbcError;
-use crate::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
+use crate::encodings::pseudo_booleans::PbcError;
+use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::{encode_adder_networks, encode_binary_merge, encode_swc};

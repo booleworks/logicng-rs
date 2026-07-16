@@ -1,8 +1,8 @@
-use crate::cardinality_constraints::cc_config::BimanderGroupSize::{Fixed, Half, Sqrt};
-use crate::cardinality_constraints::cc_config::{AmoEncoder, CcConfig};
-use crate::cardinality_constraints::cc_encoder::CcEncoder;
+use crate::encodings::cardinality_constraints::cc_config::BimanderGroupSize::{Fixed, Half, Sqrt};
+use crate::encodings::cardinality_constraints::cc_config::{AmoEncoder, CcConfig};
+use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::errors::LngResult;
-use crate::formulas::CType::EQ;
+use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
 use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
 use crate::solver::minisat::MiniSat;
@@ -35,63 +35,63 @@ fn configs() -> Vec<CcConfig> {
 }
 
 #[test]
-fn test_exo_0() {
+fn test_amo_0() {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config.clone();
-        let cc = f.cc(EQ, 0, (&[]) as &[Variable]).unwrap();
+        let cc = f.cc(LE, 0, (&[]) as &[Variable]).unwrap();
         assert!(f.nnf_of(cc).unwrap().is_verum());
     }
 }
 
 #[test]
-fn test_exo_1() {
+fn test_amo_1() {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config.clone();
         let var = f.variable("v0").as_variable().unwrap();
-        let cc = f.cc(EQ, 1, &([var]) as &[Variable]).unwrap();
-        assert_eq!(f.nnf_of(cc).unwrap(), f.variable("v0"));
-        assert_eq!(
+        let cc = f.cc(LE, 1, (&[var]) as &[Variable]).unwrap();
+        assert!(f.nnf_of(cc).unwrap().is_verum());
+        assert!(
             CcEncoder::new(config)
                 .encode(&cc.as_cc(&f).unwrap(), &f)
-                .unwrap(),
-            vec![f.variable("v0")]
+                .unwrap()
+                .is_empty()
         );
     }
 }
 
 #[test]
-fn test_exo_k() -> LngResult<()> {
+fn test_amo_k() -> LngResult<()> {
     let mut f = FormulaFactory::new();
     for config in configs() {
         f.config.cc_config = config;
-        test_exo(2, &f)?;
-        test_exo(10, &f)?;
-        test_exo(100, &f)?;
+        test_amo(2, &f)?;
+        test_amo(10, &f)?;
+        test_amo(100, &f)?;
     }
 
     Ok(())
 }
 
-fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
-    let problem_lits: Box<[Variable]> = (0..num_lits)
+fn test_amo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
+    let problem_vars: Box<[Variable]> = (0..num_lits)
         .map(|i| f.variable(format!("v{i}")).as_variable().unwrap())
         .collect();
     let mut solver = MiniSat::new();
-    let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
+    let cc = f.cc(LE, 1, problem_vars.clone()).unwrap();
     solver.add(cc, f)?;
     assert_eq!(solver.sat(), True);
     let models = enumerate_models_with_config(
         &mut solver,
         &ModelEnumerationConfig::default()
-            .variables(problem_lits)
+            .variables(problem_vars)
             .max_models(12000),
     )
     .unwrap();
-    assert_eq!(models.len(), num_lits);
+    assert_eq!(models.len(), num_lits + 1);
     for model in models {
-        assert_eq!(model.pos().len(), 1);
+        assert!(model.pos().len() <= 1);
     }
 
     Ok(())

@@ -1,6 +1,6 @@
 #![allow(clippy::cast_possible_truncation)]
 
-use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{
+use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::{
     Both, InputToOutput, OutputToInput,
 };
 use crate::datastructures::EncodingResult;

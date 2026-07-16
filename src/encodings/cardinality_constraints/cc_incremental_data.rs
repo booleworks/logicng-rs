@@ -1,5 +1,5 @@
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
-use crate::cardinality_constraints::error::CcError;
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
+use crate::encodings::cardinality_constraints::error::CcError;
 use crate::datastructures::{EncodingResult, EncodingResultFF, EncodingResultSatSolver};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};

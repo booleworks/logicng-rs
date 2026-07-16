@@ -4,7 +4,7 @@
     clippy::cast_precision_loss
 )]
 
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
 use std::cmp::Ordering;
 
 use crate::datastructures::EncodingResult;

@@ -1,4 +1,4 @@
-use crate::cardinality_constraints::{AmoEncoder, CcConfig, CcEncoder};
+use crate::encodings::cardinality_constraints::{AmoEncoder, CcConfig, CcEncoder};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, ToFormula};
 use crate::operations::OperationError;

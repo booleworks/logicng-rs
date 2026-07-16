@@ -1,7 +1,7 @@
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
-use crate::cardinality_constraints::cc_sorter;
-use crate::cardinality_constraints::cc_sorter::ImplicationDirection::{
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::cc_sorter;
+use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::{
     Both, InputToOutput, OutputToInput,
 };
 use crate::datastructures::EncodingResult;

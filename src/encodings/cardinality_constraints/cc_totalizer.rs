@@ -1,6 +1,6 @@
-use crate::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
-use crate::cardinality_constraints::cc_incremental_data::CcIncrementalData;
-use crate::cardinality_constraints::cc_totalizer::Bound::{Both, Lower, Upper};
+use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
+use crate::encodings::cardinality_constraints::cc_incremental_data::CcIncrementalData;
+use crate::encodings::cardinality_constraints::cc_totalizer::Bound::{Both, Lower, Upper};
 use crate::datastructures::EncodingResult;
 use crate::formulas::{AuxVarType, Literal, Variable};
 

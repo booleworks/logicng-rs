@@ -4,7 +4,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::cardinality_constraints::{CcEncoder, CcIncrementalData};
+use crate::encodings::cardinality_constraints::{CcEncoder, CcIncrementalData};
 use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::datastructures::{EncodingResultSatSolver, Model};
 use crate::errors::LngResult;
