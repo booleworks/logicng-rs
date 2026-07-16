@@ -1,7 +1,8 @@
 use crate::datastructures::{Assignment, Model};
+use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
 use crate::solver::maxsat_config::{MaxSatConfig, PbEncoding};
-use crate::solver::maxsat_ffi::{MaxSatError, OpenWboSolver};
+use crate::solver::maxsat_ffi::OpenWboSolver;
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 
@@ -142,7 +143,7 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(algorithm: Algorithm) -> Result<Self, MaxSatError> {
+    pub fn new(algorithm: Algorithm) -> LngResult<Self> {
         Self::from_config(algorithm, MaxSatConfig::default())
     }
 
@@ -166,7 +167,7 @@ impl MaxSatSolver {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_config(algorithm: Algorithm, config: MaxSatConfig) -> Result<Self, MaxSatError> {
+    pub fn from_config(algorithm: Algorithm, config: MaxSatConfig) -> LngResult<Self> {
         let solver = OpenWboSolver::new(&algorithm, &config)?;
 
         Ok(Self {
@@ -264,9 +265,8 @@ impl MaxSatSolver {
         &mut self,
         formula: EncodedFormula,
         f: &FormulaFactory,
-    ) -> Result<(), MaxSatError> {
-        // TODO error management
-        self.add_cnf(None, f.cnf_of(formula).unwrap(), f)
+    ) -> LngResult<()> {
+        self.add_cnf(None, f.cnf_of(formula)?, f)
     }
 
     /// Adds a soft formula to the solver.
@@ -297,6 +297,7 @@ impl MaxSatSolver {
     /// ```
     /// # use logicng::solver::maxsat::*;
     /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::solver::SolverError;
     /// # use std::error::Error;
     /// # fn main() -> Result<(), Box<dyn Error>> {
     /// let f = FormulaFactory::new();
@@ -304,7 +305,7 @@ impl MaxSatSolver {
     /// assert!(!solver.is_weighted());
     ///
     /// let res = solver.add_soft_formula(3, "A".to_formula(&f), &f);
-    /// assert_eq!(res, Err(MaxSatError::IllegalWeightedClause));
+    /// assert_eq!(res, Err(SolverError::IllegalWeightedClause.into()));
     /// # Ok(())
     /// # }
     /// ```
@@ -319,7 +320,7 @@ impl MaxSatSolver {
         weight: u64,
         formula: EncodedFormula,
         f: &FormulaFactory,
-    ) -> Result<(), MaxSatError> {
+    ) -> LngResult<()> {
         if (formula.is_or() || formula.is_literal()) && formula.is_cnf(f) {
             self.add_clause(Some(weight), formula, f)
         } else {
@@ -366,7 +367,7 @@ impl MaxSatSolver {
     ///
     /// Returns an error if OpenWBO reports an error or returns an unexpected
     /// status.
-    pub fn solve(&mut self) -> Result<MaxSatResult, MaxSatError> {
+    pub fn solve(&mut self) -> LngResult<MaxSatResult> {
         let status = self.solver.status();
         if status == Ok(MaxSatResult::Undef) {
             self.solver.search()
@@ -405,7 +406,7 @@ impl MaxSatSolver {
     ///
     /// Returns an error if OpenWBO reports an error or returns an unexpected
     /// status.
-    pub fn status(&self) -> Result<MaxSatResult, MaxSatError> {
+    pub fn status(&self) -> LngResult<MaxSatResult> {
         self.solver.status()
     }
 
@@ -443,7 +444,7 @@ impl MaxSatSolver {
     ///
     /// Returns an error if no optimum model is available or if OpenWBO reports
     /// an error while extracting the model.
-    pub fn model(&mut self) -> Result<Model, MaxSatError> {
+    pub fn model(&mut self) -> LngResult<Model> {
         self.solver.model(&self.selector_variables)
     }
 
@@ -482,7 +483,7 @@ impl MaxSatSolver {
     ///
     /// Returns an error if no optimum model is available or if OpenWBO reports
     /// an error while extracting the assignment.
-    pub fn assignment(&mut self) -> Result<Assignment, MaxSatError> {
+    pub fn assignment(&mut self) -> LngResult<Assignment> {
         self.solver.assignment(&self.selector_variables)
     }
 
@@ -528,7 +529,7 @@ impl MaxSatSolver {
         weight: Option<u64>,
         formula: EncodedFormula,
         f: &FormulaFactory,
-    ) -> Result<(), MaxSatError> {
+    ) -> LngResult<()> {
         match formula.unpack(f) {
             Formula::True => Ok(()),
             Formula::False | Formula::Lit(_) | Formula::Or(_) => {
@@ -549,7 +550,7 @@ impl MaxSatSolver {
         weight: Option<u64>,
         formula: EncodedFormula,
         f: &FormulaFactory,
-    ) -> Result<(), MaxSatError> {
+    ) -> LngResult<()> {
         match weight {
             Some(w) => self.solver.add_soft_clause(w, &formula, f),
             None => self.solver.add_hard_clause(&formula, f),

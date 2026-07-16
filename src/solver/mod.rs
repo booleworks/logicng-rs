@@ -366,7 +366,6 @@ mod maxsat_solver;
 #[cfg(feature = "open_wbo")]
 pub mod maxsat {
     pub use super::maxsat_config::*;
-    pub use super::maxsat_ffi::*;
     pub use super::maxsat_solver::*;
 }
 

@@ -6,12 +6,12 @@ use std::io::BufRead;
 
 mod pure_maxsat_tests {
     use crate::formulas::FormulaFactory;
+    use crate::solver::SolverError;
     use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use crate::solver::maxsat_config::{
         CardinalEncoding, GraphType, MaxSatConfig, MergeStrategy, Symmetry, Verbosity,
         WeightStrategy,
     };
-    use crate::solver::maxsat_ffi::MaxSatError;
     use crate::solver::tests::maxsat_tests::read_cnf_to_solver;
 
     use super::test_on_files;
@@ -262,7 +262,7 @@ mod pure_maxsat_tests {
 
         assert_eq!(
             solver.model().unwrap_err(),
-            MaxSatError::IllegalModelRequest
+            SolverError::IllegalModelRequest.into()
         );
     }
 }

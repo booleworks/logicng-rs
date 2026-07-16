@@ -14,7 +14,7 @@ pub mod ffi {
     }
 
     #[repr(i32)]
-    #[derive(Clone, Debug, Eq, PartialEq)]
+    #[derive(Clone, Debug, Eq, PartialEq, Hash)]
     pub enum OpenWboError {
         NoError,
         MaxSATError,

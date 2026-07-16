@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+use logicng_open_wbo_sys::ffi;
 use thiserror::Error;
 
 use crate::formulas::EncodedFormula;
@@ -29,4 +30,22 @@ pub enum SolverError {
 
     #[error("bound for optimization function was too large: {bound:?}")]
     OptimizationBoundTooLarge { bound: usize },
+
+    #[error("openwbo error: {error:?}")]
+    ExternalError { error: ffi::OpenWboError },
+
+    #[error("invalid openwbo response")]
+    InvalidExternalResponse,
+
+    #[error("illegal openwbo configuration")]
+    IllegalConfig,
+
+    #[error("openwbo configuration does not support weighted clauses")]
+    IllegalWeightedClause,
+
+    #[error("openwbo solver does not have a model")]
+    IllegalModelRequest,
+
+    #[error("failed to initialize the openwbo solver")]
+    InitializationError,
 }

@@ -1,9 +1,7 @@
 mod literals_test {
-    use std::borrow::Cow;
-
     use crate::{
-        formulas::{FormulaFactory, AUX_CC, AUX_CNF, AUX_PBC},
-        util::test_util::{hash, lits, string_lits, string_vars, vars, F},
+        formulas::{AUX_CC, AUX_CNF, AUX_PBC, FormulaFactory},
+        util::test_util::{F, hash, lits, string_lits, string_vars, vars},
     };
 
     #[test]
