@@ -265,7 +265,8 @@ impl MaxSatSolver {
         formula: EncodedFormula,
         f: &FormulaFactory,
     ) -> Result<(), MaxSatError> {
-        self.add_cnf(None, f.cnf_of(formula), f)
+        // TODO error management
+        self.add_cnf(None, f.cnf_of(formula).unwrap(), f)
     }
 
     /// Adds a soft formula to the solver.
