@@ -70,7 +70,11 @@ namespace wrapper {
         algorithm->loadFormula(formula);
     }
 
-    StatusCode search(MaxSAT *algorithm) {
+    static bool handler_callback(void *context, uint32_t event, uint64_t value) {
+        return maxsat_should_resume(*static_cast<MaxSatHandler *>(context), event, value);
+    }
+
+    StatusCode search(MaxSAT *algorithm, MaxSatHandler &handler) {
         auto formula = algorithm->getMaxSATFormula();
         if (formula->getMaximumWeight() == 1) {
             formula->setProblemType(openwbo::_UNWEIGHTED_);
@@ -79,8 +83,11 @@ namespace wrapper {
         }
 
         try {
+            algorithm->setHandler(&handler, handler_callback);
             auto status = algorithm->search();
             return (StatusCode) status;
+        } catch (const openwbo::MaxSATCancellationException& e) {
+            return StatusCode::Canceled;
         } catch (const openwbo::MaxSATException& e) {
             last_error = OpenWboError::MaxSATError;
         } catch (const Glucose::OutOfMemoryException& e) {
@@ -120,7 +127,9 @@ namespace wrapper {
 
     bool *get_model(MaxSAT *algorithm) {
         if(algorithm->getStatus() == openwbo::StatusCode::_OPTIMUM_
-        || algorithm->getStatus() == openwbo::StatusCode::_SATISFIABLE_) {
+        || algorithm->getStatus() == openwbo::StatusCode::_SATISFIABLE_
+        || (algorithm->getStatus() == openwbo::StatusCode::_CANCELED_
+            && get_model_size(algorithm) > 0)) {
             return ((ExposeProtectedFields*) algorithm)->get_model();
         } else {
             last_error = OpenWboError::InvalidRequest;
@@ -155,5 +164,3 @@ namespace wrapper {
         return ((ExposeProtectedFields *) algorithm)->get_ub_cost();
     }
 }
-
-

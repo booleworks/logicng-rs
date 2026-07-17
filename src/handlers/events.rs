@@ -23,12 +23,11 @@ pub enum LngEvent {
     ModelEnumerationRollback,
     SubsumptionStartingUBTreeGeneration,
     SubsumptionAddedNewSet,
+    MaxSatSolverCall,
     ComputationFinished(LngComputation),
     ComputationStarted(LngComputation),
     EnumerationFoundModels(usize),
     FactorizationCreatedClause(EncodedFormula),
-    MaxSatNewLowerBound(usize),
-    MaxSatNewUpperBound(usize),
     OptimizationFoundBetterBound(Model),
 }
 
@@ -52,6 +51,7 @@ impl Display for LngEvent {
             Self::ModelEnumerationRollback => f.write_str("model enumeration rollback"),
             Self::SubsumptionStartingUBTreeGeneration => f.write_str("starting UB tree generation"),
             Self::SubsumptionAddedNewSet => f.write_str("adding a new set to the UB tree"),
+            Self::MaxSatSolverCall => f.write_fmt(format_args!("new MaxSAT solver call")),
             Self::ComputationFinished(lng_computation) => {
                 f.write_fmt(format_args!("finished computation: {lng_computation}"))
             }
@@ -63,12 +63,6 @@ impl Display for LngEvent {
             }
             Self::FactorizationCreatedClause(_) => {
                 f.write_str("created clause during factorization")
-            }
-            Self::MaxSatNewLowerBound(lb) => {
-                f.write_fmt(format_args!("new MaxSAT lower bound {lb}"))
-            }
-            Self::MaxSatNewUpperBound(ub) => {
-                f.write_fmt(format_args!("new MaxSAT upper bound {ub}"))
             }
             Self::OptimizationFoundBetterBound(_) => {
                 f.write_str("optimization function found a better bound")

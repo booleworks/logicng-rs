@@ -1,6 +1,7 @@
 use crate::datastructures::{Assignment, Model};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::handlers::{CancelableResult, ComputationHandler, LngEvent};
 use crate::solver::SolverError;
 use crate::solver::maxsat::MaxSatResult::{Optimum, Undef, Unsatisfiable};
 use crate::solver::maxsat::{
@@ -125,7 +126,10 @@ impl OpenWboSolver {
         index
     }
 
-    pub(super) fn search(&mut self) -> LngResult<MaxSatResult> {
+    pub(super) fn search(
+        &mut self,
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<CancelableResult<MaxSatResult>> {
         let mut formula = unsafe {
             let l = ffi::new_formula();
             check_error()?;
@@ -142,10 +146,49 @@ impl OpenWboSolver {
             check_error()?;
         };
 
-        let code = unsafe { ffi::search(self.solver) };
+        struct CallbackContext<'a> {
+            handler: &'a mut dyn ComputationHandler,
+            cause: Option<LngEvent>,
+        }
+
+        unsafe fn callback(context: usize, event: u32, _: u64) -> bool {
+            let context = unsafe { &mut *(context as *mut CallbackContext<'_>) };
+            let event = if event == 1 {
+                LngEvent::SatConflictDetected
+            } else {
+                LngEvent::MaxSatSolverCall
+            };
+            let resume = context.handler.should_resume(event.clone());
+            if !resume {
+                context.cause = Some(event);
+            }
+            resume
+        }
+
+        let mut context = CallbackContext {
+            handler,
+            cause: None,
+        };
+        let mut native_handler = logicng_open_wbo_sys::MaxSatHandler::new(
+            (&mut context as *mut CallbackContext<'_>) as usize,
+            callback,
+        );
+        let code = unsafe { ffi::search(self.solver, &mut native_handler) };
         check_error()?;
         self.status = code;
-        self.status()
+        let result = self.status()?;
+        if let Some(cause) = context.cause {
+            if unsafe { ffi::get_model_size(self.solver) } > 0 {
+                Ok(CancelableResult::Partial(
+                    Optimum(unsafe { ffi::ub_cost(self.solver) }),
+                    cause,
+                ))
+            } else {
+                Ok(CancelableResult::Canceled(cause))
+            }
+        } else {
+            Ok(CancelableResult::Ok(result))
+        }
     }
 
     pub(super) fn status(&self) -> LngResult<MaxSatResult> {
@@ -156,7 +199,7 @@ impl OpenWboSolver {
                 Ok(Optimum(c))
             }
             ffi::StatusCode::Unsatisfiable => Ok(Unsatisfiable),
-            ffi::StatusCode::Unknown => Ok(Undef),
+            ffi::StatusCode::Unknown | ffi::StatusCode::Canceled => Ok(Undef),
             _ => Err(SolverError::InvalidExternalResponse.into()),
         }
     }
@@ -164,7 +207,13 @@ impl OpenWboSolver {
     pub(super) fn model(&mut self, selection_variables: &BTreeSet<Variable>) -> LngResult<Model> {
         match (&self.model, &self.status) {
             (Some(model), _) => Ok(model.clone()),
-            (None, &ffi::StatusCode::Optimum | &ffi::StatusCode::Satisfiable) => {
+            (
+                None,
+                &ffi::StatusCode::Optimum
+                | &ffi::StatusCode::Satisfiable
+                | &ffi::StatusCode::Unknown
+                | &ffi::StatusCode::Canceled,
+            ) if unsafe { ffi::get_model_size(self.solver) } > 0 => {
                 let m = self.create_model(selection_variables)?;
                 Ok(m)
             }
@@ -178,7 +227,13 @@ impl OpenWboSolver {
     ) -> LngResult<Assignment> {
         match (&self.model, &self.status) {
             (Some(model), _) => Ok(model.into()),
-            (None, &ffi::StatusCode::Optimum | &ffi::StatusCode::Satisfiable) => {
+            (
+                None,
+                &ffi::StatusCode::Optimum
+                | &ffi::StatusCode::Satisfiable
+                | &ffi::StatusCode::Unknown
+                | &ffi::StatusCode::Canceled,
+            ) if unsafe { ffi::get_model_size(self.solver) } > 0 => {
                 let m = self.create_model(selection_variables)?;
                 Ok(m.into())
             }

@@ -10,6 +10,9 @@
 #include <string>
 
 namespace wrapper {
+    struct MaxSatHandler;
+    bool maxsat_should_resume(MaxSatHandler &handler, uint32_t event, uint64_t value) noexcept;
+
     using MaxSAT = openwbo::MaxSAT;
     using MaxSATFormula = openwbo::MaxSATFormula;
     using Clause = Glucose::vec<Lit>;
@@ -32,6 +35,7 @@ namespace wrapper {
         Optimum = openwbo::_OPTIMUM_,
         Unknown = openwbo::_UNKNOWN_,
         Error = openwbo::_ERROR_,
+        Canceled = openwbo::_CANCELED_,
     };
 
     enum CardEncoding {
@@ -91,7 +95,7 @@ namespace wrapper {
 
     void load_formula(MaxSAT *algorithm, MaxSATFormula *formula);
 
-    StatusCode search(MaxSAT *algorithm);
+    StatusCode search(MaxSAT *algorithm, MaxSatHandler &handler);
 
     bool *get_model(MaxSAT *algorithm);
 

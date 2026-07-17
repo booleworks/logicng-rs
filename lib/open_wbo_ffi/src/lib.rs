@@ -1,6 +1,24 @@
 extern crate cxx;
 use std::fmt::{Display, Formatter};
 
+/// Callback used by the native MaxSAT solver to report progress and request cancellation.
+pub type MaxSatHandlerCallback = unsafe fn(usize, u32, u64) -> bool;
+
+pub struct MaxSatHandler {
+    context: usize,
+    callback: MaxSatHandlerCallback,
+}
+
+impl MaxSatHandler {
+    pub fn new(context: usize, callback: MaxSatHandlerCallback) -> Self {
+        Self { context, callback }
+    }
+}
+
+fn maxsat_should_resume(handler: &mut MaxSatHandler, event: u32, value: u64) -> bool {
+    unsafe { (handler.callback)(handler.context, event, value) }
+}
+
 #[cxx::bridge(namespace = "wrapper")]
 pub mod ffi {
     #[repr(i32)]
@@ -11,6 +29,7 @@ pub mod ffi {
         Optimum = 30,
         Unknown = 40,
         Error = 50,
+        Canceled = 60,
     }
 
     #[repr(i32)]
@@ -229,7 +248,7 @@ pub mod ffi {
         /// We flag all FFI-functions as unsafe. This function can fail, if the formula and
         /// configuration are incompatible, an unexpected error happens, or the programs runs out of memory.
         /// You need to use `get_error()` to check for that.
-        pub unsafe fn search(algorithm: *mut MaxSAT) -> StatusCode;
+        pub unsafe fn search(algorithm: *mut MaxSAT, handler: &mut MaxSatHandler) -> StatusCode;
 
         /// Get an array of boolean values, representing the result of the search.
         /// This is only possible if the search was successful (Optimum, Satisfiable).
@@ -333,6 +352,11 @@ pub mod ffi {
         ///
         /// We flag all FFI-functions as unsafe. This function should not fail.
         pub unsafe fn get_error() -> OpenWboError;
+    }
+
+    extern "Rust" {
+        type MaxSatHandler;
+        fn maxsat_should_resume(handler: &mut MaxSatHandler, event: u32, value: u64) -> bool;
     }
 }
 

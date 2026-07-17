@@ -63,7 +63,8 @@ enum StatusCode {
   _UNSATISFIABLE_ = 20,
   _OPTIMUM_ = 30,
   _UNKNOWN_ = 40,
-  _ERROR_ = 50
+  _ERROR_ = 50,
+  _CANCELED_ = 60
 };
 enum {
   _INCREMENTAL_NONE_ = 0,

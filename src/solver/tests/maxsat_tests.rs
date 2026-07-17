@@ -4,6 +4,122 @@ use crate::solver::maxsat_config::MaxSatConfig;
 use std::collections::HashMap;
 use std::io::BufRead;
 
+mod handler_tests {
+    use crate::formulas::FormulaFactory;
+    use crate::handlers::{CancelableResult, ComputationHandler, LngEvent, TimeoutHandler};
+    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
+    use crate::solver::tests::maxsat_tests::read_cnf_to_solver;
+    use std::path::Path;
+    use std::time::{Duration, Instant};
+
+    struct CancelInSatSolver;
+
+    impl ComputationHandler for CancelInSatSolver {
+        fn should_resume(&mut self, event: LngEvent) -> bool {
+            !matches!(event, LngEvent::SatConflictDetected)
+        }
+    }
+
+    #[test]
+    fn timeout_can_cancel_at_start() {
+        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let result = solver
+            .solve_with_handler(&mut TimeoutHandler::new(0))
+            .unwrap();
+        assert!(matches!(
+            result,
+            CancelableResult::Canceled(LngEvent::ComputationStarted(_))
+        ));
+    }
+
+    #[test]
+    fn cancellation_in_glucose_keeps_best_bound_and_model() {
+        let f = FormulaFactory::new();
+        let mut solver = MaxSatSolver::new(Algorithm::LinearSu).unwrap();
+        for i in 0..100 {
+            let variable = f.var(format!("x{i}"));
+            solver.add_soft_formula(1, variable.into(), &f).unwrap();
+            solver
+                .add_soft_formula(1, variable.negate().into(), &f)
+                .unwrap();
+        }
+
+        let result = solver.solve_with_handler(&mut CancelInSatSolver).unwrap();
+        assert!(matches!(
+            result,
+            CancelableResult::Partial(MaxSatResult::Optimum(_), LngEvent::SatConflictDetected)
+        ));
+        assert!(!solver.model().unwrap().literals().is_empty());
+    }
+
+    #[test]
+    fn real_timeout_on_large_maxsat_instance() {
+        const TIMEOUT: Duration = Duration::from_millis(300);
+        const MAX_CANCELLATION_DELAY: Duration = Duration::from_millis(500);
+
+        let f = FormulaFactory::new();
+        let mut solver = MaxSatSolver::new(Algorithm::Wbo).unwrap();
+        let instance =
+            Path::new("resources/partialweightedmaxsat/large/mancoosi-test-i40d0u98-17.wcnf");
+        read_cnf_to_solver(&mut solver, instance, &f).unwrap();
+
+        let started = Instant::now();
+        let result = solver
+            .solve_with_handler(&mut TimeoutHandler::new(
+                TIMEOUT.as_millis().try_into().unwrap(),
+            ))
+            .unwrap();
+        let elapsed = started.elapsed();
+
+        assert!(
+            elapsed >= TIMEOUT,
+            "solver canceled before the configured timeout: {elapsed:?}"
+        );
+        assert!(
+            elapsed < TIMEOUT + MAX_CANCELLATION_DELAY,
+            "native cancellation was not observed promptly: {elapsed:?}"
+        );
+
+        match result {
+            CancelableResult::Partial(MaxSatResult::Optimum(_), cause) => {
+                assert!(matches!(
+                    cause,
+                    LngEvent::MaxSatSolverCall | LngEvent::SatConflictDetected
+                ));
+                assert!(!solver.model().unwrap().literals().is_empty());
+            }
+            CancelableResult::Canceled(cause) => {
+                panic!("timeout did not preserve a best-so-far result: {cause:?}")
+            }
+            CancelableResult::Ok(result) => {
+                panic!("large instance unexpectedly finished before timeout: {result:?}")
+            }
+            CancelableResult::Partial(result, cause) => {
+                panic!("unexpected partial result {result:?} caused by {cause:?}")
+            }
+        }
+    }
+
+    #[test]
+    fn large_maxsat_instance_finishes_with_sufficient_timeout() {
+        let f = FormulaFactory::new();
+        let mut solver = MaxSatSolver::new(Algorithm::Wbo).unwrap();
+        let instance =
+            Path::new("resources/partialweightedmaxsat/large/mancoosi-test-i40d0u98-17.wcnf");
+        read_cnf_to_solver(&mut solver, instance, &f).unwrap();
+
+        let result = solver
+            .solve_with_handler(&mut TimeoutHandler::new(100_000))
+            .unwrap();
+
+        assert!(matches!(
+            result,
+            CancelableResult::Ok(MaxSatResult::Optimum(1_780_852))
+        ));
+        assert!(!solver.model().unwrap().literals().is_empty());
+    }
+}
+
 mod pure_maxsat_tests {
     use crate::formulas::FormulaFactory;
     use crate::solver::SolverError;

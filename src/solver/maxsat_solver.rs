@@ -1,6 +1,7 @@
 use crate::datastructures::{Assignment, Model};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
+use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
 use crate::solver::maxsat_config::{MaxSatConfig, PbEncoding};
 use crate::solver::maxsat_ffi::OpenWboSolver;
 use std::collections::BTreeSet;
@@ -370,10 +371,50 @@ impl MaxSatSolver {
     pub fn solve(&mut self) -> LngResult<MaxSatResult> {
         let status = self.solver.status();
         if status == Ok(MaxSatResult::Undef) {
-            self.solver.search()
+            self.solve_with_handler(&mut NopHandler::new())
+                .map(|result| {
+                    result
+                        .result()
+                        .expect("the no-op handler cannot cancel a computation")
+                })
         } else {
             status
         }
+    }
+
+    /// Solves the MaxSAT problem with a computation handler.
+    ///
+    /// If the computation is canceled after a model was found, the current best
+    /// bound is returned as a [`CancelableResult::Partial`]. The corresponding
+    /// best model can then be obtained with [`Self::model`].
+    pub fn solve_with_handler(
+        &mut self,
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<CancelableResult<MaxSatResult>> {
+        let started = LngEvent::ComputationStarted(LngComputation::MaxSat);
+        if !handler.should_resume(started.clone()) {
+            return Ok(CancelableResult::Canceled(started));
+        }
+
+        let status = self.solver.status()?;
+        let result = if status == MaxSatResult::Undef {
+            self.solver.search(handler)?
+        } else {
+            CancelableResult::Ok(status)
+        };
+
+        if result.is_success() {
+            let finished = LngEvent::ComputationFinished(LngComputation::MaxSat);
+            if !handler.should_resume(finished.clone()) {
+                return Ok(match result.result() {
+                    Some(MaxSatResult::Optimum(bound)) => {
+                        CancelableResult::Partial(MaxSatResult::Optimum(bound), finished)
+                    }
+                    _ => CancelableResult::Canceled(finished),
+                });
+            }
+        }
+        Ok(result)
     }
 
     /// Returns the result of the last search.

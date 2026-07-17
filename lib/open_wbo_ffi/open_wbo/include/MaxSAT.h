@@ -55,6 +55,9 @@ using Glucose::cpuTime;
 
 namespace openwbo {
 
+class MaxSATCancellationException {};
+typedef bool (*MaxSATHandlerCallback)(void *, uint32_t, uint64_t);
+
 class MaxSAT {
 
 public:
@@ -186,6 +189,11 @@ public:
    */
   StatusCode getStatus() { return searchStatus; }
 
+  void setHandler(void *context, MaxSATHandlerCallback callback) {
+    handlerContext = context;
+    handlerCallback = callback;
+  }
+
   /** return truth values for variables
    *
    *  This method returns the truth value for a variable in the internal
@@ -238,6 +246,8 @@ protected:
   int verbosity;      // Controls the verbosity of the solver.
   bool print_model;   // Controls if the model is printed at the end.
   bool print;         // Controls if data should be printed at all
+  void *handlerContext = NULL;
+  MaxSATHandlerCallback handlerCallback = NULL;
   bool print_soft;    // Controls if the unsatified soft clauses are printed at the end.
   char * unsat_soft_file;  // Name of the file where the unsatisfied soft clauses will be printed.
 

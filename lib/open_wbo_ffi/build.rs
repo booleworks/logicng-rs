@@ -5,6 +5,8 @@ fn main() {
     println!("cargo:rerun-if-changed=src/lib.rs");
     println!("cargo:rerun-if-changed=open_wbo_wrapper/library.cpp");
     println!("cargo:rerun-if-changed=open_wbo_wrapper/include/library.h");
+    println!("cargo:rerun-if-changed=open_wbo/logicng-open-wbo");
+    println!("cargo:rerun-if-changed=open_wbo/include");
 
     let os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
@@ -15,15 +17,13 @@ fn main() {
     let out_dir = env::var("OUT_DIR").expect("$OUT_DIR is not set");
     let operating_path = PathBuf::from(&out_dir);
     let lib_path = operating_path.join(lib_file_name);
-    if !lib_path.exists() {
-        build_open_wbo(
-            open_wbo_path,
-            &lib_path,
-            &operating_path.join("logicng-open-wbo-src"),
-            &os,
-            &arch,
-        );
-    }
+    build_open_wbo(
+        open_wbo_path,
+        &lib_path,
+        &operating_path.join("logicng-open-wbo-src"),
+        &os,
+        &arch,
+    );
 
     //Link OpenWBO Library
     println!("cargo:rustc-link-search={}", out_dir);
