@@ -9,9 +9,9 @@ use std::time::Instant;
 
 use logicng::formulas::{EncodedFormula, FormulaFactory};
 use logicng::operations::transformations::{CnfAlgorithm, CnfEncoder};
-use logicng::solver::minisat::SolverCnfMethod::FullPgOnSolver;
-use logicng::solver::minisat::sat::MiniSat2Solver;
-use logicng::solver::minisat::{MiniSat, MiniSatConfig};
+use logicng::solver::lng_core_solver::SolverCnfMethod::FullPgOnSolver;
+use logicng::solver::lng_core_solver::MiniSat2Solver;
+use logicng::solver::lng_core_solver::{MiniSat, MiniSatConfig};
 
 use crate::trallocator::Trallocator;
 

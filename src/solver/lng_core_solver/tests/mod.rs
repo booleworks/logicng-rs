@@ -2,8 +2,6 @@ use crate::formulas::{EncodedFormula, FormulaFactory};
 
 mod assume_tests;
 mod inc_dec_tests;
-#[cfg(feature = "open_wbo")]
-mod maxsat_tests;
 mod sat_tests;
 
 pub fn generate_pigeon_hole(n: usize, f: &FormulaFactory) -> EncodedFormula {

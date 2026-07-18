@@ -5,10 +5,10 @@ use itertools::Itertools;
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_for_formula_with_config};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat_config::MiniSatConfig;
-use crate::solver::minisat_config::SolverCnfMethod::{FullPgOnSolver, PgOnSolver};
+use crate::solver::lng_core_solver::functions::{ModelEnumerationConfig,
+enumerate_models_for_formula_with_config};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::SolverCnfMethod::{FullPgOnSolver, PgOnSolver};
 
 fn solvers() -> [MiniSat; 5] {
     [

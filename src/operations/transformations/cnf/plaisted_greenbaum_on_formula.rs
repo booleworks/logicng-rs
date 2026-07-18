@@ -96,7 +96,7 @@ mod tests {
     use crate::operations::transformations::CnfEncoder;
     use crate::operations::transformations::cnf::CnfAlgorithm;
     use crate::operations::transformations::cnf::CnfAlgorithm::PlaistedGreenbaum;
-    use crate::solver::functions::{
+    use crate::solver::lng_core_solver::functions::{
         ModelEnumerationConfig, enumerate_models_for_formula_with_config,
     };
     use crate::util::test_util::F;

@@ -3,9 +3,9 @@ use crate::errors::LngResult;
 use crate::formulas::CType::GE;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::solver::SolverError;
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::MsVar;
-use crate::solver::minisat::sat::Tristate::{False, True};
+use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::MsVar;
+use crate::solver::lng_core_solver::Tristate::{False, True};
 use std::collections::{BTreeMap, BTreeSet};
 use std::slice::Iter;
 

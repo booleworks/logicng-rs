@@ -4,9 +4,9 @@ use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::errors::LngResult;
 use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::Tristate::True;
+use crate::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
+use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::Tristate::True;
 
 fn configs() -> Vec<CcConfig> {
     vec![

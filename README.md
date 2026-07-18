@@ -106,7 +106,7 @@ solve it with an instance of MiniSAT:
 
 ```rust
 use logicng::formulas::{FormulaFactory, ToFormula};
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::MiniSat;
 
 let f = FormulaFactory::new();
 let formula = "A & ~(B | ~C)".to_formula(&f);

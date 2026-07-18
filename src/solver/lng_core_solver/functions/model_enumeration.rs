@@ -5,9 +5,9 @@ use std::collections::BTreeSet;
 use crate::datastructures::Model;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::Tristate::True;
-use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, MsVar, mk_lit};
+use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::Tristate::True;
+use crate::solver::lng_core_solver::{MiniSat2Solver, MsLit, MsVar, mk_lit};
 
 /// A configuration to adjust the behavior of the model enumeration algorithms.
 ///
@@ -18,7 +18,7 @@ use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, MsVar, mk_lit};
 /// it with new values if needed:
 ///
 /// ```
-/// # use logicng::solver::functions::ModelEnumerationConfig;
+/// # use logicng::solver::lng_core_solver::functions::ModelEnumerationConfig;
 /// # let my_variables = Vec::new();
 /// # let my_additional_variables = Vec::new();
 ///
@@ -46,7 +46,7 @@ impl ModelEnumerationConfig {
     ///
     /// Basic usage:
     /// ```
-    /// # use logicng::solver::functions::ModelEnumerationConfig;
+    /// # use logicng::solver::lng_core_solver::functions::ModelEnumerationConfig;
     /// # let my_variables = Vec::new();
     /// let configuration = ModelEnumerationConfig::default()
     ///                     //...
@@ -66,7 +66,7 @@ impl ModelEnumerationConfig {
     ///
     /// Basic usage:
     /// ```
-    /// # use logicng::solver::functions::ModelEnumerationConfig;
+    /// # use logicng::solver::lng_core_solver::functions::ModelEnumerationConfig;
     /// # let my_additional_variables = Vec::new();
     /// let configuration = ModelEnumerationConfig::default()
     ///                     //...
@@ -89,7 +89,7 @@ impl ModelEnumerationConfig {
     ///
     /// Basic usage:
     /// ```
-    /// # use logicng::solver::functions::ModelEnumerationConfig;
+    /// # use logicng::solver::lng_core_solver::functions::ModelEnumerationConfig;
     /// let configuration = ModelEnumerationConfig::default()
     ///                     //...
     ///                     .max_models(100)
@@ -131,7 +131,7 @@ impl Default for ModelEnumerationConfig {
 ///
 /// Basic usage:
 /// ```
-/// # use logicng::solver::functions::enumerate_models_for_formula;
+/// # use logicng::solver::lng_core_solver::functions::enumerate_models_for_formula;
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
 /// let f = FormulaFactory::new();
 /// let formula = "A <=> B".to_formula(&f);
@@ -162,7 +162,7 @@ pub fn enumerate_models_for_formula(
 ///
 /// Basic usage:
 /// ```
-/// # use logicng::solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
+/// # use logicng::solver::lng_core_solver::functions::{enumerate_models_for_formula_with_config, ModelEnumerationConfig};
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
 /// let f = FormulaFactory::new();
 /// let formula = "A <=> B".to_formula(&f);
@@ -197,9 +197,9 @@ pub fn enumerate_models_for_formula_with_config(
 ///
 /// Basic usage:
 /// ```
-/// # use logicng::solver::functions::enumerate_models;
+/// # use logicng::solver::lng_core_solver::functions::enumerate_models;
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::minisat::MiniSat;
+/// # use logicng::solver::lng_core_solver::MiniSat;
 /// let f = FormulaFactory::new();
 /// let mut solver = MiniSat::new();
 /// solver.add("A <=> B".to_formula(&f), &f);
@@ -227,9 +227,9 @@ pub fn enumerate_models(solver: &mut MiniSat) -> LngResult<Vec<Model>> {
 ///
 /// Basic usage:
 /// ```
-/// # use logicng::solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
+/// # use logicng::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::minisat::MiniSat;
+/// # use logicng::solver::lng_core_solver::MiniSat;
 /// let f = FormulaFactory::new();
 /// let mut solver = MiniSat::new();
 /// solver.add("A <=> B".to_formula(&f), &f);
@@ -334,9 +334,9 @@ fn generate_blocking_clause(
 ///
 /// Basic usage:
 /// ```
-/// # use logicng::solver::functions::count_models;
+/// # use logicng::solver::lng_core_solver::functions::count_models;
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::minisat::MiniSat;
+/// # use logicng::solver::lng_core_solver::MiniSat;
 /// let f = FormulaFactory::new();
 /// let mut solver = MiniSat::new();
 /// solver.add("A <=> B".to_formula(&f), &f);
@@ -367,12 +367,12 @@ mod tests {
     use crate::datastructures::Assignment;
     use crate::errors::LngResult;
     use crate::formulas::{FormulaFactory, Literal, ToFormula, Variable};
-    use crate::solver::functions::{
+    use crate::solver::lng_core_solver::functions::{
         ModelEnumerationConfig, enumerate_models, enumerate_models_with_config,
     };
-    use crate::solver::minisat::SolverCnfMethod::PgOnSolver;
-    use crate::solver::minisat::sat::Tristate::True;
-    use crate::solver::minisat::{MiniSat, MiniSatConfig};
+    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
+    use crate::solver::lng_core_solver::SolverCnfMethod::PgOnSolver;
+    use crate::solver::lng_core_solver::Tristate::True;
 
     #[test]
     fn test_model_enumeration_simple() -> LngResult<()> {

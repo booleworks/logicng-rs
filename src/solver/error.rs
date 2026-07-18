@@ -1,4 +1,5 @@
 #![allow(missing_docs)]
+#[cfg(feature = "open_wbo")]
 use logicng_open_wbo_sys::ffi;
 use thiserror::Error;
 
@@ -31,6 +32,7 @@ pub enum SolverError {
     #[error("bound for optimization function was too large: {bound:?}")]
     OptimizationBoundTooLarge { bound: usize },
 
+    #[cfg(feature = "open_wbo")]
     #[error("openwbo error: {error:?}")]
     ExternalError { error: ffi::OpenWboError },
 

@@ -1,7 +1,7 @@
 use crate::backbones::Backbone;
 use crate::formulas::Variable;
-use crate::solver::functions::backbone_function::BackboneType::PositiveAndNegative;
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::functions::backbone_function::BackboneType::PositiveAndNegative;
+use crate::solver::lng_core_solver::MiniSat;
 use BackboneType::{OnlyNegative, OnlyPositive};
 
 /// Types of backbones

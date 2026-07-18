@@ -3,7 +3,7 @@ use crate::encodings::cardinality_constraints::error::CcError;
 use crate::datastructures::{EncodingResult, EncodingResultFF, EncodingResultSatSolver};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::MiniSat;
 use itertools::Itertools;
 
 /// Incremental data for an at-most-k cardinality constraint. When an

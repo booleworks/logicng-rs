@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::MiniSat;
 
 pub fn main() {
     for threads in &[1, 2, 4, 8] {

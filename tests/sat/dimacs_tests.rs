@@ -7,8 +7,8 @@ use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 
 use logicng::formulas::Variable;
-use logicng::solver::minisat::sat::Tristate::True;
-use logicng::solver::minisat::sat::{MiniSat2Solver, mk_lit};
+use logicng::solver::lng_core_solver::Tristate::True;
+use logicng::solver::lng_core_solver::{MiniSat2Solver, mk_lit};
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]

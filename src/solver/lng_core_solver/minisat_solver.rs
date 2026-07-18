@@ -16,14 +16,13 @@ use crate::operations::transformations::{
     CnfAlgorithm, CnfEncoder, PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver,
 };
 use crate::propositions::Proposition;
+use crate::solver::lng_core_solver::functions::compute_unsat_core;
+use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::{MiniSat2Solver, MsLit, Tristate, mk_lit, sign, var};
+use crate::solver::lng_core_solver::{MiniSatConfig, SolverCnfMethod, SolverState};
 use crate::solver::SolverError;
-use crate::solver::functions::compute_unsat_core;
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
-use crate::solver::minisat::sat::{MiniSat2Solver, MsLit, Tristate, mk_lit, sign, var};
-use crate::solver::minisat::{MiniSatConfig, SolverCnfMethod, SolverState};
-
 use super::functions::OptimizationFunction;
-use super::minisat::sat::MsVar;
+use super::MsVar;
 
 /// Wrapper for the MiniSAT-style SAT solvers.
 pub struct MiniSat<Backpack = ()> {

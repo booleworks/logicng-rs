@@ -208,7 +208,7 @@ mod tests {
     use crate::operations::transformations::cnf::CnfAlgorithm::TseitinWithBoundary;
     use crate::operations::transformations::cnf::advanced::AdvancedFactorizationConfig;
     use crate::operations::transformations::{AdvancedFactorizationHandler, CnfEncoder};
-    use crate::solver::functions::{
+    use crate::solver::lng_core_solver::functions::{
         ModelEnumerationConfig, enumerate_models_for_formula_with_config,
     };
 

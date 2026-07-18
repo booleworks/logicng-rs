@@ -1,8 +1,8 @@
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::solver::minisat::SolverCnfMethod::FactoryCnf;
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
-use crate::solver::minisat::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::SolverCnfMethod::FactoryCnf;
+use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
 
 /// A predicate tests whether a formula is satisfiable. A formula is satisfiable
 /// if there exists at least one assignment such that the formula evaluates to

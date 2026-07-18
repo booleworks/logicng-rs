@@ -6,7 +6,7 @@ use crate::errors::LngResult;
 use crate::formulas::{AUX_CNF, EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
-use crate::solver::minisat::sat::{MiniSat2Solver, mk_lit};
+use crate::solver::lng_core_solver::{MiniSat2Solver, mk_lit};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -583,10 +583,10 @@ impl VarCacheEntry {
 mod tests {
     use crate::errors::LngResult;
     use crate::formulas::{AUX_PREFIX, ToFormula, Variable};
-    use crate::solver::functions::{
+    use crate::solver::lng_core_solver::functions::{
         ModelEnumerationConfig, enumerate_models_for_formula_with_config,
     };
-    use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverCnfMethod};
+    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SolverCnfMethod};
     use crate::util::test_util::F;
     use std::collections::BTreeSet;
 

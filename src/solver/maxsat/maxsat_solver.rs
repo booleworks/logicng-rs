@@ -2,8 +2,8 @@ use crate::datastructures::{Assignment, Model};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
-use crate::solver::maxsat_config::{MaxSatConfig, PbEncoding};
-use crate::solver::maxsat_ffi::OpenWboSolver;
+use crate::solver::maxsat::maxsat_ffi::OpenWboSolver;
+use crate::solver::maxsat::{MaxSatConfig, PbEncoding};
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 

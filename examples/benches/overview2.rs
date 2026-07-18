@@ -5,10 +5,10 @@ use std::error::Error;
 
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::functions::{
+use logicng::solver::lng_core_solver::functions::{
     BackboneType, ModelEnumerationConfig, enumerate_models_with_config,
 };
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::MiniSat;
 
 use crate::trallocator::Trallocator;
 

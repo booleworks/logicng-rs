@@ -4,13 +4,13 @@ mod drup_tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
     use crate::propositions::{Proposition, StandardProposition};
-    use crate::solver::minisat::SolverCnfMethod::{FactoryCnf, PgOnSolver};
-    use crate::solver::minisat::sat::Tristate::{False, True};
-    use crate::solver::minisat::{MiniSat, MiniSatConfig, SatBuilder};
     use std::collections::HashSet;
     use std::fmt::Debug;
     use std::fs::read_dir;
     use std::hash::Hash;
+    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
+    use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, PgOnSolver};
+    use crate::solver::lng_core_solver::Tristate::{False, True};
 
     fn solvers() -> [MiniSat<String>; 2] {
         [

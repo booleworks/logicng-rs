@@ -1,5 +1,5 @@
 use crate::collections::grow_to;
-use crate::solver::minisat::sat::MsVar;
+use crate::solver::lng_core_solver::MsVar;
 
 /// A heap for the SAT solver's variable ordering.
 #[derive(Debug, Hash, Eq, PartialEq)]

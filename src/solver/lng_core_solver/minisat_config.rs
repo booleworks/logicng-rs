@@ -1,4 +1,4 @@
-use crate::solver::minisat::sat::ClauseMinimization;
+use crate::solver::lng_core_solver::ClauseMinimization;
 
 /// Configuration for [`MiniSat`](crate::solver::minisat::MiniSat) solver.
 #[allow(clippy::struct_excessive_bools)]

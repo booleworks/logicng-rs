@@ -2,14 +2,13 @@ use crate::backbones::Backbone;
 use crate::errors::LngResult;
 use crate::formulas::{FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_formula;
-use crate::solver::functions::backbone_function::BackboneConfig;
-use crate::solver::functions::backbone_function::BackboneType::{OnlyNegative, OnlyPositive};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat_config::MiniSatConfig;
-use crate::solver::minisat_config::SolverCnfMethod::{FactoryCnf, PgOnSolver};
 use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::functions::BackboneConfig;
+use crate::solver::lng_core_solver::functions::BackboneType::{OnlyNegative, OnlyPositive};
+use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, PgOnSolver};
 
 fn solvers() -> [(MiniSat, &'static str); 10] {
     let config_no_pg1 = MiniSatConfig::default()

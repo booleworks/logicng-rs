@@ -5,8 +5,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::functions::OptimizationFunction;
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::functions::OptimizationFunction;
+use logicng::solver::lng_core_solver::MiniSat;
 
 /// Test for parallel model maximization with the SAT solver's
 /// optimization function on a multi-threading formula factory.

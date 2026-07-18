@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::collections::MsClause;
 use crate::propositions::Proposition;
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
 
 /// Internal representation of a variable on the solver.
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]

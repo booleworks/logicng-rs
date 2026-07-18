@@ -1,9 +1,9 @@
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
-use crate::solver::functions::BackboneConfig;
-use crate::solver::functions::BackboneType::PositiveAndNegative;
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::functions::BackboneConfig;
+use crate::solver::lng_core_solver::functions::BackboneType::PositiveAndNegative;
+use crate::solver::lng_core_solver::MiniSat;
 
 /// This function simplifies a formula by computing its backbone and
 /// propagating it through the formula.

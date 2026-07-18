@@ -3,8 +3,8 @@ use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::errors::LngResult;
 use crate::formulas::CType::{GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::Tristate::{False, True};
+use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::Tristate::{False, True};
 
 const fn encoders() -> [CcEncoder; 3] {
     [

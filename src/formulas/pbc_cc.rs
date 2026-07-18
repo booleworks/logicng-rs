@@ -11,8 +11,8 @@ use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::encodings::pseudo_booleans::{PbEncoder, PbcError};
-use crate::solver::minisat::sat::Tristate;
-use crate::solver::minisat::sat::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::Tristate;
+use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 use super::FormulaType;
@@ -904,7 +904,7 @@ mod tests {
     use crate::formulas::CType::{EQ, GE, GT, LE, LT};
     use crate::formulas::pbc_cc::evaluate_coeffs;
     use crate::formulas::{FormulaFactory, ToFormula};
-    use crate::solver::minisat::sat::Tristate::{False, True, Undef};
+    use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
 
     #[test]
     fn test_normalization() {

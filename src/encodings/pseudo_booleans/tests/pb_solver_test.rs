@@ -3,9 +3,8 @@ use crate::errors::LngResult;
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Literal};
 use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
-use crate::solver::functions::{ModelEnumerationConfig, enumerate_models_with_config};
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::Tristate;
+use crate::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
+use crate::solver::lng_core_solver::{MiniSat, Tristate};
 use crate::util::test_util::F;
 
 fn configs() -> Vec<PbConfig> {

@@ -9,14 +9,14 @@ use crate::formulas::CType::{EQ, GE};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_cnf;
 use crate::solver::SolverError;
-use crate::solver::functions::{
+use crate::solver::lng_core_solver::functions::{
     ModelEnumerationConfig, enumerate_models, enumerate_models_with_config,
 };
-use crate::solver::minisat::SolverCnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
-use crate::solver::minisat::sat::ClauseMinimization;
-use crate::solver::minisat::sat::Tristate::{False, True};
-use crate::solver::minisat::{MiniSat, MiniSatConfig, SatBuilder};
-use crate::solver::tests::generate_pigeon_hole;
+use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
+use crate::solver::lng_core_solver::ClauseMinimization;
+use crate::solver::lng_core_solver::Tristate::{False, True};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
+use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
 use crate::util::test_util::{lits, lits_list, vars_list};
 
 fn solvers() -> [MiniSat; 5] {

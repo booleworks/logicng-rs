@@ -5,10 +5,9 @@ use crate::explanations::{UnsatCore, drup_compute};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::propositions::Proposition;
 use crate::solver::SolverError;
-use crate::solver::minisat::MiniSat;
-use crate::solver::minisat::sat::MsVar;
-use crate::solver::minisat::sat::Tristate::{True, Undef};
 use std::collections::HashMap;
+use crate::solver::lng_core_solver::{MiniSat, MsVar};
+use crate::solver::lng_core_solver::Tristate::{True, Undef};
 
 /// Computes the [`UnsatCore`] if the formula is unsatisfiable.
 ///

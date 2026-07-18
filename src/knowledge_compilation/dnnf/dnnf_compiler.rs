@@ -14,7 +14,7 @@ use crate::knowledge_compilation::dnnf::dtree::{
 };
 use crate::operations::predicates::is_sat;
 use crate::operations::transformations::{backbone_simplification, cnf_subsumption};
-use crate::solver::minisat::sat::{MiniSat2Solver, MsVar, Tristate, var};
+use crate::solver::lng_core_solver::{var, MiniSat2Solver, MsVar, Tristate};
 
 /// Represents a formula in DNNF.
 ///

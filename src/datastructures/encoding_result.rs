@@ -1,6 +1,6 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::propositions::Proposition;
-use crate::solver::minisat::MiniSat;
+use crate::solver::lng_core_solver::MiniSat;
 
 /// The result of an encoding.
 ///
@@ -134,7 +134,7 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     ///
     /// ```
     /// # use logicng::formulas::FormulaFactory;
-    /// # use logicng::solver::minisat::MiniSat;
+    /// # use logicng::solver::lng_core_solver::MiniSat;
     /// # use logicng::datastructures::EncodingResultSatSolver;
     /// let f = FormulaFactory::new();
     /// let mut solver = MiniSat::new();
@@ -160,7 +160,7 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     ///
     /// ```
     /// # use logicng::formulas::FormulaFactory;
-    /// # use logicng::solver::minisat::MiniSat;
+    /// # use logicng::solver::lng_core_solver::MiniSat;
     /// # use logicng::datastructures::EncodingResultSatSolver;
     /// let f = FormulaFactory::new();
     /// let mut solver = MiniSat::new();

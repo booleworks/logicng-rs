@@ -11,8 +11,8 @@ use crate::collections::MsClause;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::knowledge_compilation::dnnf::DnnfError;
-use crate::solver::minisat::sat::Tristate::Undef;
-use crate::solver::minisat::sat::{ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate, mk_lit};
+use crate::solver::lng_core_solver::Tristate::Undef;
+use crate::solver::lng_core_solver::{ClauseRef, MiniSat2Solver, MsLit, MsVar, Tristate, mk_lit};
 
 pub struct DnnfSatSolver {
     internal_solver: MiniSat2Solver<()>,

@@ -37,11 +37,11 @@ use std::rc::Rc;
 use crate::collections::{LNG_VEC_INIT_SIZE, LngHeap, MsClause, MsVariable};
 use crate::formulas::{Literal, Variable};
 use crate::propositions::Proposition;
-use crate::solver::functions::BackboneType;
-use crate::solver::functions::BackboneType::{OnlyNegative, OnlyPositive, PositiveAndNegative};
-use crate::solver::minisat_config::MiniSatConfig;
-use crate::solver::sat::minisat2::Tristate::{False, True, Undef};
-use crate::solver::sat::minisat2_datastructures::{
+use crate::solver::lng_core_solver::functions::BackboneType;
+use crate::solver::lng_core_solver::functions::BackboneType::{OnlyNegative, OnlyPositive, PositiveAndNegative};
+use crate::solver::lng_core_solver::minisat_config::MiniSatConfig;
+use crate::solver::lng_core_solver::minisat2::Tristate::{False, True, Undef};
+use crate::solver::lng_core_solver::minisat2_datastructures::{
     ClauseMinimization, ClauseRef, MsLit, MsVar, MsWatcher, ProofInformation, Tristate,
 };
 

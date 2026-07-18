@@ -1,7 +1,7 @@
 use crate::errors::LngResult;
 use crate::formulas::ToFormula;
-use crate::solver::minisat::sat::Tristate::{False, True};
-use crate::solver::minisat::{MiniSat, MiniSatConfig, SatBuilder};
+use crate::solver::lng_core_solver::Tristate::{False, True};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
 use crate::util::test_util::F;
 
 #[test]

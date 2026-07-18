@@ -1,0 +1,1 @@
+mod maxsat_tests;

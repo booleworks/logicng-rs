@@ -4,7 +4,7 @@ use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
 use logicng::operations::functions::{ModelCountAlgorithm, count_models};
-use logicng::solver::minisat::MiniSat;
+use logicng::solver::lng_core_solver::MiniSat;
 
 #[cfg(feature = "open_wbo")]
 use logicng::solver::maxsat::{Algorithm, MaxSatSolver};

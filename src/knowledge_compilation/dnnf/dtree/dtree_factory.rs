@@ -21,8 +21,8 @@ use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{
     DTree, DTreeEncoding, DTreeIndex,
 };
-use crate::solver::minisat::sat::Tristate::{True, Undef};
-use crate::solver::minisat::sat::{MsLit, mk_lit, var};
+use crate::solver::lng_core_solver::{mk_lit, var, MsLit};
+use crate::solver::lng_core_solver::Tristate::{True, Undef};
 
 pub struct DTreeFactory {
     pub(crate) _id: String,

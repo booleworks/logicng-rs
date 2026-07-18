@@ -2,8 +2,8 @@ use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncode
 use crate::errors::LngResult;
 use crate::formulas::CType::{GE, LE};
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::minisat::sat::Tristate::{False, True};
-use crate::solver::minisat::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::Tristate::{False, True};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
 
 const fn configs() -> [CcConfig; 3] {
     [

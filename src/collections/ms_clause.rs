@@ -1,4 +1,4 @@
-use crate::solver::minisat::sat::MsLit;
+use crate::solver::lng_core_solver::MsLit;
 
 /// A MiniSAT clause
 #[allow(clippy::struct_excessive_bools)]

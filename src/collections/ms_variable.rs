@@ -1,4 +1,4 @@
-use crate::solver::minisat::sat::Tristate;
+use crate::solver::lng_core_solver::Tristate;
 
 /// A MiniSAT Variable
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]

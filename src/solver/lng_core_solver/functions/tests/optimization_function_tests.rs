@@ -2,9 +2,6 @@ use crate::datastructures::Model;
 use crate::errors::LngResult;
 use crate::formulas::CType::{GT, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::solver::functions::OptimizationFunction;
-use crate::solver::minisat::sat::Tristate::True;
-use crate::solver::minisat::{MiniSat, MiniSatConfig, SolverCnfMethod};
 use crate::util::formula_randomizer::{FormulaRandomizer, FormulaRandomizerConfig};
 use crate::util::test_formula_corner_cases::formula_corner_cases;
 use fastrand::Rng;
@@ -14,6 +11,9 @@ use std::collections::{BTreeSet, HashSet};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::{BufRead, BufReader};
+use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SolverCnfMethod};
+use crate::solver::lng_core_solver::functions::OptimizationFunction;
+use crate::solver::lng_core_solver::Tristate::True;
 
 fn solvers() -> [MiniSat; 5] {
     [
