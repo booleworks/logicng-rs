@@ -5,10 +5,10 @@ use std::error::Error;
 
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
+use logicng::solver::lng_core_solver::SatSolver;
 use logicng::solver::lng_core_solver::functions::{
     BackboneType, ModelEnumerationConfig, enumerate_models_with_config,
 };
-use logicng::solver::lng_core_solver::MiniSat;
 
 use crate::trallocator::Trallocator;
 
@@ -34,24 +34,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     let formula = read_formula("resources/formulas/large_formula2.txt", &f)?;
     GLOBAL.print_memory("read");
     let t2 = std::time::Instant::now();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     let _ = solver.add(formula, &f);
     GLOBAL.print_memory("add to solver");
     let t3 = std::time::Instant::now();
-    solver.sat();
+    solver.sat().unwrap();
     GLOBAL.print_memory("solve");
     let t4 = std::time::Instant::now();
     let models = enumerate_models_with_config(
         &mut solver,
         &ModelEnumerationConfig::default().variables(vars),
+        &f,
     )
     .unwrap();
     GLOBAL.print_memory("model enumeration");
     let t5 = std::time::Instant::now();
-    let bb = solver.underlying_solver.compute_backbone(
-        Vec::from_iter(formula.variables(&f).iter().copied()),
-        BackboneType::PositiveAndNegative,
-    );
+    let bb = solver
+        .backbone(
+            Vec::from_iter(formula.variables(&f).iter().copied()),
+            BackboneType::PositiveAndNegative,
+        )
+        .unwrap();
     GLOBAL.print_memory("backbone");
     let t6 = std::time::Instant::now();
     println!("{}", models.len());

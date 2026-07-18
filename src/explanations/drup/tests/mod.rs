@@ -4,24 +4,24 @@ mod drup_tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
     use crate::propositions::{Proposition, StandardProposition};
+    use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, PgOnSolver};
+    use crate::solver::lng_core_solver::Tristate::{False, True};
+    use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig, SatBuilder};
     use std::collections::HashSet;
     use std::fmt::Debug;
     use std::fs::read_dir;
     use std::hash::Hash;
-    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
-    use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, PgOnSolver};
-    use crate::solver::lng_core_solver::Tristate::{False, True};
 
-    fn solvers() -> [MiniSat<String>; 2] {
+    fn solvers() -> [SatSolver<String>; 2] {
         [
-            MiniSat::from_config_with_backpack(
-                MiniSatConfig::default()
+            SatSolver::from_config_with_backpack(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(FactoryCnf),
             ),
-            MiniSat::from_config_with_backpack(
-                MiniSatConfig::default()
+            SatSolver::from_config_with_backpack(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(FactoryCnf),
@@ -42,7 +42,7 @@ mod drup_tests {
         for mut solver in solvers {
             for cnf in &cnfs {
                 solver.add_all(cnf, &f)?;
-                assert_eq!(solver.sat(), False);
+                assert_eq!(solver.sat().unwrap(), False);
                 let unsat_core = solver.unsat_core(&f).unwrap();
                 verify_core(&unsat_core, cnf, &f)?;
                 solver.reset();
@@ -65,7 +65,7 @@ mod drup_tests {
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
                     solver.add_all(&cnf, f)?;
-                    if solver.sat() == False {
+                    if solver.sat().unwrap() == False {
                         let unsat_core = solver.unsat_core(f).unwrap();
                         verify_core(&unsat_core, &cnf, f)?;
                         count += 1;
@@ -91,7 +91,7 @@ mod drup_tests {
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
                     solver.add_all(&cnf, f)?;
-                    assert_eq!(solver.sat(), False);
+                    assert_eq!(solver.sat().unwrap(), False);
                     let unsat_core = solver.unsat_core(f).unwrap();
                     verify_core(&unsat_core, &cnf, f)?;
                 }
@@ -122,7 +122,7 @@ mod drup_tests {
 
         for mut solver in solvers() {
             solver.add_propositions(propositions.clone(), f)?;
-            assert_eq!(solver.sat(), False);
+            assert_eq!(solver.sat().unwrap(), False);
             let unsat_core = solver.unsat_core(f).unwrap();
             let expected_result = [
                 propositions[0].clone(),
@@ -222,16 +222,16 @@ mod drup_tests {
     pub fn test_trivial_cases_propositions() -> LngResult<()> {
         let f = &FormulaFactory::new();
         for mut solver in solvers() {
-            assert_eq!(solver.sat(), True);
+            assert_eq!(solver.sat().unwrap(), True);
             let p1 = Proposition::standard_proposition(f.falsum(), "P1");
             solver.add_proposition(p1.clone(), f)?;
             assert_unsat_core(&mut solver, &[p1], f);
 
             solver.reset();
-            assert_eq!(solver.sat(), True);
+            assert_eq!(solver.sat().unwrap(), True);
             let p2 = Proposition::standard_proposition(f.variable("a"), "P2");
             solver.add_proposition(p2.clone(), f)?;
-            assert_eq!(solver.sat(), True);
+            assert_eq!(solver.sat().unwrap(), True);
             let p3 = Proposition::standard_proposition(f.literal("a", false), "P3");
             solver.add_proposition(p3.clone(), f)?;
             assert_unsat_core(&mut solver, &[p2, p3], f);
@@ -244,14 +244,14 @@ mod drup_tests {
     fn test_core_and_assumptions() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -270,11 +270,13 @@ mod drup_tests {
             solver.add_proposition(p3, f)?;
             solver.add_proposition(p4, f)?;
 
-            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("X", true)]));
+            solver
+                .sat_with(&SatBuilder::new().assumptions(&vec![f.lit("X", true)]))
+                .unwrap();
 
             solver.add_proposition(p5.clone(), f)?;
             solver.add_proposition(p6.clone(), f)?;
-            solver.sat();
+            solver.sat().unwrap();
             assert_unsat_core(&mut solver, &[p1, p2, p5, p6], f);
         }
 
@@ -285,14 +287,14 @@ mod drup_tests {
     fn test_core_and_assumptions2() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -306,10 +308,12 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("B => X".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("B => ~X".to_formula(f)), f)?;
 
-            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("A", true)]));
+            solver
+                .sat_with(&SatBuilder::new().assumptions(&vec![f.lit("A", true)]))
+                .unwrap();
 
             solver.add_proposition(Proposition::new("~A".to_formula(f)), f)?;
-            solver.sat();
+            solver.sat().unwrap();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -321,14 +325,14 @@ mod drup_tests {
         // Unit test for DRUP issue which led to java.lang.ArrayIndexOutOfBoundsException: -1
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -347,12 +351,12 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("T1 <=> A & K & ~B & ~C".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("T2 <=> A & B & C & K".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("T1 + T2 = 1".to_formula(f)), f)?;
-            solver.sat(); // required for DRUP issue
+            solver.sat().unwrap(); // required for DRUP issue
 
             solver.add_proposition(Proposition::new("Y => ~X & D".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("X".to_formula(f)), f)?;
 
-            solver.sat();
+            solver.sat().unwrap();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -363,14 +367,14 @@ mod drup_tests {
     fn test_core_and_assumptions4() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -388,7 +392,7 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("L & A3 => A4".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("~A4".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("L | R".to_formula(f)), f)?;
-            solver.sat();
+            solver.sat().unwrap();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -398,8 +402,8 @@ mod drup_tests {
     #[test]
     fn test_with_cc_propositions() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::from_config_with_backpack(
-            MiniSatConfig::default()
+        let mut solver = SatSolver::from_config_with_backpack(
+            SatSolverConfig::default()
                 .proof_generation(true)
                 .cnf_method(PgOnSolver),
         );
@@ -421,14 +425,14 @@ mod drup_tests {
     fn test_with_special_unit_case_mini_sat() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -463,7 +467,7 @@ mod drup_tests {
                 ],
                 f,
             )?;
-            assert_eq!(True, solver.sat());
+            assert_eq!(True, solver.sat().unwrap());
             solver.add("a".to_formula(f), f)?;
             assert_unsat_core(
                 &mut solver,
@@ -502,19 +506,19 @@ mod drup_tests {
             core.iter().all(|c| cnf_set.contains(c)),
             "Core must contain only original clauses"
         );
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(&core, f)?;
-        assert_eq!(solver.sat(), False, "Core must be unsatisfiable");
+        assert_eq!(solver.sat().unwrap(), False, "Core must be unsatisfiable");
 
         Ok(())
     }
 
     fn assert_unsat_core<B: Clone + PartialEq + Eq + Hash + Debug>(
-        solver: &mut MiniSat<B>,
+        solver: &mut SatSolver<B>,
         expected: &[Proposition<B>],
         f: &FormulaFactory,
     ) {
-        assert_eq!(solver.sat(), False);
+        assert_eq!(solver.sat().unwrap(), False);
         assert_eq!(
             solver
                 .unsat_core(f)

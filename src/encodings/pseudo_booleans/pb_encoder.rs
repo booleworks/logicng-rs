@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, PbConstraint};
+use crate::datastructures::EncodingResult;
 use crate::encodings::pseudo_booleans::PbcError;
 use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
-use crate::util::exceptions::panic_unexpected_formula_type;
+use crate::errors::LngResult;
+use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, PbConstraint};
 
 use super::{encode_adder_networks, encode_binary_merge, encode_swc};
 
@@ -36,31 +36,52 @@ impl PbEncoder {
         let normalized = constraint.normalize(f)?;
         match normalized.formula_type() {
             FormulaType::Pbc => {
-                let pbc = normalized.as_pbc(f).unwrap();
+                let pbc = normalized
+                    .as_pbc(f)
+                    .ok_or(PbcError::UnexpectedNormalizedFormula)?;
                 let enc = self.encode_internal(&pbc.literals, &pbc.coefficients, pbc.rhs, f)?;
                 Ok(Arc::from(enc))
             }
-            FormulaType::Cc => normalized.as_cc(f).unwrap().encode(f),
+            FormulaType::Cc => normalized
+                .as_cc(f)
+                .ok_or(PbcError::UnexpectedNormalizedFormula)?
+                .encode(f),
             FormulaType::And => {
                 let operands = normalized.operands(f);
                 let mut result = Vec::with_capacity(operands.len());
                 for &op in &*operands {
                     match op.formula_type() {
                         FormulaType::Pbc => {
-                            result.extend(self.encode(&op.as_pbc(f).unwrap(), f)?.iter().copied());
+                            let pbc = op.as_pbc(f).ok_or(PbcError::UnexpectedNormalizedFormula)?;
+                            result.extend(self.encode(&pbc, f)?.iter().copied());
                         }
                         FormulaType::Cc => {
-                            result.extend(op.as_cc(f).unwrap().encode(f)?.iter().copied());
+                            let cc = op.as_cc(f).ok_or(PbcError::UnexpectedNormalizedFormula)?;
+                            result.extend(cc.encode(f)?.iter().copied());
                         }
-                        _ => panic_unexpected_formula_type(op, Some(f)),
+                        _ => return Err(PbcError::UnexpectedNormalizedFormula.into()),
                     }
                 }
                 Ok(Arc::from(result))
             }
             FormulaType::True => Ok(Arc::new([])),
             FormulaType::False => Ok(Arc::new([f.falsum()])),
-            _ => panic_unexpected_formula_type(normalized, Some(f)),
+            _ => Err(PbcError::UnexpectedNormalizedFormula.into()),
         }
+    }
+
+    /// Encodes a pseudo-Boolean constraint directly into an encoding result.
+    pub fn encode_on<R: EncodingResult>(
+        &self,
+        constraint: &PbConstraint,
+        result: &mut R,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
+        for clause in self.encode(constraint, f)?.iter().copied() {
+            let literals = clause.literals_for_clause_or_term(f)?;
+            result.add_clause(&literals);
+        }
+        Ok(())
     }
 
     fn encode_internal(

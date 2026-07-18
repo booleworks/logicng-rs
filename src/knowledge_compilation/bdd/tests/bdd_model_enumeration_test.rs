@@ -11,7 +11,7 @@ mod tests {
     use crate::knowledge_compilation::bdd::orderings::{
         bfs_ordering, dfs_ordering, force_ordering, max_to_min_ordering, min_to_max_ordering,
     };
-    use crate::solver::lng_core_solver::MiniSat;
+    use crate::solver::lng_core_solver::SatSolver;
     use crate::solver::lng_core_solver::Tristate;
     use crate::util::n_queens_generator::generate_n_queens;
 
@@ -119,10 +119,10 @@ mod tests {
         cnf: EncodedFormula,
         f: &FormulaFactory,
     ) -> LngResult<()> {
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         let formula = f.equivalence(original, cnf);
         solver.add(f.negate(formula), f)?;
-        assert_eq!(solver.sat(), Tristate::False);
+        assert_eq!(solver.sat().unwrap(), Tristate::False);
 
         Ok(())
     }

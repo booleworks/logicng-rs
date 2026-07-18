@@ -1,12 +1,13 @@
-mod backbone_function;
-mod model_enumeration;
-mod optimization_function;
-mod unsat_core_function;
+pub mod backbone_function;
+pub mod formula_on_solver_function;
+pub mod model_enumeration_function;
+pub mod optimization_function;
+pub mod unsat_core_function;
+pub mod up_zero_literals_function;
 
-pub use backbone_function::*;
-pub use model_enumeration::*;
-pub use optimization_function::*;
-pub use unsat_core_function::*;
+pub use backbone_function::BackboneType;
+pub use model_enumeration_function::*;
+pub use optimization_function::OptimizationFunction;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

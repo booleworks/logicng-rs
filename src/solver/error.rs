@@ -32,6 +32,21 @@ pub enum SolverError {
     #[error("bound for optimization function was too large: {bound:?}")]
     OptimizationBoundTooLarge { bound: usize },
 
+    #[error("optimization requires a satisfiable solver state")]
+    OptimizationOnUnsat,
+
+    #[error("solver reported satisfiable but did not provide a model")]
+    MissingModel,
+
+    #[error("proof data is inconsistent with the solver state")]
+    InvalidProofData,
+
+    #[error("Plaisted-Greenbaum transformation violated an internal invariant")]
+    InvalidPgTransformation,
+
+    #[error("SAT solver violated an internal invariant")]
+    InternalInvariant,
+
     #[cfg(feature = "open_wbo")]
     #[error("openwbo error: {error:?}")]
     ExternalError { error: ffi::OpenWboError },

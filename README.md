@@ -106,15 +106,16 @@ solve it with an instance of MiniSAT:
 
 ```rust
 use logicng::formulas::{FormulaFactory, ToFormula};
-use logicng::solver::lng_core_solver::MiniSat;
+use logicng::solver::lng_core_solver::SatSolver;
 
 let f = FormulaFactory::new();
 let formula = "A & ~(B | ~C)".to_formula(&f);
 
 let nnf = f.nnf_of(formula);
 let cnf = f.cnf_of(formula);
-let mut miniSat = MiniSat::new();
-let result = miniSat.sat();
+let mut solver = SatSolver::new();
+solver.add(formula, &f).expect("Adding formula failed");
+let result = solver.sat().expect("SAT call failed");
 ```
 
 ## Features

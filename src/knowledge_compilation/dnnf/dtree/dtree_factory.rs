@@ -5,24 +5,22 @@
 )]
 
 use std::collections::HashSet;
-use std::iter::repeat_n;
+use std::iter::repeat;
 use std::ops::{BitAndAssign, BitOr};
 use std::sync::Arc;
 
 use bitvec::bitvec;
 use bitvec::prelude::*;
 use bitvec::vec::BitVec;
-
 use crate::errors::LngResult;
 use crate::formulas::{Literal, Variable};
-use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
+use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf, Node};
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{
     DTree, DTreeEncoding, DTreeIndex,
 };
-use crate::solver::lng_core_solver::{mk_lit, var, MsLit};
-use crate::solver::lng_core_solver::Tristate::{True, Undef};
+use crate::solver::lng_core_solver::{mk_lit, var, LngLit, Tristate};
 
 pub struct DTreeFactory {
     pub(crate) _id: String,
@@ -33,8 +31,8 @@ pub struct DTreeFactory {
     pub(crate) nodes_static_variable_set: Vec<HashSet<Variable>>,
     pub(crate) node_2_leaf_indices: Vec<Vec<DTreeIndex>>,
 
-    pub(crate) leaf_literals: Vec<Vec<MsLit>>,
-    max_var: MsLit,
+    pub(crate) leaf_literals: Vec<Vec<LngLit>>,
+    max_var: LngLit,
 
     finished: bool,
 
@@ -56,7 +54,7 @@ impl DTreeFactory {
             nodes_static_variable_set: vec![],
             node_2_leaf_indices: vec![],
             leaf_literals: vec![],
-            max_var: MsLit(0),
+            max_var: LngLit(0),
             finished: false,
             clause_contents: vec![],
             clause_content_ranges: vec![],
@@ -81,8 +79,7 @@ impl DTreeFactory {
     pub fn node(&mut self, left: DTree, right: DTree) -> LngResult<DTree> {
         if self.finished {
             return Err(DnnfError::DTreeFinished.into());
-        }
-        let left_encoding = Self::encode(left);
+        }        let left_encoding = Self::encode(left);
         let right_encoding = Self::encode(right);
         let mut var_set: HashSet<Variable> =
             left.static_variable_set(self).iter().copied().collect();
@@ -104,21 +101,22 @@ impl DTreeFactory {
         self.leafs.len() * 2 - 1
     }
 
-    pub(crate) fn finish(&mut self, root: DTree, solver: &DnnfSatSolver) -> LngResult<()> {
+    pub(crate) fn finish(&mut self, root: DTree, solver: &DnnfSatSolver) {
         self.leaf_literals = self.generate_leaf_literals(solver);
         self.max_var = *self
             .leaf_literals
             .iter()
-            .filter_map(|leaf| leaf.iter().max())
+            .map(|leaf| leaf.iter().max().unwrap())
             .max()
-            .ok_or(DnnfError::EmptyDTreeLeaf)?;
+            .unwrap();
         let (clause_contents, clause_content_ranges) = self.generate_clause_contents(root);
         self.clause_contents = clause_contents;
         self.clause_content_ranges = clause_content_ranges;
-        self.static_var_sets = repeat_n(Arc::new(bitvec![]), 2 * self.leafs.len()).collect();
+        self.static_var_sets = repeat(Arc::new(bitvec![]))
+            .take(2 * self.leafs.len())
+            .collect();
         self.compute_static_var_sets(root);
         self.finished = true;
-        Ok(())
     }
 
     pub(crate) fn dynamic_separator(&mut self, tree: DTree, solver: &DnnfSatSolver) -> BitVec {
@@ -153,7 +151,9 @@ impl DTreeFactory {
             let mut j = i;
             let mut subsumed = false;
             while self.clause_contents[j] >= 0 {
-                if !subsumed && solver.value_of(MsLit(self.clause_contents[j] as usize)) == True {
+                if !subsumed
+                    && solver.value_of(LngLit(self.clause_contents[j] as usize)) == Tristate::True
+                {
                     subsumed = true;
                 }
                 j += 1;
@@ -162,8 +162,9 @@ impl DTreeFactory {
                 let clause_id = -self.clause_contents[j] - 1;
                 key.set(clause_id as usize + 1 + number_of_variables, true);
                 for k in i..j {
-                    if solver.value_of(MsLit(self.clause_contents[k] as usize)) == Undef {
-                        key.set(var(MsLit(self.clause_contents[k] as usize)).0, true);
+                    if solver.value_of(LngLit(self.clause_contents[k] as usize)) == Tristate::Undef
+                    {
+                        key.set(var(LngLit(self.clause_contents[k] as usize)).0, true);
                     }
                 }
             }
@@ -179,7 +180,9 @@ impl DTreeFactory {
     ) {
         for leaf_index in node.leaf_indices(self) {
             let literals = &self.leaf_literals[leaf_index as usize];
-            let is_subsumed = literals.iter().any(|lit| solver.value_of(*lit) == True);
+            let is_subsumed = literals
+                .iter()
+                .any(|lit| solver.value_of(*lit) == Tristate::True);
             if !is_subsumed {
                 for lit in literals {
                     let var = var(*lit);
@@ -192,7 +195,7 @@ impl DTreeFactory {
         }
     }
 
-    fn generate_leaf_literals(&self, solver: &DnnfSatSolver) -> Vec<Vec<MsLit>> {
+    fn generate_leaf_literals(&self, solver: &DnnfSatSolver) -> Vec<Vec<LngLit>> {
         self.leafs
             .iter()
             .map(|leaf| {
@@ -203,9 +206,9 @@ impl DTreeFactory {
             .collect()
     }
 
-    fn generate_clause_contents(&mut self, root: DTree) -> (Vec<isize>, Vec<(usize, usize)>) {
+    fn generate_clause_contents(&self, root: DTree) -> (Vec<isize>, Vec<(usize, usize)>) {
         let mut clause_contents: Vec<isize> = vec![];
-        let mut clause_content_ranges = repeat_n((0, 0), 2 * self.leafs.len()).collect();
+        let mut clause_content_ranges = repeat((0, 0)).take(2 * self.leafs.len()).collect();
         self.generate_clause_contents_rec(root, &mut clause_contents, &mut clause_content_ranges);
         (clause_contents, clause_content_ranges)
     }
@@ -251,33 +254,30 @@ impl DTreeFactory {
                     .as_ref()
                     .clone()
                     .bitor(right_var_set.as_ref().clone()))
-                .to_bitvec()
+                    .to_bitvec()
             }
         };
         self.static_var_sets[Self::encode(tree) as usize] = Arc::new(var_set);
     }
 
-    fn var_set(
-        &mut self,
-        encoding: DTreeIndex,
-        solver: &DnnfSatSolver,
-        local_var_set: &mut BitVec,
-    ) {
+    fn var_set(&self, encoding: DTreeIndex, solver: &DnnfSatSolver, local_var_set: &mut BitVec) {
         let (from, to) = self.clause_content_ranges[encoding as usize];
         let mut i = from;
         while i < to {
             let mut j = i;
             let mut subsumed = false;
             while self.clause_contents[j] >= 0 {
-                if !subsumed && solver.value_of(MsLit(self.clause_contents[j] as usize)) == True {
+                if !subsumed
+                    && solver.value_of(LngLit(self.clause_contents[j] as usize)) == Tristate::True
+                {
                     subsumed = true;
                 }
                 j += 1;
             }
             if !subsumed {
                 for k in i..j {
-                    let lit = MsLit(self.clause_contents[k] as usize);
-                    if solver.value_of(lit) == Undef {
+                    let lit = LngLit(self.clause_contents[k] as usize);
+                    if solver.value_of(lit) == Tristate::Undef {
                         local_var_set.set(var(lit).0, true);
                     }
                 }

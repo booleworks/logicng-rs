@@ -6,9 +6,9 @@ use std::io::{BufRead, BufReader, Error, Write, stdout};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 
-use logicng::formulas::Variable;
+use logicng::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use logicng::solver::lng_core_solver::SatSolver;
 use logicng::solver::lng_core_solver::Tristate::True;
-use logicng::solver::lng_core_solver::{MiniSat2Solver, mk_lit};
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]
@@ -49,28 +49,18 @@ fn read_result() -> HashMap<String, bool> {
 fn test_file(file: DimacsFile, expected: bool) {
     println!("Processing file: {}", file.name);
     stdout().flush().unwrap();
-    let mut solver: MiniSat2Solver<()> = MiniSat2Solver::new();
-    for v in 1..(file.max_var + 1) {
-        let index = solver.new_var(true, true);
-        solver.add_variable(Variable::from_index(v as u64), index);
-    }
+    let f = FormulaFactory::new();
+    let mut solver = SatSolver::new();
     for clause in file.clauses {
-        solver.add_clause(
-            clause
-                .iter()
-                .map(|v| {
-                    mk_lit(
-                        solver
-                            .idx_for_variable(Variable::from_index(v.unsigned_abs() as u64))
-                            .unwrap(),
-                        v.is_negative(),
-                    )
-                })
-                .collect(),
-            None,
-        );
+        let literals = clause.iter().map(|v| {
+            EncodedFormula::from(Literal::new(
+                Variable::from_index(v.unsigned_abs() as u64),
+                v.is_positive(),
+            ))
+        });
+        solver.add(f.or(literals), &f).unwrap();
     }
-    let result = solver.solve();
+    let result = solver.sat().unwrap();
     println!(
         "{:?}{}",
         result,

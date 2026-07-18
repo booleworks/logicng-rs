@@ -1,7 +1,11 @@
 use crate::datastructures::Model;
-use crate::errors::LngResult;
+use crate::errors::{LngError, LngResult};
 use crate::formulas::CType::{GT, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::solver::SolverError;
+use crate::solver::lng_core_solver::Tristate::True;
+use crate::solver::lng_core_solver::functions::OptimizationFunction;
+use crate::solver::lng_core_solver::{CnfMethod, SatSolver, SatSolverConfig};
 use crate::util::formula_randomizer::{FormulaRandomizer, FormulaRandomizerConfig};
 use crate::util::test_formula_corner_cases::formula_corner_cases;
 use fastrand::Rng;
@@ -11,26 +15,22 @@ use std::collections::{BTreeSet, HashSet};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::{BufRead, BufReader};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SolverCnfMethod};
-use crate::solver::lng_core_solver::functions::OptimizationFunction;
-use crate::solver::lng_core_solver::Tristate::True;
 
-fn solvers() -> [MiniSat; 5] {
+fn solvers() -> [SatSolver; 4] {
     [
-        MiniSat::from_config(MiniSatConfig::default().initial_phase(true)),
-        MiniSat::from_config(MiniSatConfig::default().initial_phase(false)),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(SatSolverConfig::default().initial_phase(true)),
+        SatSolver::from_config(SatSolverConfig::default().initial_phase(false)),
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .initial_phase(true)
-                .cnf_method(SolverCnfMethod::PgOnSolver),
+                .cnf_method(CnfMethod::PgOnSolver),
         ),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .initial_phase(true)
-                .cnf_method(SolverCnfMethod::PgOnSolver)
+                .cnf_method(CnfMethod::PgOnSolver)
                 .proof_generation(true),
         ),
-        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
     ]
 }
 
@@ -164,12 +164,10 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
         solver.add(formula, f)?;
 
         let minimum_model = solver
-            .optimize(f, &OptimizationFunction::minimize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::minimize(literals.clone()))?
             .unwrap();
         let maximum_model = solver
-            .optimize(f, &OptimizationFunction::maximize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::maximize(literals.clone()))?
             .unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert_eq!(maximum_model.pos().len(), 10);
@@ -178,12 +176,10 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
         literals.push(f.lit("p", true));
         solver.add(formula, f)?;
         let minimum_model = solver
-            .optimize(f, &OptimizationFunction::minimize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::minimize(literals.clone()))?
             .unwrap();
         let maximum_model = solver
-            .optimize(f, &OptimizationFunction::maximize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::maximize(literals.clone()))?
             .unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert!(minimum_model.pos().contains(&f.var("q")));
@@ -198,12 +194,10 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
             .for_each(|l| literals.push(l));
         solver.add(formula, f)?;
         let minimum_model = solver
-            .optimize(f, &OptimizationFunction::minimize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::minimize(literals.clone()))?
             .unwrap();
         let maximum_model = solver
-            .optimize(f, &OptimizationFunction::maximize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::maximize(literals.clone()))?
             .unwrap();
         assert_eq!(minimum_model.pos().len(), 3);
         assert!(minimum_model.pos().contains(&f.var("q")));
@@ -223,12 +217,10 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
             .for_each(|l| literals.push(l));
         solver.add(formula, f)?;
         let minimum_model = solver
-            .optimize(f, &OptimizationFunction::minimize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::minimize(literals.clone()))?
             .unwrap();
         let maximum_model = solver
-            .optimize(f, &OptimizationFunction::maximize(literals.clone()))
-            .unwrap()
+            .optimize(f, &OptimizationFunction::maximize(literals.clone()))?
             .unwrap();
         assert_eq!(minimum_model.pos().len(), 4);
         assert!(minimum_model.pos().contains(&f.var("q")));
@@ -249,14 +241,16 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
             .map(Variable::pos_lit)
             .for_each(|l| literals.push(l));
         solver.add(formula, f)?;
-        let minimum_model = solver
-            .optimize(f, &OptimizationFunction::minimize(literals.clone()))
-            .unwrap();
-        let maximum_model = solver
-            .optimize(f, &OptimizationFunction::maximize(literals.clone()))
-            .unwrap();
-        assert!(minimum_model.is_none());
-        assert!(maximum_model.is_none());
+        let minimum_error = solver.optimize(f, &OptimizationFunction::minimize(literals.clone()));
+        let maximum_error = solver.optimize(f, &OptimizationFunction::maximize(literals.clone()));
+        assert!(matches!(
+            minimum_error,
+            Err(LngError::Solver(SolverError::OptimizationOnUnsat))
+        ));
+        assert!(matches!(
+            maximum_error,
+            Err(LngError::Solver(SolverError::OptimizationOnUnsat))
+        ));
     }
 
     Ok(())
@@ -427,28 +421,27 @@ fn optimize(
     literals: &[Literal],
     additional_variables: &[Variable],
     maximize: bool,
-    solver: &mut MiniSat,
+    solver: &mut SatSolver,
     f: &FormulaFactory,
 ) -> LngResult<Option<Model>> {
     solver.reset();
     solver.add_all(formulas, f)?;
-    Ok(if maximize {
-        solver
-            .optimize(
-                f,
-                &OptimizationFunction::maximize(literals.into())
-                    .additional_variables(additional_variables.iter()),
-            )
-            .unwrap()
+    if solver.sat()? != True {
+        return Ok(None);
+    }
+    if maximize {
+        solver.optimize(
+            f,
+            &OptimizationFunction::maximize(literals.into())
+                .additional_variables(additional_variables.iter().copied()),
+        )
     } else {
-        solver
-            .optimize(
-                f,
-                &OptimizationFunction::minimize(literals.into())
-                    .additional_variables(additional_variables.iter()),
-            )
-            .unwrap()
-    })
+        solver.optimize(
+            f,
+            &OptimizationFunction::minimize(literals.into())
+                .additional_variables(additional_variables.iter().copied()),
+        )
+    }
 }
 
 fn test_minimum_model(
@@ -476,9 +469,9 @@ fn test_optimum_model(
     maximize: bool,
     f: &FormulaFactory,
 ) -> LngResult<()> {
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     solver.add(formula, f)?;
-    if solver.sat() == True {
+    if solver.sat().unwrap() == True {
         let with_formula = solver.save_state().unwrap();
         solver.add(
             f.and(
@@ -491,7 +484,7 @@ fn test_optimum_model(
             ),
             f,
         )?;
-        assert_eq!(solver.sat(), True);
+        assert_eq!(solver.sat().unwrap(), True);
         solver.load_state(&with_formula)?;
         let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals)
             .len()

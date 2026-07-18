@@ -1,8 +1,6 @@
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory};
-use crate::solver::lng_core_solver::SolverCnfMethod::FactoryCnf;
-use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::{CnfMethod, SatSolver, SatSolverConfig, Tristate};
 
 /// A predicate tests whether a formula is satisfiable. A formula is satisfiable
 /// if there exists at least one assignment such that the formula evaluates to
@@ -33,17 +31,17 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
     match f.caches.sat.get(formula) {
         Some(c) => Ok(c),
         None => {
-            let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-            solver.add(formula, f)?;
-            let sat = solver.sat();
+            let mut solver = SatSolver::<()>::from_config(
+                SatSolverConfig::default().cnf_method(CnfMethod::FactoryCnf),
+            );
+            solver.add_formula(formula, f)?;
+            let sat = solver.sat()?;
             if f.config.caches.sat {
-                match sat {
-                    True => f.caches.sat.insert(formula, true),
-                    False => f.caches.sat.insert(formula, false),
-                    Undef => {}
+                if sat != Tristate::Undef {
+                    f.caches.sat.insert(formula, sat == Tristate::True);
                 }
             }
-            Ok(sat == True)
+            Ok(sat == Tristate::True)
         }
     }
 }
@@ -92,17 +90,17 @@ pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bo
     match f.caches.sat.get(negated_formula) {
         Some(c) => Ok(!c),
         None => {
-            let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(FactoryCnf));
-            solver.add(negated_formula, f)?;
-            let sat = solver.sat();
+            let mut solver = SatSolver::<()>::from_config(
+                SatSolverConfig::default().cnf_method(CnfMethod::FactoryCnf),
+            );
+            solver.add_formula(negated_formula, f)?;
+            let sat = solver.sat()?;
             if f.config.caches.sat {
-                match sat {
-                    True => f.caches.sat.insert(negated_formula, true),
-                    False => f.caches.sat.insert(negated_formula, false),
-                    Undef => {}
+                if sat != Tristate::Undef {
+                    f.caches.sat.insert(negated_formula, sat == Tristate::True);
                 }
             }
-            Ok(sat == False)
+            Ok(sat == Tristate::False)
         }
     }
 }

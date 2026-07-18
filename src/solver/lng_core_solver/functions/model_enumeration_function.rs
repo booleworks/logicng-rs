@@ -4,10 +4,8 @@ use std::collections::BTreeSet;
 
 use crate::datastructures::Model;
 use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::lng_core_solver::MiniSat;
-use crate::solver::lng_core_solver::Tristate::True;
-use crate::solver::lng_core_solver::{MiniSat2Solver, MsLit, MsVar, mk_lit};
+use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use crate::solver::lng_core_solver::{LngLit, LngVar, SatSolver, Tristate, mk_lit};
 
 /// A configuration to adjust the behavior of the model enumeration algorithms.
 ///
@@ -27,10 +25,9 @@ use crate::solver::lng_core_solver::{MiniSat2Solver, MsLit, MsVar, mk_lit};
 ///                     .additional_variables(my_additional_variables)
 ///                     .max_models(100);
 /// ```
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ModelEnumerationConfig {
     /// Variables over which the model enumeration should iterate.
-    pub variables: Option<Box<[Variable]>>,
+    pub variables: Box<[Variable]>,
 
     /// Additional variables which should occur in every model.
     pub additional_variables: Option<Box<[Variable]>>,
@@ -39,24 +36,24 @@ pub struct ModelEnumerationConfig {
     pub max_models: Option<usize>,
 }
 
+impl Default for ModelEnumerationConfig {
+    fn default() -> Self {
+        Self::new(Vec::<Variable>::new())
+    }
+}
+
 impl ModelEnumerationConfig {
-    /// Sets the set of variables over which the model enumeration should iterate.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::lng_core_solver::functions::ModelEnumerationConfig;
-    /// # let my_variables = Vec::new();
-    /// let configuration = ModelEnumerationConfig::default()
-    ///                     //...
-    ///                     .variables(my_variables)
-    ///                     //...
-    ///                     ;
-    /// ```
+    pub fn new(variables: impl Into<Box<[Variable]>>) -> Self {
+        Self {
+            variables: variables.into(),
+            additional_variables: None,
+            max_models: None,
+        }
+    }
+
     #[must_use]
     pub fn variables<V: Into<Box<[Variable]>>>(mut self, variables: V) -> Self {
-        self.variables = Some(variables.into());
+        self.variables = variables.into();
         self
     }
 
@@ -103,17 +100,6 @@ impl ModelEnumerationConfig {
     }
 }
 
-#[allow(clippy::derivable_impls)] // these defaults are not necessarily trivial and might change in the future or with additional fields
-impl Default for ModelEnumerationConfig {
-    fn default() -> Self {
-        Self {
-            variables: None,
-            additional_variables: None,
-            max_models: None,
-        }
-    }
-}
-
 /// Enumerates all models of a formula and returns it as a vector.
 ///
 /// The default configuration is used.
@@ -122,27 +108,23 @@ impl Default for ModelEnumerationConfig {
 /// configuration does not limit the number of models and the algorithm will
 /// continue until there are no more models left.
 ///
-/// # Errors
-///
-/// Returns an error if the formula cannot be added to the solver or if model
-/// enumeration cannot save or restore the solver state.
-///
 /// # Example
 ///
 /// Basic usage:
 /// ```
 /// # use logicng::solver::lng_core_solver::functions::enumerate_models_for_formula;
-/// # use logicng::formulas::{FormulaFactory, ToFormula};
+/// # use logicng::formulas::{FormulaFactory, ToFormula, Variable};
 /// let f = FormulaFactory::new();
 /// let formula = "A <=> B".to_formula(&f);
 ///
-/// let models = enumerate_models_for_formula(formula, &f);
+/// let models = enumerate_models_for_formula(formula, Vec::<Variable>::new(), &f).unwrap();
 /// ```
 pub fn enumerate_models_for_formula(
     formula: EncodedFormula,
+    variables: impl Into<Box<[Variable]>>,
     f: &FormulaFactory,
 ) -> LngResult<Vec<Model>> {
-    enumerate_models_for_formula_with_config(formula, f, &ModelEnumerationConfig::default())
+    enumerate_models_for_formula_with_config(formula, f, &ModelEnumerationConfig::new(variables))
 }
 
 /// Enumerates all models of a formula with the given configuration and returns
@@ -152,11 +134,6 @@ pub fn enumerate_models_for_formula(
 /// all models of the formulas fit into your memory. If the algorithm is not
 /// limited to a number of models, it will continue until there are no more
 /// models left.
-///
-/// # Errors
-///
-/// Returns an error if the formula cannot be added to the solver or if model
-/// enumeration cannot save or restore the solver state.
 ///
 /// # Example
 ///
@@ -168,16 +145,16 @@ pub fn enumerate_models_for_formula(
 /// let formula = "A <=> B".to_formula(&f);
 ///
 /// let config = ModelEnumerationConfig::default();
-/// let models = enumerate_models_for_formula_with_config(formula, &f, &config);
+/// let models = enumerate_models_for_formula_with_config(formula, &f, &config).unwrap();
 /// ```
 pub fn enumerate_models_for_formula_with_config(
     formula: EncodedFormula,
     f: &FormulaFactory,
     config: &ModelEnumerationConfig,
 ) -> LngResult<Vec<Model>> {
-    let mut solver = MiniSat::new();
-    solver.add(formula, f)?;
-    enumerate_models_with_config(&mut solver, config)
+    let mut solver: SatSolver<()> = SatSolver::new();
+    solver.add_formula(formula, f)?;
+    enumerate_models_with_config(&mut solver, config, f)
 }
 
 /// Enumerates all models on the solver and returns it as a vector.
@@ -188,26 +165,25 @@ pub fn enumerate_models_for_formula_with_config(
 /// configuration does not limit the number of models and the algorithm will
 /// continue until there are no more models left.
 ///
-/// # Errors
-///
-/// Returns an error if model enumeration cannot save or restore the solver
-/// state.
-///
 /// # Example
 ///
 /// Basic usage:
 /// ```
 /// # use logicng::solver::lng_core_solver::functions::enumerate_models;
-/// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::lng_core_solver::MiniSat;
+/// # use logicng::formulas::{FormulaFactory, ToFormula, Variable};
+/// # use logicng::solver::lng_core_solver::SatSolver;
 /// let f = FormulaFactory::new();
-/// let mut solver = MiniSat::new();
-/// solver.add("A <=> B".to_formula(&f), &f);
+/// let mut solver = SatSolver::new();
+/// solver.add("A <=> B".to_formula(&f), &f).unwrap();
 ///
-/// let models = enumerate_models(&mut solver);
+/// let models = enumerate_models(&mut solver, Vec::<Variable>::new(), &f).unwrap();
 /// ```
-pub fn enumerate_models(solver: &mut MiniSat) -> LngResult<Vec<Model>> {
-    enumerate_models_with_config(solver, &ModelEnumerationConfig::default())
+pub fn enumerate_models<B: Clone>(
+    solver: &mut SatSolver<B>,
+    variables: impl Into<Box<[Variable]>>,
+    f: &FormulaFactory,
+) -> LngResult<Vec<Model>> {
+    enumerate_models_with_config(solver, &ModelEnumerationConfig::new(variables), f)
 }
 
 /// Enumerates all models on the solver with the given configuration and returns
@@ -218,86 +194,86 @@ pub fn enumerate_models(solver: &mut MiniSat) -> LngResult<Vec<Model>> {
 /// limited to a number of models, it will continue until there are no more
 /// models left.
 ///
-/// # Errors
-///
-/// Returns an error if model enumeration cannot save or restore the solver
-/// state.
-///
 /// # Example
 ///
 /// Basic usage:
 /// ```
 /// # use logicng::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::lng_core_solver::MiniSat;
+/// # use logicng::solver::lng_core_solver::SatSolver;
 /// let f = FormulaFactory::new();
-/// let mut solver = MiniSat::new();
-/// solver.add("A <=> B".to_formula(&f), &f);
+/// let mut solver = SatSolver::new();
+/// solver.add("A <=> B".to_formula(&f), &f).unwrap();
 ///
 /// let config = ModelEnumerationConfig::default();
-/// let models = enumerate_models_with_config(&mut solver, &config);
+/// let models = enumerate_models_with_config(&mut solver, &config, &f).unwrap();
 /// ```
-pub fn enumerate_models_with_config(
-    solver: &mut MiniSat,
+pub fn enumerate_models_with_config<B: Clone>(
+    solver: &mut SatSolver<B>,
     config: &ModelEnumerationConfig,
+    f: &FormulaFactory,
 ) -> LngResult<Vec<Model>> {
     let original_state = solver.save_state()?;
     let mut models: Vec<Model> = Vec::new();
-    let relevant_indices: Option<Vec<MsVar>>;
-    if let Some(relevant_vars) = &config.variables {
-        relevant_indices = Some(
-            relevant_vars
-                .iter()
-                .filter_map(|&v| solver.underlying_solver.idx_for_variable(v))
-                .collect(),
-        );
-    } else if !solver.config.auxiliary_variables_in_models {
-        let mut indices = Vec::<MsVar>::new();
-        for entry in &solver.underlying_solver.name2idx {
-            if solver.is_relevant_variable(*entry.0) {
-                indices.push(*entry.1);
-            }
-        }
-        relevant_indices = Some(indices);
+    let relevant_variables = if config.variables.is_empty() {
+        solver
+            .underlying_solver()
+            .known_variables()
+            .into_iter()
+            .collect::<Box<[_]>>()
     } else {
-        relevant_indices = None;
-    }
-    let relevant_all_indices: Option<Vec<MsVar>>;
+        config.variables.clone()
+    };
+    let relevant_indices = relevant_variables
+        .iter()
+        .filter_map(|&v| solver.underlying_solver().idx_for_variable(v))
+        .collect::<Vec<_>>();
     let mut unique_additional_variables: BTreeSet<Variable> = config
         .additional_variables
         .as_ref()
         .map_or_else(BTreeSet::new, |vars| vars.iter().copied().collect());
-    if let Some(vars) = &config.variables {
-        for var in vars {
-            unique_additional_variables.remove(var);
-        }
+    for var in &relevant_variables {
+        unique_additional_variables.remove(var);
     }
-    if let Some(indices) = &relevant_indices {
-        if unique_additional_variables.is_empty() {
-            relevant_all_indices = relevant_indices.clone();
-        } else {
-            let mut all_indices =
-                Vec::<MsVar>::with_capacity(indices.len() + unique_additional_variables.len());
-            all_indices.extend(indices);
-            unique_additional_variables
-                .iter()
-                .filter_map(|&v| solver.underlying_solver.idx_for_variable(v))
-                .for_each(|i| all_indices.push(i));
-            relevant_all_indices = Some(all_indices);
-        }
+    let additional_variables_not_on_solver: Vec<Literal> = unique_additional_variables
+        .iter()
+        .filter(|&v| {
+            !solver.underlying_solver().known_variables().contains(v)
+                && !solver
+                    .underlying_solver()
+                    .materialized_auxiliary_variables()
+                    .contains(v)
+        })
+        .map(Variable::neg_lit)
+        .collect();
+    let relevant_all_indices = if unique_additional_variables.is_empty() {
+        #[allow(clippy::redundant_clone)] //Wrong lint
+        relevant_indices.clone()
     } else {
-        relevant_all_indices = None;
-    }
+        let mut all_indices = Vec::<LngVar>::with_capacity(
+            relevant_indices.len() + unique_additional_variables.len(),
+        );
+        all_indices.extend(&relevant_indices);
+        unique_additional_variables
+            .iter()
+            .filter_map(|&v| solver.underlying_solver().idx_for_variable(v))
+            .for_each(|i| all_indices.push(i));
+        all_indices
+    };
 
     let max_models = config.max_models.map_or(usize::MAX, |max| max);
-    while models.len() < max_models && solver.sat() == True {
-        let model_from_solver = &solver.underlying_solver.model;
-        let model = solver.create_assignment(model_from_solver, &relevant_all_indices);
-        let model_empty = !model.is_empty();
+    while models.len() < max_models && solver.sat()? == Tristate::True {
+        let mut model_lits = solver
+            .underlying_solver()
+            .convert_internal_model_on_solver(&relevant_all_indices, f);
+        let model_empty = !model_lits.is_empty();
+        model_lits.extend(&additional_variables_not_on_solver);
+        let model = Model::from_literals(&model_lits);
         models.push(model);
         if model_empty {
-            let blocking_clause = generate_blocking_clause(model_from_solver, &relevant_indices);
-            solver.underlying_solver.add_clause(blocking_clause, None);
+            let blocking_clause =
+                generate_blocking_clause(&solver.underlying_solver().model, &relevant_indices);
+            solver.underlying_solver().add_clause(blocking_clause, None);
         } else {
             break;
         }
@@ -306,24 +282,13 @@ pub fn enumerate_models_with_config(
     Ok(models)
 }
 
-#[allow(clippy::option_if_let_else, clippy::ref_option)] // proposed change does not improve readability
-fn generate_blocking_clause(
-    model_from_solver: &[bool],
-    relevant_vars: &Option<Vec<MsVar>>,
-) -> Vec<MsLit> {
-    if let Some(relevant) = relevant_vars {
-        let mut blocking_clause = Vec::<MsLit>::with_capacity(relevant.len());
-        for &var_index in relevant {
-            blocking_clause.push(mk_lit(var_index, model_from_solver[var_index.0]));
-        }
-        blocking_clause
-    } else {
-        let mut blocking_clause = Vec::<MsLit>::with_capacity(model_from_solver.len());
-        for (i, c) in model_from_solver.iter().enumerate() {
-            blocking_clause.push(mk_lit(MsVar(i), *c));
-        }
-        blocking_clause
+#[allow(clippy::option_if_let_else)] // proposed change does not improve readability
+fn generate_blocking_clause(model_from_solver: &[bool], relevant_vars: &[LngVar]) -> Vec<LngLit> {
+    let mut blocking_clause = Vec::<LngLit>::with_capacity(relevant_vars.len());
+    for &var_index in relevant_vars {
+        blocking_clause.push(mk_lit(var_index, model_from_solver[var_index.0]));
     }
+    blocking_clause
 }
 
 /// Counts all models on the solver.
@@ -336,26 +301,30 @@ fn generate_blocking_clause(
 /// ```
 /// # use logicng::solver::lng_core_solver::functions::count_models;
 /// # use logicng::formulas::{FormulaFactory, ToFormula};
-/// # use logicng::solver::lng_core_solver::MiniSat;
+/// # use logicng::solver::lng_core_solver::SatSolver;
 /// let f = FormulaFactory::new();
-/// let mut solver = MiniSat::new();
-/// solver.add("A <=> B".to_formula(&f), &f);
+/// let mut solver = SatSolver::new();
+/// solver.add("A <=> B".to_formula(&f), &f).unwrap();
 ///
-/// let count = count_models(&mut solver.underlying_solver, 100);
+/// let count = count_models(&mut solver, 100, &f).unwrap();
 /// assert_eq!(count, 2);
 /// ```
-pub fn count_models<B>(solver: &mut MiniSat2Solver<B>, max_models: usize) -> usize {
+pub fn count_models<B: Clone>(
+    solver: &mut SatSolver<B>,
+    max_models: usize,
+    _f: &FormulaFactory,
+) -> LngResult<usize> {
     let mut result = 0;
-    while result <= max_models && solver.solve() == True {
+    while result <= max_models && solver.sat()? == Tristate::True {
         result += 1;
-        let mut blocking_clause = Vec::<MsLit>::new();
-        for i in 1..=solver.model.len() {
-            let pos = solver.model[i - 1];
-            blocking_clause.push(mk_lit(MsVar(i - 1), pos));
+        let mut blocking_clause = Vec::<LngLit>::new();
+        for i in 1..=solver.underlying_solver().model.len() {
+            let pos = solver.underlying_solver().model[i - 1];
+            blocking_clause.push(mk_lit(LngVar(i - 1), pos));
         }
-        solver.add_clause(blocking_clause, None);
+        solver.underlying_solver().add_clause(blocking_clause, None);
     }
-    result
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -365,21 +334,21 @@ mod tests {
     use itertools::Itertools;
 
     use crate::datastructures::Assignment;
-    use crate::errors::LngResult;
     use crate::formulas::{FormulaFactory, Literal, ToFormula, Variable};
-    use crate::solver::lng_core_solver::functions::{
+    use crate::solver::lng_core_solver::functions::model_enumeration_function::{
         ModelEnumerationConfig, enumerate_models, enumerate_models_with_config,
     };
-    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
-    use crate::solver::lng_core_solver::SolverCnfMethod::PgOnSolver;
-    use crate::solver::lng_core_solver::Tristate::True;
+    use crate::solver::lng_core_solver::{
+        CnfMethod, LngCoreSolver, SatSolver, SatSolverConfig, Tristate,
+    };
 
     #[test]
-    fn test_model_enumeration_simple() -> LngResult<()> {
+    fn test_model_enumeration_simple() {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::new();
-        solver.add("A & (B | C)".to_formula(f), f)?;
-        let models = enumerate_models(&mut solver).unwrap();
+        let mut solver = SatSolver::<()>::new();
+        solver.add_formula("A & (B | C)".to_formula(f), f).unwrap();
+        let models =
+            enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass: HashSet<Assignment> = models.iter().map(Assignment::from).collect();
         assert_eq!(
             vec![
@@ -391,37 +360,39 @@ mod tests {
             .collect::<HashSet<Assignment>>(),
             ass
         );
-
-        Ok(())
     }
 
     #[test]
-    fn test_model_enumeration_does_not_alter_solver() -> LngResult<()> {
+    fn test_model_enumeration_does_not_alter_solver() {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::new();
-        solver.add("A & (B | C)".to_formula(f), f)?;
-        assert_eq!(True, solver.sat());
-        let models1 = enumerate_models(&mut solver).unwrap();
+        let mut solver = SatSolver::<()>::new();
+        solver.add_formula("A & (B | C)".to_formula(f), f).unwrap();
+        assert!(solver.sat().unwrap() == Tristate::True);
+        let models1 =
+            enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass1: HashSet<Assignment> = models1.iter().map(Assignment::from).collect();
-        assert_eq!(True, solver.sat());
-        let models2 = enumerate_models(&mut solver).unwrap();
+        assert!(solver.sat().unwrap() == Tristate::True);
+        let models2 =
+            enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass2: HashSet<Assignment> = models2.iter().map(Assignment::from).collect();
-        assert_eq!(True, solver.sat());
+        assert!(solver.sat().unwrap() == Tristate::True);
         assert_eq!(ass1, ass2);
-
-        Ok(())
     }
 
     #[test]
-    fn test_variables_removed_by_simplification_occurs_in_models() -> LngResult<()> {
+    fn test_variables_removed_by_simplification_occurs_in_models() {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
+        let mut solver = SatSolver::<()>::from_core_solver(LngCoreSolver::new_with_config(
+            SatSolverConfig::default().with_cnf_method(CnfMethod::PgOnSolver),
+        ));
         let formula = "A & B => A".to_formula(f);
-        solver.add(formula, f)?;
+        solver.add_formula(formula, f).unwrap();
         let models = enumerate_models_with_config(
             &mut solver,
-            &ModelEnumerationConfig::default()
-                .variables(formula.variables(f).iter().copied().collect::<Box<[_]>>()),
+            &ModelEnumerationConfig::new(
+                formula.variables(f).iter().copied().collect::<Box<[_]>>(),
+            ),
+            f,
         )
         .unwrap();
         assert_eq!(4, models.len());
@@ -436,25 +407,19 @@ mod tests {
                 [f.var("A"), f.var("B")]
             );
         }
-
-        Ok(())
     }
 
     #[test]
-    fn test_unknown_variable_not_occurring_in_model() -> LngResult<()> {
+    fn test_unknown_variable_not_occurring_in_model() {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::<()>::new();
         let a = "A".to_formula(f);
-        solver.add(a, f)?;
+        solver.add_formula(a, f).unwrap();
         let vars: Box<[Variable]> = Box::new([f.var("A"), f.var("X")]);
-        let models = enumerate_models_with_config(
-            &mut solver,
-            &ModelEnumerationConfig::default().variables(vars),
-        )
-        .unwrap();
+        let models =
+            enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::new(vars), f)
+                .unwrap();
         assert_eq!(1, models.len());
         assert_eq!(models[0].literals(), vec![f.lit("A", true)]);
-
-        Ok(())
     }
 }

@@ -1,7 +1,7 @@
 use crate::errors::LngResult;
 use crate::formulas::ToFormula;
 use crate::solver::lng_core_solver::Tristate::{False, True};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
+use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
 use crate::util::test_util::F;
 
 #[test]
@@ -9,8 +9,8 @@ fn test_assume() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let solvers = [
-        MiniSat::from_config(MiniSatConfig::default().incremental(true)),
-        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
+        SatSolver::from_config(SatSolverConfig::default().incremental(true)),
+        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
     ];
 
     let assumptions1 = [f.lit("c", true), f.lit("d", true)];
@@ -29,83 +29,103 @@ fn test_assume() -> LngResult<()> {
         s.add("e => f".to_formula(f), f)?;
 
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", false)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", true)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", true)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("a", true)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("b", false)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("c", false)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("d", false)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("e", false)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("f", false)]))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", false)])),
+            s.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("g", false)]))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions1)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions1))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions2)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions2))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions3)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions3))
+                .unwrap(),
             True
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions4)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions4))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions5)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions5))
+                .unwrap(),
             False
         );
         assert_eq!(
-            s.sat_with(&SatBuilder::new().assumptions(&assumptions6)),
+            s.sat_with(&SatBuilder::new().assumptions(&assumptions6))
+                .unwrap(),
             False
         );
     }
