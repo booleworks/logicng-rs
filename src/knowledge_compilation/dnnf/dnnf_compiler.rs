@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
-use crate::handlers::ComputationHandler;
 use crate::knowledge_compilation::dnnf::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::{
     DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation,
@@ -326,8 +325,11 @@ mod tests {
                     &force_ordering(formula, f).unwrap(),
                     10000,
                     10000,
-                ).unwrap();
-                Bdd::from_formula(formula, f, kernel).unwrap().model_count(kernel)
+                )
+                .unwrap();
+                Bdd::from_formula(formula, f, kernel)
+                    .unwrap()
+                    .model_count(kernel)
             }
         }
     }

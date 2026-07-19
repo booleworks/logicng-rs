@@ -1,7 +1,7 @@
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
-use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig};
+use crate::solver::lng_core_solver::SatSolver;
 use crate::solver::lng_core_solver::functions::BackboneType::PositiveAndNegative;
 
 /// This function simplifies a formula by computing its backbone and

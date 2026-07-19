@@ -8,15 +8,15 @@ use crate::errors::LngResult;
 use crate::formulas::CType::{EQ, GE};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_cnf;
-use crate::solver::lng_core_solver::functions::{
-    enumerate_models, enumerate_models_with_config, ModelEnumerationConfig,
-};
-use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
+use crate::solver::SolverError;
 use crate::solver::lng_core_solver::ClauseMinimization;
 use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
 use crate::solver::lng_core_solver::Tristate::{False, True};
+use crate::solver::lng_core_solver::functions::{
+    ModelEnumerationConfig, enumerate_models_with_config,
+};
+use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
 use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
-use crate::solver::SolverError;
 use crate::util::test_util::{lits, lits_list, vars_list};
 
 fn solvers() -> [SatSolver; 5] {
@@ -451,13 +451,11 @@ fn test_empty_enumeration() -> LngResult<()> {
     for mut solver in solvers() {
         if solver.config.incremental {
             solver.add(f.falsum(), f)?;
-            assert!(enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default(),
-                f
-            )
-            .unwrap()
-            .is_empty());
+            assert!(
+                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                    .unwrap()
+                    .is_empty()
+            );
         }
     }
 

@@ -80,7 +80,7 @@ impl<'s, B: Clone> SatCall<'s, B> {
     }
 
     /// Creates a builder for a scoped call on `solver`.
-    pub fn builder(solver: &mut SatSolver<B>) -> SatCallBuilder<B> {
+    pub fn builder(solver: &mut SatSolver<B>) -> SatCallBuilder<'_, '_, B> {
         SatCallBuilder {
             solver,
             handler: None,

@@ -99,7 +99,6 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
     );
     let file = File::open(path)?;
     let mut clauses: Vec<Vec<isize>> = Vec::new();
-    let mut max_var: usize = 0;
     for line in BufReader::new(file).lines() {
         match line {
             Ok(line) if !line.is_empty() => {
@@ -108,7 +107,6 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
                     "c" => (),
                     "p" => {
                         clauses.reserve(split[3].parse().unwrap());
-                        max_var = split[2].parse().unwrap();
                     }
                     _ => clauses.push(Vec::<isize>::from_iter(
                         split[0..split.len() - 1].iter().map(|x| x.parse().unwrap()),
@@ -121,12 +119,10 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
     Ok(DimacsFile {
         name: path.file_name().unwrap().to_str().unwrap().into(),
         clauses,
-        max_var,
     })
 }
 
 struct DimacsFile {
     name: String,
     clauses: Vec<Vec<isize>>,
-    max_var: usize,
 }

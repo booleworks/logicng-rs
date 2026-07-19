@@ -365,7 +365,7 @@ impl<B: Clone> SatSolver<B> {
     }
 
     /// Creates a scoped SAT-call builder for assumptions and result extraction.
-    pub fn sat_call(&mut self) -> SatCallBuilder<B> {
+    pub fn sat_call(&mut self) -> SatCallBuilder<'_, '_, B> {
         SatCall::builder(self)
     }
 
