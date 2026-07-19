@@ -736,7 +736,6 @@ fn test_selection_order_simple02() -> LngResult<()> {
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files_with_selection_order() -> LngResult<()> {
-    let f = &FormulaFactory::new();
     let expected_results: HashMap<String, bool> =
         BufReader::new(File::open("resources/sat/results.txt").unwrap())
             .lines()
@@ -753,6 +752,7 @@ fn test_dimacs_files_with_selection_order() -> LngResult<()> {
         let file = file.unwrap();
         let file_name = file.file_name().to_str().unwrap().to_string();
         if file_name.ends_with(".cnf") {
+            let f = &FormulaFactory::new();
             let cnf = read_cnf(file.path().to_str().unwrap(), f).unwrap();
             for mut solver in solvers() {
                 for &clause in &cnf {
