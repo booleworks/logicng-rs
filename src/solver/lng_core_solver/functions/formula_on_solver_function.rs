@@ -6,6 +6,7 @@ use crate::{
     solver::lng_core_solver::{LngVar, SatSolver, Tristate, sign, var},
 };
 
+/// Returns a set of formulas representing all clauses currently stored on the solver.
 pub fn formula_on_solver<B>(
     solver: &mut SatSolver<B>,
     f: &FormulaFactory,

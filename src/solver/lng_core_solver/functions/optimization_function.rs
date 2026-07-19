@@ -15,6 +15,7 @@ use crate::{
 
 const SEL_PREFIX: &str = "@SEL_OPT";
 
+/// Configures whether a model optimization minimizes or maximizes its target literals.
 pub struct OptimizationFunction {
     literals: Vec<Literal>,
     result_model_variables: BTreeSet<Variable>,
@@ -52,6 +53,7 @@ impl OptimizationFunction {
         self
     }
 
+    /// Runs this optimization on `solver` and returns the best model found.
     pub fn optimize<B: Clone>(
         &self,
         solver: &mut SatSolver<B>,

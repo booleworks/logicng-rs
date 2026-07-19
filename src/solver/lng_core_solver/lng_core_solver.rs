@@ -19,11 +19,15 @@ use super::{
     sign, var,
 };
 
+/// Divisor determining the initial fraction of learnt clauses considered for removal.
 pub const RATIO_REMOVE_CLAUSES: usize = 2;
+/// Minimum conflict count before a restart may be blocked by trail growth.
 pub const LB_BLOCKING_RESTART: usize = 10_000;
 
+/// Prefix used for auxiliary variables materialized by the core solver.
 pub const AUX_LNG_CORE_SOLVER: &str = "LNG_CORE_SOLVER";
 
+/// Low-level CDCL solver implementing propagation, learning, and incremental state.
 #[allow(clippy::struct_excessive_bools)]
 pub struct LngCoreSolver<B> {
     pub(crate) config: SatSolverConfig,
@@ -240,6 +244,7 @@ impl<B> LngCoreSolver<B> {
         ClauseRef(index)
     }
 
+    /// Adds a unit clause and immediately propagates it at decision level zero.
     pub fn add_unit_clause(&mut self, lit: LngLit, proposition: Option<Proposition<B>>) {
         let unit = vec![lit];
         self.add_clause(unit, proposition);
@@ -381,18 +386,22 @@ impl<B> LngCoreSolver<B> {
         result
     }
 
+    /// Returns the model produced by the last satisfiable solve.
     pub fn model(&self) -> &[bool] {
         &self.model
     }
 
+    /// Returns whether the clauses added so far remain consistent.
     pub const fn ok(&self) -> bool {
         self.ok
     }
 
+    /// Returns the assumption literals participating in the last conflict.
     pub fn assumptions_conflict(&self) -> &[LngLit] {
         &self.assumptions_conflict
     }
 
+    /// Saves metadata required to restore the current incremental state.
     pub fn save_state(&mut self) -> SolverState {
         let id = LngState(self.next_state_id);
         self.next_state_id += 1;
@@ -417,6 +426,7 @@ impl<B> LngCoreSolver<B> {
         }
     }
 
+    /// Restores a valid state previously created by this solver.
     pub fn load_state(&mut self, solver_state: &SolverState) -> Result<(), Box<dyn Error>> {
         let mut index = None;
         for (i, &valid_state) in self.valid_states.iter().enumerate().rev() {
@@ -485,18 +495,22 @@ impl<B> LngCoreSolver<B> {
         Ok(())
     }
 
+    /// Returns the number of internal variables.
     pub fn n_vars(&self) -> usize {
         self.vars.len()
     }
 
+    /// Returns the user variables registered on the solver.
     pub fn known_variables(&self) -> BTreeSet<Variable> {
         self.var2idx.keys().copied().collect()
     }
 
+    /// Returns auxiliary variables that have been assigned external identities.
     pub fn materialized_auxiliary_variables(&self) -> BTreeSet<Variable> {
         self.aux2idx.keys().copied().collect()
     }
 
+    /// Assigns external auxiliary variables to every unnamed internal variable.
     pub fn materialize_all_variables(&mut self, f: &FormulaFactory) {
         for i in 0..self.vars.len() {
             if !self.idx2var.contains_key(&LngVar(i)) && !self.idx2aux.contains_key(&LngVar(i)) {
@@ -955,6 +969,7 @@ impl<B> LngCoreSolver<B> {
         self.learnts.truncate(j);
     }
 
+    /// Returns the original clauses recorded for proof generation.
     pub const fn pg_original_clauses(&self) -> &Vec<ProofInformation<B>> {
         &self.pg_original_clauses
     }
@@ -963,6 +978,7 @@ impl<B> LngCoreSolver<B> {
         &mut self.pg_original_clauses
     }
 
+    /// Returns the generated proof steps.
     pub const fn pg_proof(&self) -> &Vec<Vec<isize>> {
         &self.pg_proof
     }
@@ -1423,6 +1439,7 @@ impl<B> LngCoreSolver<B> {
         }
     }
 
+    /// Adds a native at-most-`rhs` constraint over the supplied literals.
     pub fn add_at_most(&mut self, mut ps: Vec<LngLit>, rhs: usize) {
         let mut k = isize::try_from(rhs).expect("at-most right-hand side exceeds isize");
         assert!(self.decision_level() == 0);
@@ -1515,6 +1532,7 @@ impl<B> LngCoreSolver<B> {
         }
     }
 
+    /// Converts an internal Boolean model into external literals for selected variables.
     pub fn convert_internal_model(
         &mut self,
         internal_model: &[bool],
@@ -1534,6 +1552,7 @@ impl<B> LngCoreSolver<B> {
         literals
     }
 
+    /// Converts the solver's current model into external literals for selected variables.
     pub fn convert_internal_model_on_solver(
         &mut self,
         relevant_indices: &[LngVar],
@@ -1601,6 +1620,7 @@ impl<B> LngCoreSolver<B> {
         result
     }
 
+    /// Maps known external variables to their internal indices.
     pub fn get_relevant_var_indices<V, I>(&self, variables: I) -> Vec<LngVar>
     where
         I: IntoIterator<Item = V>,
@@ -1796,14 +1816,17 @@ impl<B> LngCoreSolver<B> {
         self.backbone_assumptions.push(lit);
     }
 
+    /// Returns references to the original clauses stored on the solver.
     pub const fn clauses(&self) -> &Vec<ClauseRef> {
         &self.clauses
     }
 
+    /// Returns the internal solver variables.
     pub const fn variables(&self) -> &Vec<LngVariable> {
         &self.vars
     }
 
+    /// Sets a preferred branching order and literal phase.
     pub fn set_selection_order(&mut self, selection_order: &[Literal]) {
         self.selection_order.clear();
         for &literal in selection_order {
@@ -1813,6 +1836,7 @@ impl<B> LngCoreSolver<B> {
         }
     }
 
+    /// Returns the solver configuration.
     pub const fn config(&self) -> &SatSolverConfig {
         &self.config
     }
@@ -1948,6 +1972,7 @@ impl<B> std::fmt::Debug for LngCoreSolver<B> {
     }
 }
 
+/// Converts external literals to an internal clause, creating variables as required.
 pub fn generate_clause_vector<B>(
     literals: &[Literal],
     solver: &mut LngCoreSolver<B>,
@@ -1961,6 +1986,7 @@ pub fn generate_clause_vector<B>(
     clause_vec
 }
 
+/// Converts external literals using the solver's initial phase and decision settings.
 pub fn generate_clause_vector_wo_config<B>(
     literals: &[Literal],
     solver: &mut LngCoreSolver<B>,
@@ -1968,6 +1994,7 @@ pub fn generate_clause_vector_wo_config<B>(
     generate_clause_vector(literals, solver, solver.config.initial_phase, true)
 }
 
+/// Converts an external literal to its internal representation.
 pub fn solver_literal<B>(
     lit: Literal,
     solver: &mut LngCoreSolver<B>,
@@ -1984,10 +2011,12 @@ pub fn solver_literal<B>(
     }
 }
 
+/// Converts an external literal using the solver's default variable settings.
 pub fn solver_literal_default<B>(lit: Literal, solver: &mut LngCoreSolver<B>) -> LngLit {
     solver_literal(lit, solver, solver.config.initial_phase, true)
 }
 
+/// Returns whether the backbone type includes positive literals.
 pub const fn is_both_or_positive_type(backbone_type: BackboneType) -> bool {
     matches!(
         backbone_type,
@@ -1995,6 +2024,7 @@ pub const fn is_both_or_positive_type(backbone_type: BackboneType) -> bool {
     )
 }
 
+/// Returns whether the backbone type includes negative literals.
 pub const fn is_both_or_negative_type(backbone_type: BackboneType) -> bool {
     matches!(
         backbone_type,
@@ -2002,6 +2032,7 @@ pub const fn is_both_or_negative_type(backbone_type: BackboneType) -> bool {
     )
 }
 
+/// Returns whether both backbone polarities are requested.
 pub const fn is_both_type(backbone_type: BackboneType) -> bool {
     matches!(backbone_type, BackboneType::PositiveAndNegative)
 }

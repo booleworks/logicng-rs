@@ -14,6 +14,7 @@ pub struct LngHeap {
 }
 
 impl LngHeap {
+    /// Creates an empty variable-order heap.
     pub fn new() -> Self {
         Self {
             heap: Vec::with_capacity(1000),
@@ -21,23 +22,28 @@ impl LngHeap {
         }
     }
 
+    /// Returns whether the heap contains no variables.
     pub fn empty(&self) -> bool {
         self.heap.is_empty()
     }
 
+    /// Returns the number of variables in the heap.
     pub fn len(&self) -> usize {
         self.heap.len()
     }
 
+    /// Returns whether variable `n` is currently stored in the heap.
     pub fn in_heap(&self, n: LngVar) -> bool {
         n.0 < self.indices.len() && self.indices[n.0] < (LngVar::UNDEF).0
     }
 
+    /// Moves a variable upward after its activity has increased.
     pub fn decrease(&mut self, n: LngVar, solver_variables: &[LngVariable]) {
         debug_assert!(self.in_heap(n));
         self.percolate_up(self.indices[n.0], solver_variables);
     }
 
+    /// Inserts a variable according to its current activity.
     pub fn insert(&mut self, n: LngVar, solver_variables: &[LngVariable]) {
         grow_to(&mut self.indices, n.0 + 1, LngVar::UNDEF.0);
         debug_assert!(!self.in_heap(n));
@@ -46,6 +52,7 @@ impl LngHeap {
         self.percolate_up(self.indices[n.0], solver_variables);
     }
 
+    /// Removes and returns the variable with greatest activity.
     pub fn remove_min(&mut self, solver_variables: &[LngVariable]) -> LngVar {
         let x = self.heap[0];
         self.heap[0] = self.heap[self.heap.len() - 1];
@@ -58,6 +65,7 @@ impl LngHeap {
         x
     }
 
+    /// Removes the given variable from the heap.
     pub fn remove(&mut self, n: LngVar, solver_variables: &[LngVariable]) {
         debug_assert!(self.in_heap(n));
         let k_pos = self.indices[n.0];
@@ -72,6 +80,7 @@ impl LngHeap {
         };
     }
 
+    /// Rebuilds the heap from the supplied variables.
     pub fn build(&mut self, ns: &[LngVar], solver_variables: &[LngVariable]) {
         for i in 0..self.heap.len() {
             self.indices[self.heap[i].0] = LngVar::UNDEF.0;
@@ -86,6 +95,7 @@ impl LngHeap {
         }
     }
 
+    /// Removes all variables from the heap.
     pub fn clear(&mut self) {
         for i in 0..self.heap.len() {
             self.indices[self.heap[i].0] = LngVar::UNDEF.0;

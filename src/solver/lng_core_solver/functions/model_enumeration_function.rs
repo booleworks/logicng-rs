@@ -43,6 +43,7 @@ impl Default for ModelEnumerationConfig {
 }
 
 impl ModelEnumerationConfig {
+    /// Creates a model-enumeration configuration projected onto `variables`.
     pub fn new(variables: impl Into<Box<[Variable]>>) -> Self {
         Self {
             variables: variables.into(),
@@ -52,6 +53,7 @@ impl ModelEnumerationConfig {
     }
 
     #[must_use]
+    /// Replaces the variables on which enumerated models are projected.
     pub fn variables<V: Into<Box<[Variable]>>>(mut self, variables: V) -> Self {
         self.variables = variables.into();
         self

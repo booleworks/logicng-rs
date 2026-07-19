@@ -29,6 +29,7 @@ impl BackboneType {
     }
 }
 
+/// Computes the requested backbone over `variables` without permanently changing the solver.
 pub fn compute_backbone<B, V, I>(
     solver: &mut SatSolver<B>,
     variables: I,

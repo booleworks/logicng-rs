@@ -1,3 +1,6 @@
+//! SAT solving based on the LogicNG core CDCL solver.
+
+/// High-level operations implemented on top of the SAT solver.
 pub mod functions;
 
 mod datastructures;

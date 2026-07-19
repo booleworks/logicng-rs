@@ -23,8 +23,11 @@ use super::{
     generate_clause_vector_wo_config,
 };
 
+/// High-level SAT solver supporting formulas, incremental states, and model operations.
 pub struct SatSolver<B = ()> {
+    /// Low-level CDCL solver used by this facade.
     pub underlying_solver: LngCoreSolver<B>,
+    /// Configuration with which the solver was created.
     pub config: SatSolverConfig,
     last_result: Tristate,
     pg_variable_cache: HashMap<EncodedFormula, VarCacheEntry>,
@@ -32,10 +35,12 @@ pub struct SatSolver<B = ()> {
 }
 
 impl<B> SatSolver<B> {
+    /// Creates a solver whose propositions carry backpack values of type `B`.
     pub fn new_with_backpack() -> Self {
         Self::from_config_with_backpack(SatSolverConfig::default())
     }
 
+    /// Wraps an existing low-level core solver.
     pub fn from_core_solver(core_solver: LngCoreSolver<B>) -> Self {
         let config = core_solver.config().clone();
         Self {
@@ -47,6 +52,7 @@ impl<B> SatSolver<B> {
         }
     }
 
+    /// Creates a backpack-aware solver with the supplied configuration.
     pub fn from_config_with_backpack(config: SatSolverConfig) -> Self {
         Self::from_core_solver(LngCoreSolver::new_with_config(config))
     }
@@ -84,6 +90,7 @@ impl<B> SatSolver<B> {
         Ok(())
     }
 
+    /// Saves the current incremental state.
     pub fn save_state(&mut self) -> LngResult<SolverState> {
         if !self.config().incremental {
             return Err(crate::solver::SolverError::StateRequiresIncrementalMode.into());
@@ -91,6 +98,7 @@ impl<B> SatSolver<B> {
         Ok(self.underlying_solver.save_state())
     }
 
+    /// Restores a previously saved incremental state.
     pub fn load_state(&mut self, state: &SolverState) -> LngResult<()> {
         if !self.config().incremental {
             return Err(crate::solver::SolverError::StateRequiresIncrementalMode.into());
@@ -103,6 +111,7 @@ impl<B> SatSolver<B> {
         Ok(())
     }
 
+    /// Computes a backbone over the relevant variables.
     pub fn backbone<I, V>(
         &mut self,
         relevant_variables: I,
@@ -123,6 +132,7 @@ impl<B> SatSolver<B> {
             .ok_or_else(|| crate::solver::SolverError::InvalidExternalResponse.into())
     }
 
+    /// Computes a backbone using a cancelable computation handler.
     pub fn backbone_with_handler<I, V>(
         &mut self,
         relevant_variables: I,
@@ -136,10 +146,12 @@ impl<B> SatSolver<B> {
         compute_backbone(self, relevant_variables, backbone_type, handler)
     }
 
+    /// Returns this solver's configuration.
     pub fn config(&self) -> &SatSolverConfig {
         &self.config
     }
 
+    /// Returns mutable access to the low-level core solver.
     pub fn underlying_solver(&mut self) -> &mut LngCoreSolver<B> {
         &mut self.underlying_solver
     }
@@ -186,16 +198,19 @@ impl<B> SatSolver<B> {
 }
 
 impl SatSolver<()> {
+    /// Creates a solver without proposition backpack data.
     pub fn new() -> Self {
         Self::new_with_backpack()
     }
 
+    /// Creates a solver without proposition backpack data using `config`.
     pub fn from_config(config: SatSolverConfig) -> Self {
         Self::from_config_with_backpack(config)
     }
 }
 
 impl<B: Clone> SatSolver<B> {
+    /// Adds every formula produced by `formulas` to the solver.
     pub fn add_formulas<E, I>(&mut self, formulas: I, f: &FormulaFactory) -> LngResult<()>
     where
         E: Into<EncodedFormula>,
@@ -207,6 +222,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(())
     }
 
+    /// Adds all formulas in the slice to the solver.
     pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()>
     where
         B: Clone,
@@ -214,10 +230,12 @@ impl<B: Clone> SatSolver<B> {
         self.add_formulas(formulas.iter().copied(), f)
     }
 
+    /// Adds a formula without proposition metadata.
     pub fn add_formula(&mut self, formula: EncodedFormula, f: &FormulaFactory) -> LngResult<()> {
         self.add_intern(formula, None, f)
     }
 
+    /// Adds a formula together with proposition metadata.
     pub fn add_with_proposition(
         &mut self,
         formula: EncodedFormula,
@@ -293,6 +311,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(())
     }
 
+    /// Adds all supplied propositions and their formulas.
     pub fn add_propositions<I>(&mut self, propositions: I, f: &FormulaFactory) -> LngResult<()>
     where
         I: IntoIterator<Item = Proposition<B>>,
@@ -303,6 +322,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(())
     }
 
+    /// Adds a proposition and preserves it for proof-based explanations.
     pub fn add_proposition(
         &mut self,
         proposition: Proposition<B>,
@@ -311,6 +331,7 @@ impl<B: Clone> SatSolver<B> {
         self.add_intern(proposition.formula, Some(proposition), f)
     }
 
+    /// Adds a formula relaxed by the given variable.
     pub fn add_formula_with_relaxation(
         &mut self,
         relaxation_var: Variable,
@@ -320,6 +341,7 @@ impl<B: Clone> SatSolver<B> {
         self.add_formula(f.or([relaxation_var.into(), formula]), f)
     }
 
+    /// Adds several formulas, each relaxed by the given variable.
     pub fn add_formulas_with_relaxation(
         &mut self,
         relaxation_var: Variable,
@@ -332,6 +354,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(())
     }
 
+    /// Adds an incremental cardinality constraint and returns its refinement data.
     pub fn add_incremental_cc(
         &mut self,
         cc: &CardinalityConstraint,
@@ -341,10 +364,12 @@ impl<B: Clone> SatSolver<B> {
         CcEncoder::default().encode_incremental_on(&mut result, cc)
     }
 
+    /// Creates a scoped SAT-call builder for assumptions and result extraction.
     pub fn sat_call(&mut self) -> SatCallBuilder<B> {
         SatCall::builder(self)
     }
 
+    /// Solves the currently stored formula without assumptions.
     pub fn sat(&mut self) -> LngResult<Tristate> {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.underlying_solver
@@ -359,6 +384,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(self.last_result)
     }
 
+    /// Solves using assumptions and a selection order from `builder`.
     pub fn sat_with(&mut self, builder: &SatBuilder<'_, '_>) -> LngResult<Tristate> {
         if let Some(assumptions) = builder.assumptions {
             self.underlying_solver.assumptions =
@@ -373,6 +399,7 @@ impl<B: Clone> SatSolver<B> {
         result
     }
 
+    /// Returns a model from the last satisfiable call, optionally projected to variables.
     pub fn model(&mut self, variables: Option<&[Variable]>) -> LngResult<Option<Model>> {
         match self.last_result {
             Tristate::False => Ok(None),
@@ -402,6 +429,7 @@ impl<B: Clone> SatSolver<B> {
         }
     }
 
+    /// Returns all user variables currently known by the solver.
     pub fn known_variables(&self) -> Vec<Variable> {
         self.underlying_solver
             .known_variables()
@@ -410,15 +438,18 @@ impl<B: Clone> SatSolver<B> {
             .collect()
     }
 
+    /// Clears all formulas and state while preserving the configuration.
     pub fn reset(&mut self) {
         let config = self.config().clone();
         *self = Self::from_config_with_backpack(config);
     }
 
+    /// Invalidates the result of the last SAT call.
     pub fn set_solver_to_undef(&mut self) {
         self.last_result = Tristate::Undef;
     }
 
+    /// Runs the supplied model-optimization function.
     pub fn optimize(
         &mut self,
         f: &FormulaFactory,
@@ -428,6 +459,7 @@ impl<B: Clone> SatSolver<B> {
         Ok(result.result().map(|model| (*model).clone()))
     }
 
+    /// Enumerates all models projected onto `variables`.
     pub fn enumerate_all_models(
         &mut self,
         variables: &[Variable],
@@ -436,10 +468,12 @@ impl<B: Clone> SatSolver<B> {
         enumerate_models(self, variables, f)
     }
 
+    /// Returns formulas representing the clauses currently stored on the solver.
     pub fn formula_on_solver(&mut self, f: &FormulaFactory) -> LngResult<HashSet<EncodedFormula>> {
         formula_on_solver(self, f)
     }
 
+    /// Returns literals propagated at level zero by the last satisfiable call.
     pub fn up_zero_literals(&mut self) -> LngResult<Option<BTreeSet<Literal>>> {
         match self.last_result {
             Tristate::Undef => Err(crate::solver::SolverError::NotSolved.into()),
@@ -457,12 +491,14 @@ impl<B: Clone> SatSolver<B> {
     }
 }
 
+/// Additional assumptions and branching order for a direct SAT call.
 pub struct SatBuilder<'a, 'o> {
     assumptions: Option<&'a [Literal]>,
     selection_order: Option<&'o [Literal]>,
 }
 
 impl<'a, 'o> SatBuilder<'a, 'o> {
+    /// Creates an empty SAT-call configuration.
     pub const fn new() -> Self {
         Self {
             assumptions: None,
@@ -471,12 +507,14 @@ impl<'a, 'o> SatBuilder<'a, 'o> {
     }
 
     #[must_use]
+    /// Sets temporary assumption literals.
     pub fn assumptions(mut self, assumptions: &'a [Literal]) -> Self {
         self.assumptions = Some(assumptions);
         self
     }
 
     #[must_use]
+    /// Sets the preferred branching order and phases.
     pub const fn selection_order(mut self, selection_order: &'o [Literal]) -> Self {
         self.selection_order = Some(selection_order);
         self
@@ -490,6 +528,7 @@ impl Default for SatBuilder<'_, '_> {
 }
 
 impl<B: Clone + PartialEq> SatSolver<B> {
+    /// Extracts an unsatisfiable core from the last unsatisfiable call.
     pub fn unsat_core(
         &mut self,
         f: &FormulaFactory,

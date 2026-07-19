@@ -1,5 +1,6 @@
 use std::ops::{Add, Div, Sub};
 
+/// Fixed-capacity circular queue that tracks the sum of its current elements.
 #[derive(Clone, Debug)]
 pub struct BoundedQueue<E> {
     elems: Vec<E>,
@@ -11,6 +12,7 @@ pub struct BoundedQueue<E> {
 }
 
 impl<E: Default> BoundedQueue<E> {
+    /// Creates an uninitialized queue with zero capacity.
     pub fn new() -> Self {
         Self {
             elems: Vec::new(),
@@ -22,6 +24,7 @@ impl<E: Default> BoundedQueue<E> {
         }
     }
 
+    /// Sets the queue capacity and clears all queued elements.
     pub fn init_size(&mut self, size: usize) {
         self.elems.resize_with(size, || E::default());
         self.first = 0;
@@ -30,6 +33,7 @@ impl<E: Default> BoundedQueue<E> {
         self.last = 0;
     }
 
+    /// Clears the queue while retaining its allocated element storage.
     pub fn fast_clear(&mut self) {
         self.first = 0;
         self.last = 0;
@@ -45,40 +49,49 @@ impl<E: Default> Default for BoundedQueue<E> {
 }
 
 impl<E> BoundedQueue<E> {
+    /// Returns whether the queue is filled to its configured capacity.
     pub const fn valid(&self) -> bool {
         self.queue_size == self.max_size
     }
 
+    /// Returns the queue's backing element storage.
     pub const fn elements(&self) -> &Vec<E> {
         &self.elems
     }
 
+    /// Consumes the queue and returns its backing element storage.
     pub fn into_elements(self) -> Vec<E> {
         self.elems
     }
 
+    /// Returns the index at which the next element is written.
     pub const fn first(&self) -> usize {
         self.first
     }
 
+    /// Returns the index of the oldest element when the queue is full.
     pub const fn last(&self) -> usize {
         self.last
     }
 
+    /// Returns the sum of the elements currently in the queue.
     pub const fn sum_of_queue(&self) -> &E {
         &self.sum_of_queue
     }
 
+    /// Returns the configured queue capacity.
     pub const fn max_size(&self) -> usize {
         self.max_size
     }
 
+    /// Returns the number of elements currently in the queue.
     pub const fn queue_size(&self) -> usize {
         self.queue_size
     }
 }
 
 impl<E: Add<Output = E> + Sub<Output = E> + Copy> BoundedQueue<E> {
+    /// Appends an element, replacing the oldest element when the queue is full.
     pub fn push(&mut self, x: E) {
         if self.queue_size == self.max_size {
             assert_eq!(self.last, self.first);
@@ -101,6 +114,7 @@ impl<E: Add<Output = E> + Sub<Output = E> + Copy> BoundedQueue<E> {
 }
 
 impl<A, E: Div<Output = A> + From<usize> + Copy> BoundedQueue<E> {
+    /// Returns the arithmetic mean of the queued elements.
     pub fn avg(&self) -> A {
         self.sum_of_queue / self.queue_size.into()
     }

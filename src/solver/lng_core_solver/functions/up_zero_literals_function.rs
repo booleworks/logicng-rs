@@ -6,6 +6,7 @@ use crate::{
     solver::lng_core_solver::{SatSolver, Tristate, sign, var},
 };
 
+/// Returns the externally represented literals propagated at decision level zero.
 pub fn up_zero_literals<B: Clone>(
     solver: &mut SatSolver<B>,
     f: &FormulaFactory,

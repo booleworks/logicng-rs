@@ -10,6 +10,7 @@ use crate::{
     solver::lng_core_solver::{LngVar, SatSolver},
 };
 
+/// Builds an unsatisfiable core from the proof recorded by `solver`.
 pub fn compute_unsat_core<B: PartialEq>(
     solver: &mut SatSolver<B>,
     f: &FormulaFactory,

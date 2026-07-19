@@ -18,6 +18,7 @@ pub struct LngLit(pub usize);
 impl LngLit {
     /// Last possible representation of a literal.
     pub const UNDEF: Self = Self(usize::MAX);
+    /// Sentinel used when an operation reports a literal-level error.
     pub const ERROR: Self = Self(usize::MAX - 1);
 }
 
@@ -41,37 +42,58 @@ pub const fn var(lit: LngLit) -> LngVar {
     LngVar(lit.0 >> 1)
 }
 
+/// Identifier of a saved incremental solver state.
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct LngState(pub usize);
 
+/// Snapshot metadata used to restore an earlier incremental solver state.
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Clone, Hash)]
 pub struct SolverState {
+    /// Unique identifier of this state.
     pub id: LngState,
+    /// Whether the solver was consistent when the state was saved.
     pub ok: bool,
+    /// Number of variables present in the saved state.
     pub vars_size: usize,
+    /// Size of the clause arena in the saved state.
     pub all_clause_size: usize,
+    /// Number of original clauses in the saved state.
     pub clause_size: usize,
+    /// Number of unit clauses in the saved state.
     pub unit_clause_size: usize,
+    /// Number of original proof entries in the saved state.
     pub pg_original_size: usize,
+    /// Number of generated proof entries in the saved state.
     pub pg_proof_size: usize,
 }
 
+/// Internal representation of a clause and its solver metadata.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, PartialEq, Debug)]
 pub struct LngClause {
+    /// Literals contained in the clause.
     pub data: Vec<LngLit>,
+    /// Incremental state on which this clause was learnt, if any.
     pub learnt_on_state: Option<LngState>,
+    /// Whether this is a native at-most clause.
     pub is_at_most: bool,
+    /// Clause activity used during learnt-clause reduction.
     pub activity: f64,
+    /// Temporary conflict-analysis marker.
     pub seen: bool,
+    /// Literal block distance of the clause.
     pub lbd: usize,
+    /// Whether database reduction may delete this clause.
     pub can_be_del: bool,
+    /// Whether the clause uses the one-watched representation.
     pub one_watched: bool,
+    /// Number of watched literals for an at-most clause.
     pub at_most_watchers: Option<usize>,
 }
 
 impl LngClause {
+    /// Creates a clause from its literals and basic classification metadata.
     pub fn new(data: Vec<LngLit>, learnt_on_state: Option<LngState>, is_at_most: bool) -> Self {
         Self {
             data,
@@ -86,30 +108,37 @@ impl LngClause {
         }
     }
 
+    /// Returns the number of literals in the clause.
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
+    /// Returns the literal at position `i`.
     pub fn get(&self, i: usize) -> LngLit {
         self.data[i]
     }
 
+    /// Replaces the literal at position `i`.
     pub fn set(&mut self, i: usize, lit: LngLit) {
         self.data[i] = lit;
     }
 
+    /// Increases the clause activity by `inc`.
     pub fn increment_activity(&mut self, inc: f64) {
         self.activity += inc;
     }
 
+    /// Rescales clause activity to avoid floating-point overflow.
     pub fn rescale_activity(&mut self) {
         self.activity *= 1e-20;
     }
 
+    /// Copies all literals starting at `from`.
     pub fn range_copy_from(&self, from: usize) -> Vec<LngLit> {
         self.data[from..].to_vec()
     }
 
+    /// Returns the right-hand-side cardinality of an at-most clause.
     pub fn cardinality(&self) -> usize {
         self.data.len() - self.at_most_watchers.unwrap() + 1
     }
@@ -118,15 +147,22 @@ impl LngClause {
 /// A SatSolver Variable
 #[derive(Clone, PartialEq, Debug)]
 pub struct LngVariable {
+    /// Current truth assignment.
     pub assignment: Tristate,
+    /// Decision level of the current assignment.
     pub level: Option<usize>,
+    /// Clause that implied the current assignment.
     pub reason: Option<ClauseRef>,
+    /// Variable activity used for branch selection.
     pub activity: f64,
+    /// Preferred decision polarity.
     pub polarity: bool,
+    /// Whether the variable may be selected as a decision variable.
     pub decision: bool,
 }
 
 impl LngVariable {
+    /// Creates an unassigned solver variable.
     pub const fn new(polarity: bool, decision: bool) -> Self {
         Self {
             assignment: Tristate::Undef,
@@ -138,14 +174,17 @@ impl LngVariable {
         }
     }
 
+    /// Returns whether the variable is assigned above decision level zero.
     pub fn level_greater_zero(&self) -> bool {
         self.level.unwrap_or(0) > 0
     }
 
+    /// Increases the variable activity by `inc`.
     pub fn increment_activity(&mut self, inc: f64) {
         self.activity += inc;
     }
 
+    /// Rescales variable activity to avoid floating-point overflow.
     pub fn rescale_activity(&mut self) {
         self.activity *= 1e-100;
     }

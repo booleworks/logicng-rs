@@ -15,6 +15,7 @@ use super::{
     generate_clause_vector_wo_config,
 };
 
+/// Scoped SAT call whose temporary assumptions and formulas are reverted on drop.
 pub struct SatCall<'s, B> {
     solver: &'s mut SatSolver<B>,
     initial_state: Option<SolverState>,
@@ -78,6 +79,7 @@ impl<'s, B: Clone> SatCall<'s, B> {
         })
     }
 
+    /// Creates a builder for a scoped call on `solver`.
     pub fn builder(solver: &mut SatSolver<B>) -> SatCallBuilder<B> {
         SatCallBuilder {
             solver,
@@ -87,10 +89,12 @@ impl<'s, B: Clone> SatCall<'s, B> {
         }
     }
 
+    /// Returns the cancelable Boolean result of this SAT call.
     pub fn get_sat_result(&self) -> LngResult<CancelableResult<bool>> {
         self.sat_result.clone()
     }
 
+    /// Returns a model projected onto `variables` when the call was satisfiable.
     pub fn model(
         &mut self,
         variables: &[Variable],
@@ -123,6 +127,7 @@ impl<'s, B: Clone> SatCall<'s, B> {
 }
 
 impl<'s, B: PartialEq> SatCall<'s, B> {
+    /// Returns the unsatisfiable core when proof generation is enabled and the call was unsatisfiable.
     pub fn unsat_core(&mut self, f: &FormulaFactory) -> LngResult<Option<UnsatCore<B>>> {
         if !self.solver.config().proof_generation {
             Err(crate::solver::SolverError::ProofGenerationRequired.into())
@@ -184,6 +189,7 @@ impl<B> Additionals<B> {
     }
 }
 
+/// Builder for configuring and executing a scoped [`SatCall`].
 pub struct SatCallBuilder<'s, 'h, B> {
     solver: &'s mut SatSolver<B>,
     handler: Option<Box<&'h mut dyn ComputationHandler>>,
@@ -192,6 +198,7 @@ pub struct SatCallBuilder<'s, 'h, B> {
 }
 
 impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
+    /// Executes the configured call and returns its scoped result object.
     pub fn solve(self, f: &FormulaFactory) -> LngResult<SatCall<'s, B>> {
         SatCall::init(
             self.solver,
@@ -202,6 +209,7 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
         )
     }
 
+    /// Executes the call and returns both the call and its computation handler.
     pub fn solve_and_get_handler(
         self,
         f: &FormulaFactory,
@@ -228,11 +236,13 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
         }
     }
 
+    /// Sets the handler used to cancel the SAT computation.
     pub fn handler(mut self, handler: &'h mut dyn ComputationHandler) -> Self {
         self.handler = Some(Box::new(handler));
         self
     }
 
+    /// Adds formulas that are active only for this call.
     pub fn add_formulas<E, I>(mut self, formulas: I) -> Self
     where
         E: Into<EncodedFormula>,
@@ -245,6 +255,7 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
         self
     }
 
+    /// Adds propositions that are active only for this call.
     pub fn add_propositions<I>(mut self, propositions: I) -> Self
     where
         I: IntoIterator<Item = Proposition<B>>,
@@ -253,16 +264,19 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
         self
     }
 
+    /// Sets an optional preferred variable and phase order.
     pub fn selection_order(mut self, selection_order: Option<Vec<Literal>>) -> Self {
         self.selection_order = selection_order;
         self
     }
 
+    /// Executes the call and returns only its satisfiability result.
     pub fn sat(self, f: &FormulaFactory) -> LngResult<CancelableResult<bool>> {
         let call = self.solve(f)?;
         call.get_sat_result()
     }
 
+    /// Executes the call and returns a projected model when satisfiable.
     pub fn model(self, variables: &[Variable], f: &FormulaFactory) -> LngResult<Option<Model>> {
         let mut call = self.solve(f)?;
         call.model(variables, f)
@@ -270,6 +284,7 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
 }
 
 impl<'s, 'h, B: PartialEq + Clone> SatCallBuilder<'s, 'h, B> {
+    /// Executes the call and returns an unsatisfiable core when available.
     pub fn unsat_core(self, f: &FormulaFactory) -> LngResult<Option<UnsatCore<B>>> {
         let mut call = self.solve(f)?;
         call.unsat_core(f)
