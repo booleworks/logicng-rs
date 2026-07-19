@@ -165,7 +165,7 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
 }
 
 #[test]
-#[ignore = "Too large for MiniSat, requires Glucose"]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_very_large_modular_totalizer_amk() -> LngResult<()> {
     let f = &mut FormulaFactory::new();
     f.config.cc_config = configs()[2].clone();
