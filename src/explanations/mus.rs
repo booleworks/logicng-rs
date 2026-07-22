@@ -4,7 +4,7 @@ use crate::{
     formulas::{EncodedFormula, FormulaFactory, Literal},
     handlers::{CancelableResult, ComputationHandler, LngEvent, NopHandler},
     propositions::Proposition,
-    solver::lng_core_solver::{SatSolver, SolverState},
+    solver::lng_core_solver::{SatSolver, SatSolverConfig, SolverState},
 };
 
 /// The algorithm for the MUS computation
@@ -14,6 +14,8 @@ pub enum MusAlgorithm {
     Deletion,
     /// A deletion-based MUS algorithm using selection variables and SAT assumptions
     DeletionSelection,
+    /// A core-guided MUS algorithm followed by selector-based deletion
+    CoreGuided,
     /// A naive plain insertion-based MUS algorithm
     PlainInsertion,
 }
@@ -56,8 +58,8 @@ pub fn compute_mus_for_formulas(
     compute_mus(algo, &propositions, f)
 }
 
-///  Computes a MUS for the given 'formulas' with the given MUS 'algorithm' and
-///  the given 'handler' to abort the computation.
+///  Computes a MUS for the given formulas with the given MUS algorithm and
+///  a handler to abort the computation.
 ///
 /// # Errors
 ///
@@ -105,7 +107,7 @@ pub fn compute_mus_for_formulas_with_handler(
 ///
 /// Returns an error if the proposition list is empty, its formulas are satisfiable, or the SAT
 /// solver encounters an error.
-pub fn compute_mus<B>(
+pub fn compute_mus<B: PartialEq>(
     algo: MusAlgorithm,
     propositions: &[Proposition<B>],
     f: &FormulaFactory,
@@ -114,14 +116,14 @@ pub fn compute_mus<B>(
     Ok(mus.result().expect("nop handler can never abort"))
 }
 
-///  Computes a MUS for the given 'propositions' with the given MUS 'algorithm'
-///  and the given 'handler' to abort the computation.
+///  Computes a MUS for the given propositions with the given MUS algorithm
+///  and a handler to abort the computation.
 ///
 /// # Errors
 ///
 /// Returns an error if the proposition list is empty, its formulas are satisfiable, or the SAT
 /// solver encounters an error.
-pub fn compute_mus_with_handler<B>(
+pub fn compute_mus_with_handler<B: PartialEq>(
     algo: MusAlgorithm,
     propositions: &[Proposition<B>],
     f: &FormulaFactory,
@@ -135,6 +137,7 @@ pub fn compute_mus_with_handler<B>(
         MusAlgorithm::DeletionSelection => {
             deletion_based_mus_with_selectors(propositions, f, handler)
         }
+        MusAlgorithm::CoreGuided => core_guided_mus(propositions, f, handler),
         MusAlgorithm::PlainInsertion => insertion_based_mus(propositions, f, handler),
     }
 }
@@ -147,7 +150,14 @@ fn deletion_based_mus_with_selectors<B>(
     if !handler.should_resume(LngEvent::MusComputationStarted) {
         return Ok(CancelableResult::Canceled(LngEvent::MusComputationStarted));
     }
+    deletion_based_mus_with_selectors_internal(propositions, f, handler)
+}
 
+fn deletion_based_mus_with_selectors_internal<B>(
+    propositions: &[Proposition<B>],
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<UnsatCore<B>>> {
     let mut solver: SatSolver<B> = SatSolver::new_with_backpack();
     let mut selectors: Vec<Literal> = Vec::with_capacity(propositions.len());
     for proposition in propositions {
@@ -199,6 +209,35 @@ fn deletion_based_mus_with_selectors<B>(
         .map(|(proposition, _)| proposition.clone())
         .collect();
     Ok(CancelableResult::Ok(UnsatCore::new(mus, true)))
+}
+
+fn core_guided_mus<B: PartialEq>(
+    propositions: &[Proposition<B>],
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<UnsatCore<B>>> {
+    if !handler.should_resume(LngEvent::MusComputationStarted) {
+        return Ok(CancelableResult::Canceled(LngEvent::MusComputationStarted));
+    }
+
+    let config = SatSolverConfig::default().proof_generation(true);
+    let mut solver: SatSolver<B> = SatSolver::from_config_with_backpack(config);
+    solver.add_propositions(propositions.iter().cloned(), f)?;
+
+    let core = {
+        let mut call = solver.sat_call().handler(handler).solve(f)?;
+        match call.get_sat_result()? {
+            CancelableResult::Ok(true) => {
+                return Err(ExplanationError::SatisfiableFormula.into());
+            }
+            CancelableResult::Ok(false) => call.unsat_core(f)?.expect("unsatisfiable SAT call"),
+            CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+                return Ok(CancelableResult::Canceled(e));
+            }
+        }
+    };
+
+    deletion_based_mus_with_selectors_internal(&core.propositions, f, handler)
 }
 
 fn deletion_based_mus<B>(
@@ -381,6 +420,7 @@ mod tests {
             format!("{:?}", MusAlgorithm::DeletionSelection),
             "DeletionSelection"
         );
+        assert_eq!(format!("{:?}", MusAlgorithm::CoreGuided), "CoreGuided");
     }
 
     #[test]
@@ -390,6 +430,7 @@ mod tests {
         for algorithm in [
             MusAlgorithm::Deletion,
             MusAlgorithm::DeletionSelection,
+            MusAlgorithm::CoreGuided,
             MusAlgorithm::PlainInsertion,
         ] {
             assert_eq!(
@@ -412,6 +453,7 @@ mod tests {
             for algorithm in [
                 MusAlgorithm::PlainInsertion,
                 MusAlgorithm::DeletionSelection,
+                MusAlgorithm::CoreGuided,
             ] {
                 let mus = compute_mus(algorithm, &propositions, &f).unwrap();
                 assert_mus(&propositions, &mus, &f);
@@ -460,12 +502,33 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
+    fn core_guided_mus() {
+        let f = FormulaFactory::new();
+        for propositions in [
+            pigeon_hole_propositions(3, &f),
+            pigeon_hole_propositions(4, &f),
+            pigeon_hole_propositions(5, &f),
+            pigeon_hole_propositions(6, &f),
+            pigeon_hole_propositions(7, &f),
+            test_file("resources/sat/3col40_5_10.shuffled.cnf", &f),
+            test_file("resources/sat/x1_16.shuffled.cnf", &f),
+            test_file("resources/sat/grid_10_20.shuffled.cnf", &f),
+            test_file("resources/sat/ca032.shuffled.cnf", &f),
+        ] {
+            let mus = compute_mus(MusAlgorithm::CoreGuided, &propositions, &f).unwrap();
+            assert_mus(&propositions, &mus, &f);
+        }
+    }
+
+    #[test]
     fn cancellation_points() {
         let f = FormulaFactory::new();
         let propositions = test_file("resources/sat/unsat/bf0432-007.cnf", &f);
         for algorithm in [
             MusAlgorithm::Deletion,
             MusAlgorithm::DeletionSelection,
+            MusAlgorithm::CoreGuided,
             MusAlgorithm::PlainInsertion,
         ] {
             for bound in 0..10 {
