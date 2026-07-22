@@ -210,7 +210,7 @@ impl SatSolver<()> {
     }
 }
 
-impl<B: Clone> SatSolver<B> {
+impl<B> SatSolver<B> {
     /// Adds every formula produced by `formulas` to the solver.
     pub fn add_formulas<E, I>(&mut self, formulas: I, f: &FormulaFactory) -> LngResult<()>
     where
@@ -224,10 +224,7 @@ impl<B: Clone> SatSolver<B> {
     }
 
     /// Adds all formulas in the slice to the solver.
-    pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()>
-    where
-        B: Clone,
-    {
+    pub fn add_all(&mut self, formulas: &[EncodedFormula], f: &FormulaFactory) -> LngResult<()> {
         self.add_formulas(formulas.iter().copied(), f)
     }
 
@@ -526,7 +523,7 @@ impl Default for SatBuilder<'_, '_> {
     }
 }
 
-impl<B: Clone + PartialEq> SatSolver<B> {
+impl<B: PartialEq> SatSolver<B> {
     /// Extracts an unsatisfiable core from the last unsatisfiable call.
     pub fn unsat_core(
         &mut self,

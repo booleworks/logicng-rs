@@ -23,7 +23,7 @@ pub struct SatCall<'s, B> {
     sat_result: LngResult<CancelableResult<bool>>,
 }
 
-impl<'s, B: Clone> SatCall<'s, B> {
+impl<'s, B> SatCall<'s, B> {
     fn init(
         solver: &'s mut SatSolver<B>,
         handler: Option<&mut dyn ComputationHandler>,
@@ -191,7 +191,7 @@ pub struct SatCallBuilder<'s, 'h, B> {
     selection_order: Option<Vec<Literal>>,
 }
 
-impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
+impl<'s, 'h, B> SatCallBuilder<'s, 'h, B> {
     /// Executes the configured call and returns its scoped result object.
     pub fn solve(self, f: &FormulaFactory) -> LngResult<SatCall<'s, B>> {
         SatCall::init(
@@ -277,7 +277,7 @@ impl<'s, 'h, B: Clone> SatCallBuilder<'s, 'h, B> {
     }
 }
 
-impl<'s, 'h, B: PartialEq + Clone> SatCallBuilder<'s, 'h, B> {
+impl<'s, 'h, B: PartialEq> SatCallBuilder<'s, 'h, B> {
     /// Executes the call and returns an unsatisfiable core when available.
     pub fn unsat_core(self, f: &FormulaFactory) -> LngResult<Option<UnsatCore<B>>> {
         let mut call = self.solve(f)?;

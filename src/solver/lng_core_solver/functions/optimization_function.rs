@@ -54,7 +54,7 @@ impl OptimizationFunction {
     }
 
     /// Runs this optimization on `solver` and returns the best model found.
-    pub fn optimize<B: Clone>(
+    pub fn optimize<B>(
         &self,
         solver: &mut SatSolver<B>,
         handler: &mut dyn ComputationHandler,
@@ -66,7 +66,7 @@ impl OptimizationFunction {
         model
     }
 
-    fn compute<B: Clone>(
+    fn compute<B>(
         &self,
         solver: &mut SatSolver<B>,
         handler: &mut dyn ComputationHandler,

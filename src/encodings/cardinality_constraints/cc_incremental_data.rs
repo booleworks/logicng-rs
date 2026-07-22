@@ -1,6 +1,6 @@
+use crate::datastructures::{EncodingResult, EncodingResultFF, EncodingResultSatSolver};
 use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncoder};
 use crate::encodings::cardinality_constraints::error::CcError;
-use crate::datastructures::{EncodingResult, EncodingResultFF, EncodingResultSatSolver};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
 use crate::solver::lng_core_solver::SatSolver;
@@ -185,7 +185,7 @@ impl CcIncrementalData {
     /// Returns an error if this incremental data does not belong to an at-least-k encoding,
     /// if the new bound does not tighten the current bound, or if the right-hand side cannot
     /// be represented on this architecture.
-    pub fn new_lower_bound_for_solver<B: Clone>(
+    pub fn new_lower_bound_for_solver<B>(
         &mut self,
         solver: &mut SatSolver<B>,
         f: &FormulaFactory,

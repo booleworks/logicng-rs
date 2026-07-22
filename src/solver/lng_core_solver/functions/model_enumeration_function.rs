@@ -180,7 +180,7 @@ pub fn enumerate_models_for_formula_with_config(
 ///
 /// let models = enumerate_models(&mut solver, Vec::<Variable>::new(), &f).unwrap();
 /// ```
-pub fn enumerate_models<B: Clone>(
+pub fn enumerate_models<B>(
     solver: &mut SatSolver<B>,
     variables: impl Into<Box<[Variable]>>,
     f: &FormulaFactory,
@@ -210,7 +210,7 @@ pub fn enumerate_models<B: Clone>(
 /// let config = ModelEnumerationConfig::default();
 /// let models = enumerate_models_with_config(&mut solver, &config, &f).unwrap();
 /// ```
-pub fn enumerate_models_with_config<B: Clone>(
+pub fn enumerate_models_with_config<B>(
     solver: &mut SatSolver<B>,
     config: &ModelEnumerationConfig,
     f: &FormulaFactory,
@@ -311,7 +311,7 @@ fn generate_blocking_clause(model_from_solver: &[bool], relevant_vars: &[LngVar]
 /// let count = count_models(&mut solver, 100, &f).unwrap();
 /// assert_eq!(count, 2);
 /// ```
-pub fn count_models<B: Clone>(
+pub fn count_models<B>(
     solver: &mut SatSolver<B>,
     max_models: usize,
     _f: &FormulaFactory,

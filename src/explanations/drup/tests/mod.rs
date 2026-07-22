@@ -509,7 +509,7 @@ mod drup_tests {
         Ok(())
     }
 
-    fn assert_unsat_core<B: Clone + PartialEq + Eq + Hash + Debug>(
+    fn assert_unsat_core<B: PartialEq + Eq + Hash + Debug>(
         solver: &mut SatSolver<B>,
         expected: &[Proposition<B>],
         f: &FormulaFactory,

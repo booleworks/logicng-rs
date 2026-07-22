@@ -172,7 +172,7 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     }
 }
 
-impl<B: Clone> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
+impl<B> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
     fn new_auxiliary_variable(&mut self, aux_type: &str) -> Variable {
         let initial_phase = self.solver.config().initial_phase;
         let index = self.solver.underlying_solver().new_var(initial_phase, true);

@@ -6,10 +6,7 @@ use crate::{
 };
 
 /// Returns the externally represented literals propagated at decision level zero.
-pub fn up_zero_literals<B: Clone>(
-    solver: &mut SatSolver<B>,
-    f: &FormulaFactory,
-) -> BTreeSet<Literal> {
+pub fn up_zero_literals<B>(solver: &mut SatSolver<B>, f: &FormulaFactory) -> BTreeSet<Literal> {
     if solver.sat() == Tristate::True {
         let literals = solver.underlying_solver().up_zero_literals();
         literals
