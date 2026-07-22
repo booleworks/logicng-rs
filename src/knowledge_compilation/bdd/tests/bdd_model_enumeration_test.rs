@@ -122,7 +122,7 @@ mod tests {
         let mut solver = SatSolver::new();
         let formula = f.equivalence(original, cnf);
         solver.add(f.negate(formula), f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::False);
+        assert_eq!(solver.sat(), Tristate::False);
 
         Ok(())
     }

@@ -7,7 +7,7 @@ use bitvec::vec::BitVec;
 
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal, Variable};
 use crate::solver::lng_core_solver::{
-    self, mk_lit, ClauseRef, LngClause, LngCoreSolver, LngLit, LngState, LngVar, Tristate,
+    self, ClauseRef, LngClause, LngCoreSolver, LngLit, LngState, LngVar, Tristate, mk_lit,
 };
 use crate::util::exceptions::panic_unexpected_formula_type;
 
@@ -49,7 +49,7 @@ impl DnnfSatSolver {
                 self.internal_solver.add_clause(clause_vec, None);
             }),
             _ => panic_unexpected_formula_type(formula, Some(f)),
-        }
+        };
     }
 
     pub fn decide(&mut self, var: LngVar, phase: bool) -> bool {

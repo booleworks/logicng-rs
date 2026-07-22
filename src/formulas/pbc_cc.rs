@@ -5,12 +5,12 @@ use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use crate::encodings::cardinality_constraints::CcEncoder;
 use crate::datastructures::Assignment;
+use crate::encodings::cardinality_constraints::CcEncoder;
+use crate::encodings::pseudo_booleans::{PbEncoder, PbcError};
 use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::encodings::pseudo_booleans::{PbEncoder, PbcError};
 use crate::solver::lng_core_solver::Tristate;
 use crate::solver::lng_core_solver::Tristate::{False, True, Undef};
 use crate::util::exceptions::panic_unexpected_formula_type;

@@ -83,7 +83,7 @@ fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
     let mut solver = SatSolver::new();
     let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
     solver.add(cc, f)?;
-    assert_eq!(solver.sat().unwrap(), True);
+    assert_eq!(solver.sat(), True);
     let models = enumerate_models_with_config(
         &mut solver,
         &ModelEnumerationConfig::default()

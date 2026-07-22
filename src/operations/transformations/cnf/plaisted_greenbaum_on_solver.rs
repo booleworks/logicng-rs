@@ -44,7 +44,7 @@ impl Default for PgOnSolverConfig {
     }
 }
 
-pub fn add_cnf_to_solver<B>(
+pub(crate) fn add_cnf_to_solver<B>(
     solver: &mut LngCoreSolver<B>,
     formula: EncodedFormula,
     proposition: Option<Proposition<B>>,
@@ -52,12 +52,7 @@ pub fn add_cnf_to_solver<B>(
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
 ) -> LngResult<()> {
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        add_cnf_to_solver_internal(solver, formula, proposition, f, cache, config)
-    }))
-    .map_err(|_| {
-        crate::errors::LngError::from(crate::solver::SolverError::InvalidPgTransformation)
-    })?
+    add_cnf_to_solver_internal(solver, formula, proposition, f, cache, config)
 }
 
 fn add_cnf_to_solver_internal<B>(
@@ -74,7 +69,7 @@ fn add_cnf_to_solver_internal<B>(
         formula
     };
     if working_formula.is_cnf(f) {
-        add_cnf(solver, working_formula, proposition, f)?;
+        add_cnf(solver, working_formula, proposition, f);
     } else if let Some(top_level_vars) = compute_transformation(
         working_formula,
         proposition.clone(),
@@ -95,7 +90,7 @@ fn add_cnf<B>(
     cnf: EncodedFormula,
     proposition: Option<Proposition<B>>,
     f: &FormulaFactory,
-) -> LngResult<()> {
+) {
     use Formula::{And, False, Lit, Or, True};
     match cnf.unpack(f) {
         True => {}
@@ -115,9 +110,8 @@ fn add_cnf<B>(
                 add_to_solver(solver, c, proposition.clone());
             }
         }
-        _ => return Err(crate::solver::SolverError::NotInCnf { formula: cnf }.into()),
+        _ => panic_unexpected_formula_type(cnf, Some(f)),
     }
-    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]

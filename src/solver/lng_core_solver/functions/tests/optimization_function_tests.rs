@@ -426,7 +426,7 @@ fn optimize(
 ) -> LngResult<Option<Model>> {
     solver.reset();
     solver.add_all(formulas, f)?;
-    if solver.sat()? != True {
+    if solver.sat() != True {
         return Ok(None);
     }
     if maximize {
@@ -471,7 +471,7 @@ fn test_optimum_model(
 ) -> LngResult<()> {
     let mut solver = SatSolver::new();
     solver.add(formula, f)?;
-    if solver.sat().unwrap() == True {
+    if solver.sat() == True {
         let with_formula = solver.save_state().unwrap();
         solver.add(
             f.and(
@@ -484,7 +484,7 @@ fn test_optimum_model(
             ),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), True);
+        assert_eq!(solver.sat(), True);
         solver.load_state(&with_formula)?;
         let num_satisfied_literals = satisfied_literals(&optimum_model.unwrap(), literals)
             .len()

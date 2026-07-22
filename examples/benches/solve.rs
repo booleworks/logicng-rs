@@ -39,7 +39,7 @@ fn solve(thread_count: usize) {
                 let formula = formulas_l[c];
                 let mut solver = SatSolver::new();
                 let _ = solver.add(formula, &f_l);
-                let _ = solver.sat().unwrap();
+                let _ = solver.sat();
             }
         });
         threads.push(handle);

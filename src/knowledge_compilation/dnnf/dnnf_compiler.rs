@@ -35,8 +35,9 @@ pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<Dn
     let cnf = f.cnf_of(formula)?;
     let formula = backbone_simplification(cnf, f)?;
     let formula = cnf_subsumption(formula, f)?;
+    let dnnf = DnnfCompiler::new(formula, f).compile(f)?;
     Ok(DnnfFormula {
-        formula: DnnfCompiler::new(formula, f).compile(f)?,
+        formula: dnnf,
         original_variables,
     })
 }

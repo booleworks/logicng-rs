@@ -74,7 +74,7 @@ fn test_pb_eq() -> LngResult<()> {
             f.pbc(EQ, 5, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -100,7 +100,7 @@ fn test_pb_eq() -> LngResult<()> {
             f.pbc(EQ, 7, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -126,7 +126,7 @@ fn test_pb_eq() -> LngResult<()> {
             f.pbc(EQ, 0, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -145,14 +145,14 @@ fn test_pb_eq() -> LngResult<()> {
             f.pbc(EQ, 1, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::False);
+        assert_eq!(solver.sat(), Tristate::False);
 
         solver.reset();
         solver.add(
             f.pbc(EQ, 21, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -171,7 +171,7 @@ fn test_pb_eq() -> LngResult<()> {
             f.pbc(EQ, 22, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::False);
+        assert_eq!(solver.sat(), Tristate::False);
     }
 
     Ok(())
@@ -191,7 +191,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 6, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -213,7 +213,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LT, 7, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -235,7 +235,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 0, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -254,7 +254,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 1, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -273,7 +273,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LT, 2, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -292,7 +292,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LT, 1, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -311,7 +311,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 2, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -330,7 +330,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 3, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -349,7 +349,7 @@ fn test_pb_less() -> LngResult<()> {
             f.pbc(LE, 4, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -381,7 +381,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GE, 17, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -403,7 +403,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GT, 16, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -425,7 +425,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GE, 21, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -444,7 +444,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GE, 20, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -463,7 +463,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GT, 19, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -482,7 +482,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GT, 20, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -501,7 +501,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GE, 19, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -520,7 +520,7 @@ fn test_pb_greater() -> LngResult<()> {
             f.pbc(GE, 18, literals10.clone(), coeffs10.clone()).unwrap(),
             f,
         )?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -550,7 +550,7 @@ fn test_pb_negative() -> LngResult<()> {
 
         let pbc = f.pbc(EQ, 2, literals10.clone(), coeffs10.clone()).unwrap();
         solver.add(pbc, f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -570,7 +570,7 @@ fn test_pb_negative() -> LngResult<()> {
         solver.reset();
         let pbc = f.pbc(EQ, 4, literals10.clone(), coeffs10.clone()).unwrap();
         solver.add(pbc, f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -591,7 +591,7 @@ fn test_pb_negative() -> LngResult<()> {
         let coeffs10: Box<[i64]> = Box::new([2, 2, -3, 2, -7, 2, 2, 2, 2, -2]);
         let pbc = f.pbc(EQ, 4, literals10.clone(), coeffs10.clone()).unwrap();
         solver.add(pbc, f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -614,7 +614,7 @@ fn test_pb_negative() -> LngResult<()> {
             .pbc(EQ, -10, literals10.clone(), coeffs10.clone())
             .unwrap();
         solver.add(pbc, f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(
@@ -637,7 +637,7 @@ fn test_pb_negative() -> LngResult<()> {
             .pbc(EQ, -12, literals10.clone(), coeffs10.clone())
             .unwrap();
         solver.add(pbc, f)?;
-        assert_eq!(solver.sat().unwrap(), Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models = enumerate_models_with_config(
             &mut solver,
             &ModelEnumerationConfig::default().variables(

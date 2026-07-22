@@ -48,9 +48,9 @@ fn test_cc(num_lits: u64, rhs: u32, expected: u64, f: &FormulaFactory) -> LngRes
     let mut solver = SatSolver::new();
     solver.add(cc, f)?;
     if expected == 0 {
-        assert_eq!(solver.sat().unwrap(), False);
+        assert_eq!(solver.sat(), False);
     } else {
-        assert_eq!(solver.sat().unwrap(), True);
+        assert_eq!(solver.sat(), True);
     }
     let models = enumerate_models_with_config(
         &mut solver,

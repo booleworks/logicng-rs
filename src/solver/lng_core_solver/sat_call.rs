@@ -59,23 +59,17 @@ impl<'s, B: Clone> SatCall<'s, B> {
                 .set_selection_order(selection_order);
         }
         let sat_result = if let Some(handler) = handler {
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                solver.underlying_solver().internal_solve(handler)
-            }))
-            .map_err(|_| crate::solver::SolverError::InternalInvariant.into())
+            solver.underlying_solver().internal_solve(handler)
         } else {
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                solver
-                    .underlying_solver()
-                    .internal_solve(&mut NopHandler::new())
-            }))
-            .map_err(|_| crate::solver::SolverError::InternalInvariant.into())
+            solver
+                .underlying_solver()
+                .internal_solve(&mut NopHandler::new())
         };
         Ok(Self {
             solver,
             initial_state,
             pg_original_clauses_length,
-            sat_result,
+            sat_result: Ok(sat_result),
         })
     }
 

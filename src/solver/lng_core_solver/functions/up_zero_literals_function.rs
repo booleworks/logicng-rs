@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use crate::{
-    errors::LngResult,
     formulas::{FormulaFactory, Literal},
     solver::lng_core_solver::{SatSolver, Tristate, sign, var},
 };
@@ -10,10 +9,10 @@ use crate::{
 pub fn up_zero_literals<B: Clone>(
     solver: &mut SatSolver<B>,
     f: &FormulaFactory,
-) -> LngResult<BTreeSet<Literal>> {
-    if solver.sat()? == Tristate::True {
+) -> BTreeSet<Literal> {
+    if solver.sat() == Tristate::True {
         let literals = solver.underlying_solver().up_zero_literals();
-        Ok(literals
+        literals
             .into_iter()
             .map(|lit| {
                 Literal::new(
@@ -21,8 +20,8 @@ pub fn up_zero_literals<B: Clone>(
                     !sign(lit),
                 )
             })
-            .collect())
+            .collect()
     } else {
-        Ok(BTreeSet::new())
+        BTreeSet::new()
     }
 }

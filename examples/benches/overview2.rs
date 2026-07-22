@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _ = solver.add(formula, &f);
     GLOBAL.print_memory("add to solver");
     let t3 = std::time::Instant::now();
-    solver.sat().unwrap();
+    solver.sat();
     GLOBAL.print_memory("solve");
     let t4 = std::time::Instant::now();
     let models = enumerate_models_with_config(

@@ -37,7 +37,7 @@ fn test_build_amk(num_lits: u32, f: &FormulaFactory) -> LngResult<()> {
     for i in (10..100).step_by(10) {
         let cc = f.cc(LE, i, problem_lits.clone()).unwrap();
         solver.add(cc, f)?;
-        assert_eq!(solver.sat().unwrap(), True);
+        assert_eq!(solver.sat(), True);
         let model = solver.model(None).unwrap().unwrap();
         assert!(f.evaluate(cc, &model.into()));
     }

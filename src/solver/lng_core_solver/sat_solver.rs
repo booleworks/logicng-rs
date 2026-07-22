@@ -11,6 +11,7 @@ use crate::{
     handlers::{CancelableResult, ComputationHandler, NopHandler},
     operations::transformations::{PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver},
     propositions::Proposition,
+    util::exceptions::panic_unexpected_formula_type,
 };
 
 use super::{
@@ -62,20 +63,19 @@ impl<B> SatSolver<B> {
         formula: EncodedFormula,
         proposition: Option<Proposition<B>>,
         f: &FormulaFactory,
-    ) -> LngResult<()> {
+    ) {
         match formula.unpack(f) {
             Formula::False | Formula::Lit(_) | Formula::Or(_) => {
-                self.add_clause(formula, proposition, f)?
+                self.add_clause(formula, proposition, f)
             }
             Formula::And(nary_iterator) => {
                 for op in nary_iterator {
-                    self.add_clause(op, proposition.clone(), f)?;
+                    self.add_clause(op, proposition.clone(), f);
                 }
             }
             Formula::True => {}
-            _ => return Err(crate::solver::SolverError::NotInCnf { formula }.into()),
+            _ => panic_unexpected_formula_type(formula, Some(f)),
         };
-        Ok(())
     }
 
     pub(crate) fn add_clause(
@@ -83,11 +83,12 @@ impl<B> SatSolver<B> {
         formula: EncodedFormula,
         proposition: Option<Proposition<B>>,
         f: &FormulaFactory,
-    ) -> LngResult<()> {
-        let literals = formula.literals_for_clause_or_term(f)?;
+    ) {
+        let literals = formula
+            .literals_for_clause_or_term(f)
+            .expect("cnf is guaranteed");
         let ps = generate_clause_vector_wo_config(&literals, &mut self.underlying_solver);
         self.underlying_solver.add_clause(ps, proposition);
-        Ok(())
     }
 
     /// Saves the current incremental state.
@@ -126,7 +127,7 @@ impl<B> SatSolver<B> {
             relevant_variables,
             backbone_type,
             &mut NopHandler::new(),
-        )?;
+        );
         result
             .result()
             .ok_or_else(|| crate::solver::SolverError::InvalidExternalResponse.into())
@@ -138,7 +139,7 @@ impl<B> SatSolver<B> {
         relevant_variables: I,
         backbone_type: BackboneType,
         handler: &mut dyn ComputationHandler,
-    ) -> LngResult<CancelableResult<Backbone>>
+    ) -> CancelableResult<Backbone>
     where
         I: IntoIterator<Item = V> + Clone,
         V: Into<Variable>,
@@ -164,7 +165,7 @@ impl<B> SatSolver<B> {
     ) -> LngResult<()> {
         match self.config().configured_cnf_method() {
             CnfMethod::FactoryCnf => {
-                self.add_clause_set(f.cnf_of(formula)?, proposition, f)?;
+                self.add_clause_set(f.cnf_of(formula)?, proposition, f);
             }
             CnfMethod::PgOnSolver => {
                 let config = PgOnSolverConfig::default()
@@ -370,22 +371,20 @@ impl<B: Clone> SatSolver<B> {
     }
 
     /// Solves the currently stored formula without assumptions.
-    pub fn sat(&mut self) -> LngResult<Tristate> {
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.underlying_solver
-                .internal_solve(&mut NopHandler::new())
-        }))
-        .map_err(|_| crate::solver::SolverError::InternalInvariant)?;
+    pub fn sat(&mut self) -> Tristate {
+        let result = self
+            .underlying_solver
+            .internal_solve(&mut NopHandler::new());
         self.last_result = match result.result() {
             Some(true) => Tristate::True,
             Some(false) => Tristate::False,
             None => Tristate::Undef,
         };
-        Ok(self.last_result)
+        self.last_result
     }
 
     /// Solves using assumptions and a selection order from `builder`.
-    pub fn sat_with(&mut self, builder: &SatBuilder<'_, '_>) -> LngResult<Tristate> {
+    pub fn sat_with(&mut self, builder: &SatBuilder<'_, '_>) -> Tristate {
         if let Some(assumptions) = builder.assumptions {
             self.underlying_solver.assumptions =
                 generate_clause_vector_wo_config(assumptions, &mut self.underlying_solver);

@@ -264,7 +264,7 @@ pub fn enumerate_models_with_config<B: Clone>(
     };
 
     let max_models = config.max_models.map_or(usize::MAX, |max| max);
-    while models.len() < max_models && solver.sat()? == Tristate::True {
+    while models.len() < max_models && solver.sat() == Tristate::True {
         let mut model_lits = solver
             .underlying_solver()
             .convert_internal_model_on_solver(&relevant_all_indices, f);
@@ -317,7 +317,7 @@ pub fn count_models<B: Clone>(
     _f: &FormulaFactory,
 ) -> LngResult<usize> {
     let mut result = 0;
-    while result <= max_models && solver.sat()? == Tristate::True {
+    while result <= max_models && solver.sat() == Tristate::True {
         result += 1;
         let mut blocking_clause = Vec::<LngLit>::new();
         for i in 1..=solver.underlying_solver().model.len() {
@@ -369,15 +369,15 @@ mod tests {
         let f = &FormulaFactory::new();
         let mut solver = SatSolver::<()>::new();
         solver.add_formula("A & (B | C)".to_formula(f), f).unwrap();
-        assert!(solver.sat().unwrap() == Tristate::True);
+        assert!(solver.sat() == Tristate::True);
         let models1 =
             enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass1: HashSet<Assignment> = models1.iter().map(Assignment::from).collect();
-        assert!(solver.sat().unwrap() == Tristate::True);
+        assert!(solver.sat() == Tristate::True);
         let models2 =
             enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass2: HashSet<Assignment> = models2.iter().map(Assignment::from).collect();
-        assert!(solver.sat().unwrap() == Tristate::True);
+        assert!(solver.sat() == Tristate::True);
         assert_eq!(ass1, ass2);
     }
 

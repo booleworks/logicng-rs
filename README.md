@@ -115,7 +115,7 @@ let nnf = f.nnf_of(formula);
 let cnf = f.cnf_of(formula);
 let mut solver = SatSolver::new();
 solver.add(formula, &f).expect("Adding formula failed");
-let result = solver.sat().expect("SAT call failed");
+let result = solver.sat();
 ```
 
 ## Features

@@ -35,7 +35,7 @@ pub fn is_sat(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bool> {
                 SatSolverConfig::default().cnf_method(CnfMethod::FactoryCnf),
             );
             solver.add_formula(formula, f)?;
-            let sat = solver.sat()?;
+            let sat = solver.sat();
             if f.config.caches.sat {
                 if sat != Tristate::Undef {
                     f.caches.sat.insert(formula, sat == Tristate::True);
@@ -94,7 +94,7 @@ pub fn is_tautology(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<bo
                 SatSolverConfig::default().cnf_method(CnfMethod::FactoryCnf),
             );
             solver.add_formula(negated_formula, f)?;
-            let sat = solver.sat()?;
+            let sat = solver.sat();
             if f.config.caches.sat {
                 if sat != Tristate::Undef {
                     f.caches.sat.insert(negated_formula, sat == Tristate::True);

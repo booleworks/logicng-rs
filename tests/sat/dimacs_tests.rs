@@ -60,7 +60,7 @@ fn test_file(file: DimacsFile, expected: bool) {
         });
         solver.add(f.or(literals), &f).unwrap();
     }
-    let result = solver.sat().unwrap();
+    let result = solver.sat();
     println!(
         "{:?}{}",
         result,

@@ -41,26 +41,26 @@ fn test_simple_incremental_amk() -> LngResult<()> {
                 .add_incremental_cc(&f.cc(LE, 9, vars).unwrap().as_cc(f).unwrap(), f)
                 .unwrap()
                 .unwrap();
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 8)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 7)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 6)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 5)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 4)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
 
             if solver.underlying_solver.config.incremental {
                 let state = solver.save_state().unwrap();
                 inc_data.new_upper_bound_for_solver(solver, f, 3)?;
-                assert_eq!(solver.sat().unwrap(), False);
+                assert_eq!(solver.sat(), False);
                 solver.load_state(&state)?;
-                assert_eq!(solver.sat().unwrap(), True);
+                assert_eq!(solver.sat(), True);
                 inc_data.new_upper_bound_for_solver(solver, f, 2)?;
-                assert_eq!(solver.sat().unwrap(), False);
+                assert_eq!(solver.sat(), False);
             }
         }
     }
@@ -83,26 +83,26 @@ fn test_simple_incremental_alk() -> LngResult<()> {
                 .add_incremental_cc(&f.cc(GE, 2, vars).unwrap().as_cc(f).unwrap(), f)
                 .unwrap()
                 .unwrap();
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 3)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 4)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 5)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 6)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 7)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
 
             if solver.underlying_solver.config.incremental {
                 let state = solver.save_state().unwrap();
                 inc_data.new_lower_bound_for_solver(solver, f, 8)?;
-                assert_eq!(solver.sat().unwrap(), False);
+                assert_eq!(solver.sat(), False);
                 solver.load_state(&state)?;
-                assert_eq!(solver.sat().unwrap(), True);
+                assert_eq!(solver.sat(), True);
                 inc_data.new_lower_bound_for_solver(solver, f, 9)?;
-                assert_eq!(solver.sat().unwrap(), False);
+                assert_eq!(solver.sat(), False);
             }
         }
     }
@@ -126,7 +126,7 @@ fn test_large_upper_bound_amk() -> LngResult<()> {
                 .add_incremental_cc(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
                 .unwrap()
                 .unwrap();
-            while solver.sat().unwrap() == True {
+            while solver.sat() == True {
                 current_bound -= 1;
                 inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound)?;
             }
@@ -153,7 +153,7 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
                 .add_incremental_cc(&f.cc(GE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
                 .unwrap()
                 .unwrap();
-            while solver.sat().unwrap() == True {
+            while solver.sat() == True {
                 current_bound += 1;
                 inc_data.new_lower_bound_for_solver(&mut solver, f, current_bound)?;
             }
@@ -178,7 +178,7 @@ fn test_very_large_modular_totalizer_amk() -> LngResult<()> {
         .add_incremental_cc(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)
         .unwrap()
         .unwrap();
-    while solver.sat().unwrap() == True {
+    while solver.sat() == True {
         current_bound -= 1;
         inc_data.new_upper_bound_for_solver(&mut solver, f, current_bound)?;
     }

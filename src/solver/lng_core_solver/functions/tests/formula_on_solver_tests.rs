@@ -93,7 +93,7 @@ fn test_formula_on_solver_with_contradiction() -> LngResult<()> {
             assert!(on_solver.contains(fm));
         }
 
-        solver.sat()?;
+        solver.sat();
         let on_solver = solver.formula_on_solver(f)?;
         let expected = [
             f.parse("A | B").unwrap(),

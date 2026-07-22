@@ -3,16 +3,11 @@
 use logicng_open_wbo_sys::ffi;
 use thiserror::Error;
 
-use crate::formulas::EncodedFormula;
-
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SolverError {
     #[error("solver is in undef state, call 'sat' before")]
     NotSolved,
-
-    #[error("unexpected formula in cnf: {formula:?}")]
-    NotInCnf { formula: EncodedFormula },
 
     #[error("invalid solver state")]
     InvalidSolverState,

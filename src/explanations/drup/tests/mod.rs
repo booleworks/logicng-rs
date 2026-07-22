@@ -6,7 +6,7 @@ mod drup_tests {
     use crate::propositions::{Proposition, StandardProposition};
     use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, PgOnSolver};
     use crate::solver::lng_core_solver::Tristate::{False, True};
-    use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig, SatBuilder};
+    use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
     use std::collections::HashSet;
     use std::fmt::Debug;
     use std::fs::read_dir;
@@ -42,7 +42,7 @@ mod drup_tests {
         for mut solver in solvers {
             for cnf in &cnfs {
                 solver.add_all(cnf, &f)?;
-                assert_eq!(solver.sat().unwrap(), False);
+                assert_eq!(solver.sat(), False);
                 let unsat_core = solver.unsat_core(&f).unwrap();
                 verify_core(&unsat_core, cnf, &f)?;
                 solver.reset();
@@ -65,7 +65,7 @@ mod drup_tests {
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
                     solver.add_all(&cnf, f)?;
-                    if solver.sat().unwrap() == False {
+                    if solver.sat() == False {
                         let unsat_core = solver.unsat_core(f).unwrap();
                         verify_core(&unsat_core, &cnf, f)?;
                         count += 1;
@@ -91,7 +91,7 @@ mod drup_tests {
                 if extension == "cnf" {
                     let cnf = read_cnf(path.to_str().unwrap(), f).unwrap();
                     solver.add_all(&cnf, f)?;
-                    assert_eq!(solver.sat().unwrap(), False);
+                    assert_eq!(solver.sat(), False);
                     let unsat_core = solver.unsat_core(f).unwrap();
                     verify_core(&unsat_core, &cnf, f)?;
                 }
@@ -122,7 +122,7 @@ mod drup_tests {
 
         for mut solver in solvers() {
             solver.add_propositions(propositions.clone(), f)?;
-            assert_eq!(solver.sat().unwrap(), False);
+            assert_eq!(solver.sat(), False);
             let unsat_core = solver.unsat_core(f).unwrap();
             let expected_result = [
                 propositions[0].clone(),
@@ -222,16 +222,16 @@ mod drup_tests {
     pub fn test_trivial_cases_propositions() -> LngResult<()> {
         let f = &FormulaFactory::new();
         for mut solver in solvers() {
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             let p1 = Proposition::standard_proposition(f.falsum(), "P1");
             solver.add_proposition(p1.clone(), f)?;
             assert_unsat_core(&mut solver, &[p1], f);
 
             solver.reset();
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             let p2 = Proposition::standard_proposition(f.variable("a"), "P2");
             solver.add_proposition(p2.clone(), f)?;
-            assert_eq!(solver.sat().unwrap(), True);
+            assert_eq!(solver.sat(), True);
             let p3 = Proposition::standard_proposition(f.literal("a", false), "P3");
             solver.add_proposition(p3.clone(), f)?;
             assert_unsat_core(&mut solver, &[p2, p3], f);
@@ -270,13 +270,11 @@ mod drup_tests {
             solver.add_proposition(p3, f)?;
             solver.add_proposition(p4, f)?;
 
-            solver
-                .sat_with(&SatBuilder::new().assumptions(&vec![f.lit("X", true)]))
-                .unwrap();
+            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("X", true)]));
 
             solver.add_proposition(p5.clone(), f)?;
             solver.add_proposition(p6.clone(), f)?;
-            solver.sat().unwrap();
+            solver.sat();
             assert_unsat_core(&mut solver, &[p1, p2, p5, p6], f);
         }
 
@@ -308,12 +306,10 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("B => X".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("B => ~X".to_formula(f)), f)?;
 
-            solver
-                .sat_with(&SatBuilder::new().assumptions(&vec![f.lit("A", true)]))
-                .unwrap();
+            solver.sat_with(&SatBuilder::new().assumptions(&vec![f.lit("A", true)]));
 
             solver.add_proposition(Proposition::new("~A".to_formula(f)), f)?;
-            solver.sat().unwrap();
+            solver.sat();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -351,12 +347,12 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("T1 <=> A & K & ~B & ~C".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("T2 <=> A & B & C & K".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("T1 + T2 = 1".to_formula(f)), f)?;
-            solver.sat().unwrap(); // required for DRUP issue
+            solver.sat(); // required for DRUP issue
 
             solver.add_proposition(Proposition::new("Y => ~X & D".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("X".to_formula(f)), f)?;
 
-            solver.sat().unwrap();
+            solver.sat();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -392,7 +388,7 @@ mod drup_tests {
             solver.add_proposition(Proposition::new("L & A3 => A4".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("~A4".to_formula(f)), f)?;
             solver.add_proposition(Proposition::new("L | R".to_formula(f)), f)?;
-            solver.sat().unwrap();
+            solver.sat();
             assert!(!solver.unsat_core(f).unwrap().propositions.is_empty());
         }
 
@@ -467,7 +463,7 @@ mod drup_tests {
                 ],
                 f,
             )?;
-            assert_eq!(True, solver.sat().unwrap());
+            assert_eq!(True, solver.sat());
             solver.add("a".to_formula(f), f)?;
             assert_unsat_core(
                 &mut solver,
@@ -508,7 +504,7 @@ mod drup_tests {
         );
         let mut solver = SatSolver::new();
         solver.add_all(&core, f)?;
-        assert_eq!(solver.sat().unwrap(), False, "Core must be unsatisfiable");
+        assert_eq!(solver.sat(), False, "Core must be unsatisfiable");
 
         Ok(())
     }
@@ -518,7 +514,7 @@ mod drup_tests {
         expected: &[Proposition<B>],
         f: &FormulaFactory,
     ) {
-        assert_eq!(solver.sat().unwrap(), False);
+        assert_eq!(solver.sat(), False);
         assert_eq!(
             solver
                 .unsat_core(f)

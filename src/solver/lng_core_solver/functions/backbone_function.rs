@@ -1,6 +1,5 @@
 use crate::{
     backbones::Backbone,
-    errors::LngResult,
     formulas::Variable,
     handlers::{CancelableResult, ComputationHandler},
     solver::lng_core_solver::SatSolver,
@@ -35,15 +34,12 @@ pub fn compute_backbone<B, V, I>(
     variables: I,
     backbone_type: BackboneType,
     handler: &mut dyn ComputationHandler,
-) -> LngResult<CancelableResult<Backbone>>
+) -> CancelableResult<Backbone>
 where
     I: IntoIterator<Item = V> + Clone,
     V: Into<Variable>,
 {
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        solver
-            .underlying_solver()
-            .compute_backbone(variables, backbone_type, handler)
-    }))
-    .map_err(|_| crate::solver::SolverError::InternalInvariant.into())
+    solver
+        .underlying_solver()
+        .compute_backbone(variables, backbone_type, handler)
 }
