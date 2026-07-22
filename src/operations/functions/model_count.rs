@@ -14,9 +14,6 @@ use crate::operations::transformations::{
     AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion,
 };
 
-#[cfg(feature = "sharp_sat")]
-use crate::solver::sharpsat::SharpSatSolver;
-
 /// Algorithms available for model counting.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ModelCountAlgorithm {
@@ -30,9 +27,6 @@ pub enum ModelCountAlgorithm {
         /// Cache size of the Bdd kernel.
         cache_size: usize,
     },
-    #[cfg(feature = "sharp_sat")]
-    /// Model counting using the sharp-sat library. Requires `sharp_sat` feature to be activated.
-    SharpSat,
 }
 
 /// Computes the model count for a given formula.
@@ -53,8 +47,7 @@ pub fn count_models(
 ///
 /// # Errors
 ///
-/// Returns an error if the formula cannot be encoded, if the selected algorithm
-/// fails, or if SharpSAT is selected since SharpSAT does not support handlers.
+/// Returns an error if the formula cannot be encoded or if the selected algorithm fails.
 pub fn count_models_with_handler(
     formula: EncodedFormula,
     algorithm: ModelCountAlgorithm,
@@ -95,8 +88,8 @@ pub fn count_models_with_vars(
 ///
 /// # Errors
 ///
-/// Returns an error if `relevant_vars` omits formula variables, encoding or
-/// counting fails, or SharpSAT is selected since SharpSAT does not support handlers.
+/// Returns an error if `relevant_vars` omits formula variables or encoding or
+/// counting fails.
 pub fn count_models_with_vars_with_handler(
     formula: EncodedFormula,
     algorithm: ModelCountAlgorithm,
@@ -104,7 +97,6 @@ pub fn count_models_with_vars_with_handler(
     f: &FormulaFactory,
     handler: &mut dyn ComputationHandler,
 ) -> LngResult<CancelableResult<BigUint>> {
-    ensure_handler_supported(algorithm, handler)?;
     let vars = formula.variables(f);
     if !vars.is_subset(relevant_vars) {
         return Err(OperationError::MCNotAllVars.into());
@@ -157,8 +149,7 @@ pub fn count_models_conjunction(
 ///
 /// # Errors
 ///
-/// Returns an error if encoding or counting fails, or if SharpSAT is selected
-/// since SharpSAT does not support handlers.
+/// Returns an error if encoding or counting fails.
 pub fn count_models_conjunction_with_handler(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,
@@ -205,8 +196,8 @@ pub fn count_models_conjunction_with_vars(
 ///
 /// # Errors
 ///
-/// Returns an error if `relevant_vars` omits formula variables, encoding or
-/// counting fails, or SharpSAT is selected since SharpSAT does not support handlers.
+/// Returns an error if `relevant_vars` omits formula variables or encoding or
+/// counting fails.
 pub fn count_models_conjunction_with_vars_with_handler(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,
@@ -231,7 +222,6 @@ fn count_models_internal_with_handler(
     f: &FormulaFactory,
     handler: &mut dyn ComputationHandler,
 ) -> LngResult<CancelableResult<BigUint>> {
-    ensure_handler_supported(algorithm, handler)?;
     if !all_vars.is_subset(relevant_vars) {
         return Err(OperationError::MCNotAllVars.into());
     }
@@ -276,21 +266,7 @@ fn count_formula_with_handler(
                     .map(|bdd| bdd.model_count(&mut kernel)),
             )
         }
-        #[cfg(feature = "sharp_sat")]
-        ModelCountAlgorithm::SharpSat => Err(OperationError::SharpSatDoesNotSupportHandler.into()),
     }
-}
-
-fn ensure_handler_supported(
-    algorithm: ModelCountAlgorithm,
-    handler: &mut dyn ComputationHandler,
-) -> LngResult<()> {
-    #[cfg(feature = "sharp_sat")]
-    if algorithm == ModelCountAlgorithm::SharpSat && (handler as &dyn Any).is::<NopHandler>() {
-        return Err(OperationError::SharpSatDoesNotSupportHandler.into());
-    }
-    let _ = algorithm;
-    Ok(())
 }
 
 fn dont_care_factor(
@@ -460,26 +436,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "sharp_sat")]
-    #[test]
-    fn test_sharp_sat_rejects_handler() {
-        use crate::errors::LngError;
-        use crate::operations::OperationError;
-
-        let f = FormulaFactory::new();
-        let error = count_models_with_handler(
-            "a".to_formula(&f),
-            ModelCountAlgorithm::SharpSat,
-            &f,
-            &mut NopHandler,
-        )
-        .unwrap_err();
-        assert_eq!(
-            error,
-            LngError::Operation(OperationError::SharpSatDoesNotSupportHandler)
-        );
-    }
-
     mod dnnf {
         use crate::formulas::FormulaFactory;
         use crate::operations::functions::{ModelCountAlgorithm, count_models};
@@ -590,48 +546,6 @@ mod tests {
                 )
                 .unwrap();
                 assert_eq!(count, expected);
-            }
-        }
-
-        #[cfg(feature = "sharp_sat")]
-        mod sharp_sat {
-            use crate::formulas::FormulaFactory;
-            use crate::operations::functions::{ModelCountAlgorithm, count_models};
-            use crate::util::read_model_counting_examples::{read_cnf, read_normal};
-            use num_bigint::BigUint;
-
-            #[test]
-            fn test_verum() {
-                let f = FormulaFactory::new();
-                let count = count_models(f.verum(), ModelCountAlgorithm::SharpSat, &f);
-                assert_eq!(count, BigUint::from(1_u64));
-            }
-
-            #[test]
-            fn test_falsum() {
-                let f = FormulaFactory::new();
-                let count = count_models(f.falsum(), ModelCountAlgorithm::SharpSat, &f);
-                assert_eq!(count, BigUint::from(0_u64));
-            }
-
-            #[test]
-            fn test_normal_formulas() {
-                let f = FormulaFactory::new();
-                let tests = read_normal(&f);
-                for (formula, expected) in tests {
-                    let count = count_models(formula, ModelCountAlgorithm::SharpSat, &f);
-                    assert_eq!(count, expected);
-                }
-            }
-
-            #[test]
-            fn test_cnf_formulas() {
-                let f = FormulaFactory::new();
-                let tests = read_cnf(&f);
-                for (formula, expected) in tests {
-                    let count = count_models(formula, ModelCountAlgorithm::SharpSat, &f);
-                    assert_eq!(count, expected);
-                }
             }
         }
     }

@@ -47,9 +47,7 @@ functionalities:
   [Open-WBO](https://github.com/sat-group/open-wbo)), activate via feature
   `open_wbo`
 - Knowledge compilation with BDDs or DNNFs
-- Model counting with DNNFs or
-  [SharpSAT](https://github.com/marcthurley/sharpSAT) (activate via feature
-  `sharp_sat`)
+- Model counting with DNNFs or BDDs
 
 ## Philosophy
 
@@ -123,7 +121,6 @@ let result = solver.sat();
 | Feature     | Description                                         |
 | ----------- | --------------------------------------------------- |
 | `open_wbo`  | Activates MaxSAT solving with Open-WBO.             |
-| `sharp_sat` | Activates model counting using the SharpSAT solver. |
 
 ## Funding
 

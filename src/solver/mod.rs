@@ -9,7 +9,3 @@ pub use error::SolverError;
 /// The Max-SAT solver of LogicNG
 #[cfg(feature = "open_wbo")]
 pub mod maxsat;
-
-/// SharpSAT for model counting
-#[cfg(feature = "sharp_sat")]
-mod sharpsat;

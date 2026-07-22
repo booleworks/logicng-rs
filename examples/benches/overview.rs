@@ -15,11 +15,6 @@ fn main() {
     sat();
     model_counting();
 
-    #[cfg(feature = "sharp_sat")]
-    {
-        model_counting_sharpsat();
-    }
-
     #[cfg(feature = "open_wbo")]
     {
         maximize_maxsat();
@@ -71,24 +66,6 @@ fn model_counting() {
     }
     println!(
         "Rust Model Counting (Dnnf): {}s",
-        start.elapsed().as_secs_f32()
-    );
-}
-
-#[cfg(feature = "sharp_sat")]
-fn model_counting_sharpsat() {
-    let f = FormulaFactory::new();
-    let formulas = fs::read_dir("./resources/formula_suite_1/")
-        .unwrap()
-        .map(|p| read_formula(&String::from(p.unwrap().path().to_str().unwrap()), &f).unwrap())
-        .collect_vec();
-
-    let start = std::time::Instant::now();
-    for formula in formulas {
-        count_models(formula, ModelCountAlgorithm::SharpSat, &f);
-    }
-    println!(
-        "Rust Model Counting (SharpSAT): {}s",
         start.elapsed().as_secs_f32()
     );
 }

@@ -31,7 +31,6 @@ pest_derive = "2.8"
 dashmap = "6"
 thiserror = "2"
 logicng-open-wbo-sys = { version = "0.1.0", path = "lib/open_wbo_ffi", optional = true }
-logicng-sharp-sat-sys = {version = "0.1.0", path = "lib/sharp_sat_ffi", optional = true }
 
 # bitvec@1.0.1 and wyz@0.5.1 allow tap@1.0.0 as dependency, but only build with
 # tap@1.0.1 or newer. We need to enforce this version to build with
@@ -43,7 +42,6 @@ default = []
 # these tests should only be executed with the release profile, otherwise they take too much time
 long_running_tests = []
 open_wbo = ["dep:logicng-open-wbo-sys"]
-sharp_sat = ["dep:logicng-sharp-sat-sys"]
 
 [profile.release]
 debug = true # no runtime costs involved
@@ -55,11 +53,6 @@ path = "examples/benches/performance_large.rs"
 [[example]]
 name = "model_counting"
 path = "examples/benches/model_counting.rs"
-
-[[example]]
-name = "model_counting_sharpsat"
-path = "examples/benches/model_counting_sharpsat.rs"
-required-features = ["sharp_sat"]
 
 [[example]]
 name = "maximize"
