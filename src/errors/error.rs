@@ -1,5 +1,7 @@
 #![allow(missing_docs)]
 use crate::encodings::cardinality_constraints::CcError;
+use crate::encodings::pseudo_booleans::PbcError;
+use crate::explanations::ExplanationError;
 use crate::formulas::FormulaError;
 use crate::graphs::GraphError;
 use crate::io::IoError;
@@ -7,7 +9,6 @@ use crate::knowledge_compilation::bdd::BddError;
 use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::operations::OperationError;
 use crate::parser::ParserError;
-use crate::encodings::pseudo_booleans::PbcError;
 use crate::solver::SolverError;
 use crate::util::UtilError;
 
@@ -35,6 +36,9 @@ pub enum LngError {
 
     #[error("solver: {0}")]
     Solver(#[from] SolverError),
+
+    #[error("explanation: {0}")]
+    Explanation(#[from] ExplanationError),
 
     #[error("graph: {0}")]
     Graph(#[from] GraphError),
