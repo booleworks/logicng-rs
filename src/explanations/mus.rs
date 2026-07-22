@@ -1,7 +1,7 @@
 use crate::{
     errors::LngResult,
     explanations::{ExplanationError, UnsatCore},
-    formulas::{EncodedFormula, FormulaFactory},
+    formulas::{EncodedFormula, FormulaFactory, Literal},
     handlers::{CancelableResult, ComputationHandler, LngEvent, NopHandler},
     propositions::Proposition,
     solver::lng_core_solver::{SatSolver, SolverState},
@@ -12,6 +12,8 @@ use crate::{
 pub enum MusAlgorithm {
     /// A naive deletion-based MUS algorithm
     Deletion,
+    /// A deletion-based MUS algorithm using selection variables and SAT assumptions
+    DeletionSelection,
     /// A naive plain insertion-based MUS algorithm
     PlainInsertion,
 }
@@ -130,8 +132,73 @@ pub fn compute_mus_with_handler<B>(
     }
     match algo {
         MusAlgorithm::Deletion => deletion_based_mus(propositions, f, handler),
+        MusAlgorithm::DeletionSelection => {
+            deletion_based_mus_with_selectors(propositions, f, handler)
+        }
         MusAlgorithm::PlainInsertion => insertion_based_mus(propositions, f, handler),
     }
+}
+
+fn deletion_based_mus_with_selectors<B>(
+    propositions: &[Proposition<B>],
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<UnsatCore<B>>> {
+    if !handler.should_resume(LngEvent::MusComputationStarted) {
+        return Ok(CancelableResult::Canceled(LngEvent::MusComputationStarted));
+    }
+
+    let mut solver: SatSolver<B> = SatSolver::new_with_backpack();
+    let mut selectors: Vec<Literal> = Vec::with_capacity(propositions.len());
+    for proposition in propositions {
+        let selector = f.new_auxiliary_variable("MUS_SELECTOR").pos_lit();
+        solver.add(f.implication(selector.into(), proposition.formula), f)?;
+        selectors.push(selector);
+    }
+
+    match solver
+        .sat_call()
+        .handler(handler)
+        .add_formulas(selectors.iter().copied())
+        .sat(f)?
+    {
+        CancelableResult::Ok(false) => {}
+        CancelableResult::Ok(true) => {
+            return Err(ExplanationError::SatisfiableFormula.into());
+        }
+        CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+            return Ok(CancelableResult::Canceled(e));
+        }
+    }
+
+    let mut active_selectors = selectors.clone();
+    let mut required = vec![false; propositions.len()];
+    for i in (0..selectors.len()).rev() {
+        active_selectors.remove(i);
+        match solver
+            .sat_call()
+            .handler(handler)
+            .add_formulas(active_selectors.iter().copied())
+            .sat(f)?
+        {
+            CancelableResult::Ok(true) => {
+                active_selectors.insert(i, selectors[i]);
+                required[i] = true;
+            }
+            CancelableResult::Ok(false) => {}
+            CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+                return Ok(CancelableResult::Canceled(e));
+            }
+        }
+    }
+
+    let mus = propositions
+        .iter()
+        .zip(required)
+        .filter(|(_, required)| *required)
+        .map(|(proposition, _)| proposition.clone())
+        .collect();
+    Ok(CancelableResult::Ok(UnsatCore::new(mus, true)))
 }
 
 fn deletion_based_mus<B>(
@@ -310,13 +377,21 @@ mod tests {
         let algorithm = MusAlgorithm::Deletion;
         assert_eq!(algorithm, MusAlgorithm::Deletion);
         assert_eq!(format!("{algorithm:?}"), "Deletion");
+        assert_eq!(
+            format!("{:?}", MusAlgorithm::DeletionSelection),
+            "DeletionSelection"
+        );
     }
 
     #[test]
     fn rejects_satisfiable_formula_sets() {
         let f = FormulaFactory::new();
         let propositions: [StandardProposition; 1] = [Proposition::new(f.variable("a"))];
-        for algorithm in [MusAlgorithm::Deletion, MusAlgorithm::PlainInsertion] {
+        for algorithm in [
+            MusAlgorithm::Deletion,
+            MusAlgorithm::DeletionSelection,
+            MusAlgorithm::PlainInsertion,
+        ] {
             assert_eq!(
                 compute_mus(algorithm, &propositions, &f).unwrap_err(),
                 LngError::Explanation(ExplanationError::SatisfiableFormula)
@@ -325,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn plain_insertion_based_mus() {
+    fn easy_examples_mus_algorithms() {
         let f = FormulaFactory::new();
         for propositions in [
             pigeon_hole_propositions(3, &f),
@@ -334,8 +409,13 @@ mod tests {
             test_file("resources/sat/3col40_5_10.shuffled.cnf", &f),
             test_file("resources/sat/x1_16.shuffled.cnf", &f),
         ] {
-            let mus = compute_mus(MusAlgorithm::PlainInsertion, &propositions, &f).unwrap();
-            assert_mus(&propositions, &mus, &f);
+            for algorithm in [
+                MusAlgorithm::PlainInsertion,
+                MusAlgorithm::DeletionSelection,
+            ] {
+                let mus = compute_mus(algorithm, &propositions, &f).unwrap();
+                assert_mus(&propositions, &mus, &f);
+            }
         }
     }
 
@@ -360,10 +440,34 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
+    fn deletion_selection_based_mus() {
+        let f = FormulaFactory::new();
+        for propositions in [
+            pigeon_hole_propositions(3, &f),
+            pigeon_hole_propositions(4, &f),
+            pigeon_hole_propositions(5, &f),
+            pigeon_hole_propositions(6, &f),
+            pigeon_hole_propositions(7, &f),
+            test_file("resources/sat/3col40_5_10.shuffled.cnf", &f),
+            test_file("resources/sat/x1_16.shuffled.cnf", &f),
+            test_file("resources/sat/grid_10_20.shuffled.cnf", &f),
+            test_file("resources/sat/ca032.shuffled.cnf", &f),
+        ] {
+            let mus = compute_mus(MusAlgorithm::DeletionSelection, &propositions, &f).unwrap();
+            assert_mus(&propositions, &mus, &f);
+        }
+    }
+
+    #[test]
     fn cancellation_points() {
         let f = FormulaFactory::new();
         let propositions = test_file("resources/sat/unsat/bf0432-007.cnf", &f);
-        for algorithm in [MusAlgorithm::Deletion, MusAlgorithm::PlainInsertion] {
+        for algorithm in [
+            MusAlgorithm::Deletion,
+            MusAlgorithm::DeletionSelection,
+            MusAlgorithm::PlainInsertion,
+        ] {
             for bound in 0..10 {
                 let result = compute_mus_with_handler(
                     algorithm,
