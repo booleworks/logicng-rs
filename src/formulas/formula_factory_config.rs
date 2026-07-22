@@ -1,6 +1,6 @@
 use crate::encodings::cardinality_constraints::CcConfig;
-use crate::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm};
 use crate::encodings::pseudo_booleans::PbConfig;
+use crate::operations::transformations::{AdvancedFactorizationConfig, CnfAlgorithm};
 
 use super::CacheConfig;
 

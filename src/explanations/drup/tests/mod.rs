@@ -4,9 +4,9 @@ mod drup_tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
     use crate::propositions::{Proposition, StandardProposition};
-    use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
     use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, PgOnSolver};
     use crate::solver::lng_core_solver::Tristate::{False, True};
+    use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
     use std::collections::HashSet;
     use std::fmt::Debug;
     use std::fs::read_dir;

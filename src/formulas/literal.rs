@@ -3,9 +3,9 @@ use std::fmt::{Display, Formatter};
 
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
 
+use super::FormulaType;
 use super::formula::ToFormula;
 use super::formula_cache::formula_encoding::{Encoding, FormulaEncoding};
-use super::FormulaType;
 
 /// Specifies all types of literals.
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug)]

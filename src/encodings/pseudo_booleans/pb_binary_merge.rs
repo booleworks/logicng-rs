@@ -5,11 +5,11 @@
     clippy::cast_possible_truncation
 )]
 
+use crate::datastructures::EncodingResultFF;
 use crate::encodings::cardinality_constraints::cc_sorter::ImplicationDirection::InputToOutput;
 use crate::encodings::cardinality_constraints::cc_sorter::{cc_merge, cc_sort};
-use crate::datastructures::EncodingResultFF;
 use crate::encodings::pseudo_booleans::pb_config::PbConfig;
-use crate::formulas::{EncodedFormula, FormulaFactory, Literal, AUX_PBC};
+use crate::formulas::{AUX_PBC, EncodedFormula, FormulaFactory, Literal};
 
 pub fn encode_binary_merge(
     config: &PbConfig,

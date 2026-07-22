@@ -1,5 +1,5 @@
 use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, AUX_CNF};
+use crate::formulas::{AUX_CNF, EncodedFormula, FormulaFactory, FormulaType, Literal};
 use crate::operations::functions::sub_nodes;
 use crate::operations::transformations::cnf::factorization::factorization_cnf;
 use crate::operations::transformations::restrict_lit;

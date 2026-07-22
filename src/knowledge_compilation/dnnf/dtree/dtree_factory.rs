@@ -9,18 +9,18 @@ use std::iter::repeat;
 use std::ops::{BitAndAssign, BitOr};
 use std::sync::Arc;
 
-use bitvec::bitvec;
-use bitvec::prelude::*;
-use bitvec::vec::BitVec;
 use crate::errors::LngResult;
 use crate::formulas::{Literal, Variable};
-use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::DnnfError;
+use crate::knowledge_compilation::dnnf::dnnf_sat_solver::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree::{Leaf, Node};
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::{
     DTree, DTreeEncoding, DTreeIndex,
 };
-use crate::solver::lng_core_solver::{mk_lit, var, LngLit, Tristate};
+use crate::solver::lng_core_solver::{LngLit, Tristate, mk_lit, var};
+use bitvec::bitvec;
+use bitvec::prelude::*;
+use bitvec::vec::BitVec;
 
 pub struct DTreeFactory {
     pub(crate) _id: String,
@@ -79,7 +79,8 @@ impl DTreeFactory {
     pub fn node(&mut self, left: DTree, right: DTree) -> LngResult<DTree> {
         if self.finished {
             return Err(DnnfError::DTreeFinished.into());
-        }        let left_encoding = Self::encode(left);
+        }
+        let left_encoding = Self::encode(left);
         let right_encoding = Self::encode(right);
         let mut var_set: HashSet<Variable> =
             left.static_variable_set(self).iter().copied().collect();
@@ -254,7 +255,7 @@ impl DTreeFactory {
                     .as_ref()
                     .clone()
                     .bitor(right_var_set.as_ref().clone()))
-                    .to_bitvec()
+                .to_bitvec()
             }
         };
         self.static_var_sets[Self::encode(tree) as usize] = Arc::new(var_set);
