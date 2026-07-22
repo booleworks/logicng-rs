@@ -369,15 +369,15 @@ mod tests {
         let f = &FormulaFactory::new();
         let mut solver = SatSolver::<()>::new();
         solver.add_formula("A & (B | C)".to_formula(f), f).unwrap();
-        assert!(solver.sat() == Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models1 =
             enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass1: HashSet<Assignment> = models1.iter().map(Assignment::from).collect();
-        assert!(solver.sat() == Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         let models2 =
             enumerate_models(&mut solver, [f.var("A"), f.var("B"), f.var("C")], f).unwrap();
         let ass2: HashSet<Assignment> = models2.iter().map(Assignment::from).collect();
-        assert!(solver.sat() == Tristate::True);
+        assert_eq!(solver.sat(), Tristate::True);
         assert_eq!(ass1, ass2);
     }
 

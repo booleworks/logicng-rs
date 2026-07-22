@@ -74,12 +74,13 @@ fn test_handler_aware_backbone_returns_cancelable_result() -> LngResult<()> {
         vars("a b c", f),
         PositiveAndNegative,
         &mut NopHandler::new(),
-    );
+    )?;
     let backbone = result.result().expect("nop handler must not cancel");
     assert_eq!(literals("a", f), backbone.complete_backbone());
 
     let mut cancel = CancelImmediately;
-    let canceled = solver.backbone_with_handler(vars("a b c", f), PositiveAndNegative, &mut cancel);
+    let canceled =
+        solver.backbone_with_handler(vars("a b c", f), PositiveAndNegative, &mut cancel)?;
     assert!(matches!(
         canceled,
         CancelableResult::Canceled(LngEvent::ComputationStarted(LngComputation::Backbone))

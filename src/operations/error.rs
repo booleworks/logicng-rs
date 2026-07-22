@@ -16,6 +16,9 @@ pub enum OperationError {
     #[error("expected model counting variables to contain all of the formulas' variables")]
     MCNotAllVars,
 
+    #[error("SharpSAT model counting does not support computation handlers")]
+    SharpSatDoesNotSupportHandler,
+
     #[error("factorization cannot be used as fallback algorithm")]
     FactorizationAsFallback,
 

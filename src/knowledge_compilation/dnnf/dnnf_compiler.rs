@@ -4,16 +4,26 @@ use std::sync::Arc;
 
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
+use crate::handlers::{CancelableResult, ComputationHandler, LngEvent, NopHandler};
 use crate::knowledge_compilation::dnnf::DnnfSatSolver;
 use crate::knowledge_compilation::dnnf::dtree::{
-    DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation,
+    DTree, DTreeFactory, DTreeIndex, min_fill_dtree_generation_with_handler,
 };
-use crate::operations::predicates::is_sat;
-use crate::operations::transformations::{backbone_simplification, cnf_subsumption};
+use crate::operations::predicates::is_sat_with_handler;
+use crate::operations::transformations::{backbone_simplification_with_handler, cnf_subsumption};
 use crate::solver::lng_core_solver::{LngCoreSolver, LngVar, Tristate, var};
 use bitvec::bitvec;
 use bitvec::vec::BitVec;
 use itertools::Itertools;
+
+type HandlerResult<T> = Result<T, LngEvent>;
+
+fn completed<T>(result: CancelableResult<T>) -> HandlerResult<T> {
+    match result {
+        CancelableResult::Ok(value) => Ok(value),
+        CancelableResult::Canceled(event) | CancelableResult::Partial(_, event) => Err(event),
+    }
+}
 
 /// Represents a formula in DNNF.
 ///
@@ -30,16 +40,34 @@ pub struct DnnfFormula {
 
 /// Compiles the given formula to a DNNF instance.
 pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<DnnfFormula> {
-    // TODO version with handler
+    Ok(
+        compile_dnnf_with_handler(formula, f, &mut NopHandler::new())?
+            .result()
+            .expect("nop handler can never abort"),
+    )
+}
+
+/// Compiles the given formula to a DNNF instance with a handler.
+pub fn compile_dnnf_with_handler(
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<DnnfFormula>> {
     let original_variables = formula.variables(f);
     let cnf = f.cnf_of(formula)?;
-    let formula = backbone_simplification(cnf, f)?;
+    let formula = match completed(backbone_simplification_with_handler(cnf, f, handler)?) {
+        Ok(formula) => formula,
+        Err(event) => return Ok(CancelableResult::Canceled(event)),
+    };
+
     let formula = cnf_subsumption(formula, f)?;
-    let dnnf = DnnfCompiler::new(formula, f).compile(f)?;
-    Ok(DnnfFormula {
-        formula: dnnf,
-        original_variables,
-    })
+    match DnnfCompiler::new(formula, f).compile(f, handler)? {
+        Ok(dnnf) => Ok(CancelableResult::Ok(DnnfFormula {
+            formula: dnnf,
+            original_variables,
+        })),
+        Err(event) => Ok(CancelableResult::Canceled(event)),
+    }
 }
 
 struct DnnfCompiler<'a> {
@@ -71,24 +99,54 @@ impl<'a> DnnfCompiler<'a> {
         }
     }
 
-    fn compile(&mut self, f: &FormulaFactory) -> LngResult<EncodedFormula> {
+    fn compile(
+        &mut self,
+        f: &FormulaFactory,
+        handler: &mut dyn ComputationHandler,
+    ) -> LngResult<HandlerResult<EncodedFormula>> {
         if self.non_unit_clauses.is_atomic() {
-            Ok(self.cnf)
-        } else if !is_sat(self.cnf, self.f)? || !self.solver.start() {
-            Ok(self.f.falsum())
+            return Ok(Ok(self.cnf));
+        }
+
+        let sat = match completed(is_sat_with_handler(self.cnf, f, handler)?) {
+            Ok(sat) => sat,
+            Err(event) => return Ok(Err(event)),
+        };
+
+        if !sat || !self.solver.start() {
+            Ok(Ok(self.f.falsum()))
         } else {
-            let tree = min_fill_dtree_generation(self.cnf, self.f, &mut self.df)?;
+            let tree = match completed(min_fill_dtree_generation_with_handler(
+                self.cnf,
+                self.f,
+                &mut self.df,
+                handler,
+            )?) {
+                Ok(tree) => tree,
+                Err(event) => return Ok(Err(event)),
+            };
+
             self.df.finish(tree, &self.solver);
-            Ok(self.compile_tree(tree, f))
+            Ok(self.compile_tree(tree, f, handler))
         }
     }
 
-    fn compile_tree(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
-        let result = self.cnf2ddnnf(tree, f);
-        self.f.and([self.unit_clauses, result])
+    fn compile_tree(
+        &mut self,
+        tree: DTree,
+        f: &FormulaFactory,
+        handler: &mut dyn ComputationHandler,
+    ) -> HandlerResult<EncodedFormula> {
+        let result = self.cnf2ddnnf(tree, f, handler)?;
+        Ok(self.f.and([self.unit_clauses, result]))
     }
 
-    fn cnf2ddnnf(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
+    fn cnf2ddnnf(
+        &mut self,
+        tree: DTree,
+        f: &FormulaFactory,
+        handler: &mut dyn ComputationHandler,
+    ) -> HandlerResult<EncodedFormula> {
         let implied = self.newly_implied_literals(&self.df.static_var_set(tree));
         let separator = self.df.dynamic_separator(tree, &self.solver);
 
@@ -96,41 +154,44 @@ impl<'a> DnnfCompiler<'a> {
             match tree {
                 DTree::Leaf(n) => {
                     let leaf_formula = self.leaf2ddnnf(n, f);
-                    self.f.and([implied, leaf_formula])
+                    Ok(self.f.and([implied, leaf_formula]))
                 }
-                DTree::Node(n) => self.conjoin(implied, self.df.children(n), f),
+                DTree::Node(n) => self.conjoin(implied, self.df.children(n), f, handler),
             }
         } else {
+            if !handler.should_resume(LngEvent::DnnfShannonExpansion) {
+                return Err(LngEvent::DnnfShannonExpansion);
+            }
             let sep = separator;
             let var = self.choose_shannon_variable(tree, &sep);
 
             // Positive branch
             let positive_dnnf = if self.solver.decide(var, true) {
-                self.cnf2ddnnf(tree, f)
+                self.cnf2ddnnf(tree, f, handler)?
             } else {
                 self.f.falsum()
             };
             self.solver.undo_decide(var);
             if positive_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
-                    self.cnf2ddnnf(tree, f)
+                    self.cnf2ddnnf(tree, f, handler)
                 } else {
-                    self.f.falsum()
+                    Ok(self.f.falsum())
                 };
             }
 
             // Negative branch
             let negative_dnnf = if self.solver.decide(var, false) {
-                self.cnf2ddnnf(tree, f)
+                self.cnf2ddnnf(tree, f, handler)?
             } else {
                 self.f.falsum()
             };
             self.solver.undo_decide(var);
             if negative_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
-                    self.cnf2ddnnf(tree, f)
+                    self.cnf2ddnnf(tree, f, handler)
                 } else {
-                    self.f.falsum()
+                    Ok(self.f.falsum())
                 };
             }
 
@@ -139,7 +200,7 @@ impl<'a> DnnfCompiler<'a> {
             let positive_branch = self.f.and([lit, positive_dnnf]);
             let negative_branch = self.f.and([neg_lit, negative_dnnf]);
             let shannon = self.f.or([positive_branch, negative_branch]);
-            self.f.and([implied, shannon])
+            Ok(self.f.and([implied, shannon]))
         }
     }
 
@@ -175,34 +236,40 @@ impl<'a> DnnfCompiler<'a> {
         implied: EncodedFormula,
         node: (DTree, DTree),
         f: &FormulaFactory,
-    ) -> EncodedFormula {
+        handler: &mut dyn ComputationHandler,
+    ) -> HandlerResult<EncodedFormula> {
         if implied.is_falsum() {
-            return implied;
+            return Ok(implied);
         }
-        let left = self.cnf_aux(node.0, f);
+        let left = self.cnf_aux(node.0, f, handler)?;
         if left.is_falsum() {
-            return left;
+            return Ok(left);
         }
-        let right = self.cnf_aux(node.1, f);
+        let right = self.cnf_aux(node.1, f, handler)?;
         if right.is_falsum() {
-            return right;
+            return Ok(right);
         }
-        self.f.and([implied, left, right])
+        Ok(self.f.and([implied, left, right]))
     }
 
-    fn cnf_aux(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
+    fn cnf_aux(
+        &mut self,
+        tree: DTree,
+        f: &FormulaFactory,
+        handler: &mut dyn ComputationHandler,
+    ) -> HandlerResult<EncodedFormula> {
         match tree {
-            DTree::Leaf(n) => self.leaf2ddnnf(n, f),
+            DTree::Leaf(n) => Ok(self.leaf2ddnnf(n, f)),
             DTree::Node(_) => {
                 let key = self.compute_cache_key(tree);
                 if let Some(&cache) = self.cache.get(&key) {
-                    cache
+                    Ok(cache)
                 } else {
-                    let dnnf = self.cnf2ddnnf(tree, f);
+                    let dnnf = self.cnf2ddnnf(tree, f, handler)?;
                     if !dnnf.is_falsum() {
                         self.cache.insert(key, dnnf);
                     }
-                    dnnf
+                    Ok(dnnf)
                 }
             }
         }
@@ -244,10 +311,15 @@ fn initialize_clauses(cnf: EncodedFormula, f: &FormulaFactory) -> (EncodedFormul
 #[cfg(test)]
 mod tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, ToFormula};
+    use crate::handlers::{
+        CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler,
+    };
     use crate::io::read_cnf;
     use crate::knowledge_compilation::bdd::orderings::force_ordering;
     use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
-    use crate::knowledge_compilation::dnnf::dnnf_compiler::compile_dnnf;
+    use crate::knowledge_compilation::dnnf::dnnf_compiler::{
+        compile_dnnf, compile_dnnf_with_handler,
+    };
     use crate::knowledge_compilation::dnnf::dnnf_model_counting::count;
     use crate::operations::predicates::is_tautology;
     use num_bigint::{BigUint, ToBigUint};
@@ -278,6 +350,45 @@ mod tests {
         test_formula("2*a + 3*b + -2*c + d < 5".to_formula(f), f, true);
         test_formula("2*a + 3*b + -2*c + d >= 5".to_formula(f), f, true);
         test_formula("~a & (~a | b | c | d)".to_formula(f), f, true);
+    }
+
+    #[test]
+    fn test_handler_cancellation() {
+        for event in [
+            DnnfEvent::BackboneComputationStarted,
+            DnnfEvent::SatComputationStarted,
+            DnnfEvent::DtreeGenerationStarted,
+            DnnfEvent::DtreeMinFillGraphInitialized,
+            DnnfEvent::DtreeMinFillNewIteration,
+            DnnfEvent::DtreeProcessingNextOrderVariable,
+            DnnfEvent::ShannonExpansion,
+        ] {
+            let f = FormulaFactory::new();
+            let formula = "(a | b) & (~a | c) & (~b | ~c)".to_formula(&f);
+            let result =
+                compile_dnnf_with_handler(formula, &f, &mut CancelOnDnnfEvent(event)).unwrap();
+
+            match result {
+                CancelableResult::Canceled(cause) => assert!(event.matches(&cause)),
+                CancelableResult::Ok(_) => panic!("DNNF compilation was not canceled"),
+                CancelableResult::Partial(_, _) => {
+                    panic!("DNNF compilation must not return partial results")
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_handler_completes_normally() {
+        let f = FormulaFactory::new();
+        let formula = "(a | b) & (~a | c) & (~b | ~c)".to_formula(&f);
+        let handled = compile_dnnf_with_handler(formula, &f, &mut NopHandler::new())
+            .unwrap()
+            .result()
+            .expect("nop handler can never abort");
+        let unhandled = compile_dnnf(formula, &f).unwrap();
+
+        assert_eq!(handled, unhandled);
     }
 
     #[test]
@@ -332,6 +443,52 @@ mod tests {
                     .unwrap()
                     .model_count(kernel)
             }
+        }
+    }
+
+    #[derive(Clone, Copy)]
+    enum DnnfEvent {
+        BackboneComputationStarted,
+        SatComputationStarted,
+        DtreeGenerationStarted,
+        DtreeMinFillGraphInitialized,
+        DtreeMinFillNewIteration,
+        DtreeProcessingNextOrderVariable,
+        ShannonExpansion,
+    }
+
+    impl DnnfEvent {
+        fn matches(self, event: &LngEvent) -> bool {
+            matches!(
+                (self, event),
+                (
+                    Self::BackboneComputationStarted,
+                    LngEvent::ComputationStarted(LngComputation::Backbone)
+                ) | (
+                    Self::SatComputationStarted,
+                    LngEvent::ComputationStarted(LngComputation::Sat)
+                ) | (
+                    Self::DtreeGenerationStarted,
+                    LngEvent::DnnfDtreeGenerationStarted
+                ) | (
+                    Self::DtreeMinFillGraphInitialized,
+                    LngEvent::DnnfDtreeMinFillGraphInitialized
+                ) | (
+                    Self::DtreeMinFillNewIteration,
+                    LngEvent::DnnfDtreeMinFillNewIteration
+                ) | (
+                    Self::DtreeProcessingNextOrderVariable,
+                    LngEvent::DnnfDtreeProcessingNextOrderVariable
+                ) | (Self::ShannonExpansion, LngEvent::DnnfShannonExpansion)
+            )
+        }
+    }
+
+    struct CancelOnDnnfEvent(DnnfEvent);
+
+    impl ComputationHandler for CancelOnDnnfEvent {
+        fn should_resume(&mut self, event: LngEvent) -> bool {
+            !self.0.matches(&event)
         }
     }
 }

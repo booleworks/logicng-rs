@@ -372,11 +372,7 @@ impl MaxSatSolver {
         let status = self.solver.status();
         if status == Ok(MaxSatResult::Undef) {
             self.solve_with_handler(&mut NopHandler::new())
-                .map(|result| {
-                    result
-                        .result()
-                        .expect("the no-op handler cannot cancel a computation")
-                })
+                .map(|result| result.result().expect("nop handler can never abort"))
         } else {
             status
         }

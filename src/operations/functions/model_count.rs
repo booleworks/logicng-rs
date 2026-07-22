@@ -5,9 +5,10 @@ use num_bigint::BigUint;
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
+use crate::handlers::{CancelableResult, ComputationHandler, NopHandler};
 use crate::knowledge_compilation::bdd::orderings::force_ordering;
 use crate::knowledge_compilation::bdd::{Bdd, BddKernel};
-use crate::knowledge_compilation::dnnf::compile_dnnf;
+use crate::knowledge_compilation::dnnf::compile_dnnf_with_handler;
 use crate::operations::OperationError;
 use crate::operations::transformations::{
     AdvancedFactorizationConfig, CnfAlgorithm, CnfEncoder, pure_expansion,
@@ -48,6 +49,21 @@ pub fn count_models(
     count_models_with_vars(formula, algorithm, &formula.variables(f), f)
 }
 
+/// Computes the model count for a given formula using a cancelable computation handler.
+///
+/// # Errors
+///
+/// Returns an error if the formula cannot be encoded, if the selected algorithm
+/// fails, or if SharpSAT is selected since SharpSAT does not support handlers.
+pub fn count_models_with_handler(
+    formula: EncodedFormula,
+    algorithm: ModelCountAlgorithm,
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
+    count_models_with_vars_with_handler(formula, algorithm, &formula.variables(f), f, handler)
+}
+
 /// Computes the model count for a given formula and a set of relevant
 /// variables. This set can only be a superset of the original formula's
 /// variables.
@@ -63,29 +79,60 @@ pub fn count_models_with_vars(
     relevant_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
 ) -> LngResult<BigUint> {
+    Ok(count_models_with_vars_with_handler(
+        formula,
+        algorithm,
+        relevant_vars,
+        f,
+        &mut NopHandler::new(),
+    )?
+    .result()
+    .expect("nop handler can never abort"))
+}
+
+/// Computes the model count for a formula and relevant variables using a
+/// cancelable computation handler.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` omits formula variables, encoding or
+/// counting fails, or SharpSAT is selected since SharpSAT does not support handlers.
+pub fn count_models_with_vars_with_handler(
+    formula: EncodedFormula,
+    algorithm: ModelCountAlgorithm,
+    relevant_vars: &BTreeSet<Variable>,
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
+    ensure_handler_supported(algorithm, handler)?;
     let vars = formula.variables(f);
     if !vars.is_subset(relevant_vars) {
         return Err(OperationError::MCNotAllVars.into());
     }
 
     if vars.is_empty() {
-        return if formula.is_verum() {
-            Ok(BigUint::from(1_usize))
+        return Ok(CancelableResult::Ok(if formula.is_verum() {
+            BigUint::from(1_usize)
         } else {
-            Ok(BigUint::from(0_usize))
-        };
+            BigUint::from(0_usize)
+        }));
     }
 
     let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
         AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
     ));
-    let cnf = cnf_encoder.transform(pure_expansion(formula, f)?, f)?;
-    let count = count_formula(cnf, algorithm, f)?;
-
+    let expanded = pure_expansion(formula, f)?;
+    let cnf = match cnf_encoder.transform_with_handler(expanded, f, handler)? {
+        CancelableResult::Ok(cnf) => cnf,
+        CancelableResult::Canceled(event) | CancelableResult::Partial(_, event) => {
+            return Ok(CancelableResult::Canceled(event));
+        }
+    };
+    let count = count_formula_with_handler(cnf, algorithm, f, handler)?;
     let dont_care_vars = relevant_vars.difference(&cnf.variables(f)).count();
     let dc_size = u32::try_from(dont_care_vars).map_err(|_| OperationError::MCTooManyDontCares)?;
     let factor = BigUint::from(2_usize).pow(dc_size);
-    Ok(count * factor)
+    Ok(count.map(|count| count * factor))
 }
 
 /// Computes the model count for a given set of formulas (interpreted as conjunction).
@@ -99,13 +146,32 @@ pub fn count_models_conjunction(
     algorithm: ModelCountAlgorithm,
     f: &FormulaFactory,
 ) -> LngResult<BigUint> {
+    Ok(
+        count_models_conjunction_with_handler(formulas, algorithm, f, &mut NopHandler::new())?
+            .result()
+            .expect("nop handler can never abort"),
+    )
+}
+
+/// Computes the model count of a conjunction using a cancelable computation handler.
+///
+/// # Errors
+///
+/// Returns an error if encoding or counting fails, or if SharpSAT is selected
+/// since SharpSAT does not support handlers.
+pub fn count_models_conjunction_with_handler(
+    formulas: &[EncodedFormula],
+    algorithm: ModelCountAlgorithm,
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
     let vars = formulas
         .iter()
-        .fold(BTreeSet::default(), |mut akk, formula| {
-            akk.extend((*formula.variables(f)).clone());
-            akk
+        .fold(BTreeSet::default(), |mut variables, formula| {
+            variables.extend((*formula.variables(f)).clone());
+            variables
         });
-    count_models_internal(formulas, algorithm, &vars, &vars, f)
+    count_models_internal_with_handler(formulas, algorithm, &vars, &vars, f, handler)
 }
 
 /// Computes the model count for a given set of formulas (interpreted as conjunction)
@@ -117,66 +183,85 @@ pub fn count_models_conjunction(
 /// Returns an error if `relevant_vars` does not contain all variables of the
 /// formulas, if the formulas cannot be encoded for the chosen model counting
 /// algorithm, or if the algorithm itself fails.
-pub fn count_models_conjunction_with_vars<I>(
+pub fn count_models_conjunction_with_vars(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,
     relevant_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
 ) -> LngResult<BigUint> {
-    let vars = formulas
-        .iter()
-        .fold(BTreeSet::default(), |mut akk, formula| {
-            akk.extend((*formula.variables(f)).clone());
-            akk
-        });
-    count_models_internal(formulas, algorithm, relevant_vars, &vars, f)
+    Ok(count_models_conjunction_with_vars_with_handler(
+        formulas,
+        algorithm,
+        relevant_vars,
+        f,
+        &mut NopHandler::new(),
+    )?
+    .result()
+    .expect("nop handler can never abort"))
 }
 
-fn count_models_internal(
+/// Computes the model count of a conjunction and relevant variables using a
+/// cancelable computation handler.
+///
+/// # Errors
+///
+/// Returns an error if `relevant_vars` omits formula variables, encoding or
+/// counting fails, or SharpSAT is selected since SharpSAT does not support handlers.
+pub fn count_models_conjunction_with_vars_with_handler(
+    formulas: &[EncodedFormula],
+    algorithm: ModelCountAlgorithm,
+    relevant_vars: &BTreeSet<Variable>,
+    f: &FormulaFactory,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
+    let vars = formulas
+        .iter()
+        .fold(BTreeSet::default(), |mut variables, formula| {
+            variables.extend((*formula.variables(f)).clone());
+            variables
+        });
+    count_models_internal_with_handler(formulas, algorithm, relevant_vars, &vars, f, handler)
+}
+
+fn count_models_internal_with_handler(
     formulas: &[EncodedFormula],
     algorithm: ModelCountAlgorithm,
     relevant_vars: &BTreeSet<Variable>,
     all_vars: &BTreeSet<Variable>,
     f: &FormulaFactory,
-) -> LngResult<BigUint> {
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
+    ensure_handler_supported(algorithm, handler)?;
     if !all_vars.is_subset(relevant_vars) {
         return Err(OperationError::MCNotAllVars.into());
     }
 
     if all_vars.is_empty() {
         let all_verum = formulas.iter().all(|formula| formula.is_verum());
-        return if all_verum {
-            Ok(BigUint::from(1_usize))
-        } else {
-            Ok(BigUint::from(0_usize))
-        };
+        return Ok(CancelableResult::Ok(BigUint::from(usize::from(all_verum))));
     }
 
-    let cnfs = encode_as_cnf(formulas, f)?;
+    let cnfs = match encode_as_cnf_with_handler(formulas, f, handler)? {
+        CancelableResult::Ok(cnfs) => cnfs,
+        CancelableResult::Canceled(event) | CancelableResult::Partial(_, event) => {
+            return Ok(CancelableResult::Canceled(event));
+        }
+    };
     let (backbone_variables, simplified) = simplify(&cnfs, f);
-    let count = count(&simplified, algorithm, f)?;
+    let count = count_formula_with_handler(f.and(&simplified), algorithm, f, handler)?;
     let factor = dont_care_factor(backbone_variables, &simplified, relevant_vars, f)?;
-    Ok(count * factor)
+    Ok(count.map(|count| count * factor))
 }
 
-fn count(
-    formulas: &[EncodedFormula],
-    algorithm: ModelCountAlgorithm,
-    f: &FormulaFactory,
-) -> LngResult<BigUint> {
-    count_formula(f.and(formulas), algorithm, f)
-}
-
-fn count_formula(
+fn count_formula_with_handler(
     formula: EncodedFormula,
     algorithm: ModelCountAlgorithm,
     f: &FormulaFactory,
-) -> LngResult<BigUint> {
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<BigUint>> {
     match algorithm {
-        ModelCountAlgorithm::Dnnf => {
-            let dnnf = compile_dnnf(formula, f)?;
-            Ok(crate::knowledge_compilation::dnnf::count(&dnnf, f))
-        }
+        ModelCountAlgorithm::Dnnf => Ok(compile_dnnf_with_handler(formula, f, handler)?
+            .map(|dnnf| crate::knowledge_compilation::dnnf::count(&dnnf, f))),
         ModelCountAlgorithm::Bdd {
             node_size,
             cache_size,
@@ -186,15 +271,26 @@ fn count_formula(
                 node_size,
                 cache_size,
             )?;
-            Ok(Bdd::from_formula(formula, f, &mut kernel)?.model_count(&mut kernel))
+            Ok(
+                Bdd::from_formula_with_handler(formula, f, &mut kernel, handler)?
+                    .map(|bdd| bdd.model_count(&mut kernel)),
+            )
         }
         #[cfg(feature = "sharp_sat")]
-        ModelCountAlgorithm::SharpSat => {
-            let mut solver = SharpSatSolver::new();
-            solver.add_cnf(formula, f);
-            solver.solve()
-        }
+        ModelCountAlgorithm::SharpSat => Err(OperationError::SharpSatDoesNotSupportHandler.into()),
     }
+}
+
+fn ensure_handler_supported(
+    algorithm: ModelCountAlgorithm,
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<()> {
+    #[cfg(feature = "sharp_sat")]
+    if algorithm == ModelCountAlgorithm::SharpSat && (handler as &dyn Any).is::<NopHandler>() {
+        return Err(OperationError::SharpSatDoesNotSupportHandler.into());
+    }
+    let _ = algorithm;
+    Ok(())
 }
 
 fn dont_care_factor(
@@ -214,10 +310,11 @@ fn dont_care_factor(
     Ok(BigUint::from(2_usize).pow(dc_size))
 }
 
-fn encode_as_cnf(
+fn encode_as_cnf_with_handler(
     formulas: &[EncodedFormula],
     f: &FormulaFactory,
-) -> LngResult<Vec<EncodedFormula>> {
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<Vec<EncodedFormula>>> {
     let mut cnf_encoder = CnfEncoder::new(CnfAlgorithm::Advanced(
         AdvancedFactorizationConfig::default().fallback_algorithm(CnfAlgorithm::Tseitin),
     ));
@@ -225,11 +322,16 @@ fn encode_as_cnf(
         .iter()
         .map(|&formula| pure_expansion(formula, f))
         .collect::<Result<Vec<_>, _>>()?;
-    let transformed = expanded
-        .iter()
-        .map(|formula| cnf_encoder.transform(*formula, f))
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(transformed)
+    let mut transformed = Vec::with_capacity(expanded.len());
+    for formula in expanded {
+        match cnf_encoder.transform_with_handler(formula, f, handler)? {
+            CancelableResult::Ok(cnf) => transformed.push(cnf),
+            CancelableResult::Canceled(event) | CancelableResult::Partial(_, event) => {
+                return Ok(CancelableResult::Canceled(event));
+            }
+        }
+    }
+    Ok(CancelableResult::Ok(transformed))
 }
 
 fn simplify(
@@ -256,6 +358,128 @@ fn simplify(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
+    use num_bigint::BigUint;
+
+    use crate::formulas::{FormulaFactory, ToFormula};
+    use crate::handlers::{ComputationHandler, LngComputation, LngEvent, NopHandler};
+    use crate::operations::functions::{
+        ModelCountAlgorithm, count_models_conjunction_with_handler,
+        count_models_conjunction_with_vars_with_handler, count_models_with_handler,
+        count_models_with_vars_with_handler,
+    };
+
+    struct CancelComputation(LngComputation);
+
+    impl ComputationHandler for CancelComputation {
+        fn should_resume(&mut self, event: LngEvent) -> bool {
+            !matches!(event, LngEvent::ComputationStarted(computation) if computation == self.0)
+        }
+    }
+
+    #[test]
+    fn test_handler_variants() {
+        let f = FormulaFactory::new();
+        let formula = "a | b".to_formula(&f);
+        let formulas = ["a | b".to_formula(&f), "~a | b".to_formula(&f)];
+        let relevant_vars = BTreeSet::from([f.var("a"), f.var("b"), f.var("c")]);
+
+        assert_eq!(
+            count_models_with_handler(formula, ModelCountAlgorithm::Dnnf, &f, &mut NopHandler)
+                .unwrap()
+                .result(),
+            Some(BigUint::from(3_u8))
+        );
+        assert_eq!(
+            count_models_with_vars_with_handler(
+                formula,
+                ModelCountAlgorithm::Dnnf,
+                &relevant_vars,
+                &f,
+                &mut NopHandler,
+            )
+            .unwrap()
+            .result(),
+            Some(BigUint::from(6_u8))
+        );
+        assert_eq!(
+            count_models_conjunction_with_handler(
+                &formulas,
+                ModelCountAlgorithm::Dnnf,
+                &f,
+                &mut NopHandler,
+            )
+            .unwrap()
+            .result(),
+            Some(BigUint::from(2_u8))
+        );
+        assert_eq!(
+            count_models_conjunction_with_vars_with_handler(
+                &formulas,
+                ModelCountAlgorithm::Dnnf,
+                &relevant_vars,
+                &f,
+                &mut NopHandler,
+            )
+            .unwrap()
+            .result(),
+            Some(BigUint::from(4_u8))
+        );
+    }
+
+    #[test]
+    fn test_handler_cancellation() {
+        let f = FormulaFactory::new();
+        let formula = "(a | b) & (~a | c) & (~b | ~c)".to_formula(&f);
+        assert!(
+            count_models_with_handler(
+                formula,
+                ModelCountAlgorithm::Dnnf,
+                &f,
+                &mut CancelComputation(LngComputation::Backbone),
+            )
+            .unwrap()
+            .is_canceled()
+        );
+
+        let bdd_f = FormulaFactory::new();
+        let bdd_formula = "a | b".to_formula(&bdd_f);
+        assert!(
+            count_models_with_handler(
+                bdd_formula,
+                ModelCountAlgorithm::Bdd {
+                    node_size: 100,
+                    cache_size: 100,
+                },
+                &bdd_f,
+                &mut CancelComputation(LngComputation::Bdd),
+            )
+            .unwrap()
+            .is_canceled()
+        );
+    }
+
+    #[cfg(feature = "sharp_sat")]
+    #[test]
+    fn test_sharp_sat_rejects_handler() {
+        use crate::errors::LngError;
+        use crate::operations::OperationError;
+
+        let f = FormulaFactory::new();
+        let error = count_models_with_handler(
+            "a".to_formula(&f),
+            ModelCountAlgorithm::SharpSat,
+            &f,
+            &mut NopHandler,
+        )
+        .unwrap_err();
+        assert_eq!(
+            error,
+            LngError::Operation(OperationError::SharpSatDoesNotSupportHandler)
+        );
+    }
+
     mod dnnf {
         use crate::formulas::FormulaFactory;
         use crate::operations::functions::{ModelCountAlgorithm, count_models};

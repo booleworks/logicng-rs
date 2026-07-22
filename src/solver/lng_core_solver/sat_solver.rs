@@ -127,10 +127,8 @@ impl<B> SatSolver<B> {
             relevant_variables,
             backbone_type,
             &mut NopHandler::new(),
-        );
-        result
-            .result()
-            .ok_or_else(|| crate::solver::SolverError::InvalidExternalResponse.into())
+        )?;
+        Ok(result .result().expect("nop handler can never abort"))
     }
 
     /// Computes a backbone using a cancelable computation handler.
@@ -139,7 +137,7 @@ impl<B> SatSolver<B> {
         relevant_variables: I,
         backbone_type: BackboneType,
         handler: &mut dyn ComputationHandler,
-    ) -> CancelableResult<Backbone>
+    ) -> LngResult<CancelableResult<Backbone>>
     where
         I: IntoIterator<Item = V> + Clone,
         V: Into<Variable>,

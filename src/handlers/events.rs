@@ -14,6 +14,7 @@ pub enum LngEvent {
     NoEvent,
     DistributionPerformed,
     BddNewRefAdded,
+    DnnfDtreeGenerationStarted,
     DnnfDtreeMinFillGraphInitialized,
     DnnfDtreeMinFillNewIteration,
     DnnfDtreeProcessingNextOrderVariable,
@@ -38,6 +39,7 @@ impl Display for LngEvent {
             Self::NoEvent => f.write_str("no event"),
             Self::DistributionPerformed => f.write_str("distribution performed"),
             Self::BddNewRefAdded => f.write_str("new reference added in BDD"),
+            Self::DnnfDtreeGenerationStarted => f.write_str("DNNF DTree generation started"),
             Self::DnnfDtreeMinFillGraphInitialized => {
                 f.write_str("DNNF DTree MinFill graph initialized")
             }

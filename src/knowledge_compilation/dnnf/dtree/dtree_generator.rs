@@ -6,18 +6,37 @@ use itertools::Itertools;
 
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
+use crate::handlers::{CancelableResult, ComputationHandler, LngEvent};
 use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::knowledge_compilation::dnnf::dtree::dtree_datastructure::DTree;
 use crate::knowledge_compilation::dnnf::dtree::dtree_factory::DTreeFactory;
 
-pub fn min_fill_dtree_generation(
+/// Generates a DTree for 'cnf' with the min-fill strategy and a handler
+pub fn min_fill_dtree_generation_with_handler(
     cnf: EncodedFormula,
     f: &FormulaFactory,
     df: &mut DTreeFactory,
-) -> LngResult<DTree> {
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<DTree>> {
+    if !handler.should_resume(LngEvent::DnnfDtreeGenerationStarted) {
+        return Ok(CancelableResult::Canceled(
+            LngEvent::DnnfDtreeGenerationStarted,
+        ));
+    }
+
     let graph = Graph::new_from_cnf(cnf, f);
-    let ordering = graph.get_min_fill_ordering();
-    generate_with_eliminating_order(cnf, ordering, f, df)
+    if !handler.should_resume(LngEvent::DnnfDtreeMinFillGraphInitialized) {
+        return Ok(CancelableResult::Canceled(
+            LngEvent::DnnfDtreeMinFillGraphInitialized,
+        ));
+    }
+    let ordering = graph.get_min_fill_ordering(handler);
+    match ordering {
+        CancelableResult::Ok(ord) => generate_with_eliminating_order(cnf, ord, f, df, handler),
+        CancelableResult::Canceled(e) | CancelableResult::Partial(_, e) => {
+            Ok(CancelableResult::Canceled(e))
+        }
+    }
 }
 
 fn generate_with_eliminating_order(
@@ -25,7 +44,8 @@ fn generate_with_eliminating_order(
     ordering: Vec<Variable>,
     f: &FormulaFactory,
     df: &mut DTreeFactory,
-) -> LngResult<DTree> {
+    handler: &mut dyn ComputationHandler,
+) -> LngResult<CancelableResult<DTree>> {
     if cnf.variables(f).len() != ordering.len() {
         return Err(DnnfError::VarsFormulaOrderingNeq.into());
     }
@@ -34,6 +54,7 @@ fn generate_with_eliminating_order(
         return Err(DnnfError::NonCnfFormula.into());
     } else if !cnf.is_and() {
         df.leaf((*cnf.literals(f)).iter().copied().collect())
+            .map(|r| CancelableResult::Ok(r))
     } else {
         let mut sigma: Vec<DTree> = cnf
             .operands(f)
@@ -42,6 +63,11 @@ fn generate_with_eliminating_order(
             .collect::<Result<Vec<_>, _>>()?;
 
         for variable in ordering {
+            if !handler.should_resume(LngEvent::DnnfDtreeProcessingNextOrderVariable) {
+                return Ok(CancelableResult::Canceled(
+                    LngEvent::DnnfDtreeProcessingNextOrderVariable,
+                ));
+            }
             let mut gamma = Vec::new();
             let mut sigma2 = Vec::new();
             for tree in sigma {
@@ -56,7 +82,7 @@ fn generate_with_eliminating_order(
                 sigma.push(compose(&gamma, df)?);
             }
         }
-        compose(&sigma, df)
+        compose(&sigma, df).map(|r| CancelableResult::Ok(r))
     }
 }
 
@@ -133,13 +159,19 @@ impl Graph {
         }
     }
 
-    pub fn get_min_fill_ordering(self) -> Vec<Variable> {
+    pub fn get_min_fill_ordering(
+        self,
+        handler: &mut dyn ComputationHandler,
+    ) -> CancelableResult<Vec<Variable>> {
         let mut fill_adj_matrix = self.adj_matrix;
         let mut fill_edge_list = self.edge_list;
         let mut ordering = Vec::with_capacity(self.number_of_vertices);
         let mut processed: Vec<bool> = repeat_n(false, self.number_of_vertices).collect();
         let mut tree_width = 0;
         for _ in 0..self.number_of_vertices {
+            if !handler.should_resume(LngEvent::DnnfDtreeMinFillNewIteration) {
+                return CancelableResult::Canceled(LngEvent::DnnfDtreeMinFillNewIteration);
+            }
             let mut possibly_best_vertices = Vec::new();
             let mut min_edges = usize::MAX;
             for current_vertex in 0..self.number_of_vertices {
@@ -206,7 +238,7 @@ impl Graph {
             processed[best_vertex] = true;
             ordering.push(self.vertices[best_vertex]);
         }
-        ordering
+        CancelableResult::Ok(ordering)
     }
 }
 
@@ -221,8 +253,9 @@ mod tests {
         use std::io::{BufRead, BufReader};
 
         use crate::formulas::FormulaFactory;
+        use crate::handlers::NopHandler;
         use crate::knowledge_compilation::dnnf::dtree::dtree_factory::DTreeFactory;
-        use crate::knowledge_compilation::dnnf::dtree::dtree_generator::min_fill_dtree_generation;
+        use crate::knowledge_compilation::dnnf::dtree::dtree_generator::min_fill_dtree_generation_with_handler;
 
         let reader = BufReader::new(File::open("resources/formulas/large_formula.txt").unwrap());
         let f = &FormulaFactory::new();
@@ -232,7 +265,10 @@ mod tests {
         let cnf = CnfEncoder::new(CnfAlgorithm::Factorization)
             .transform(formula, f)
             .unwrap();
-        let tree = min_fill_dtree_generation(cnf, f, &mut df).unwrap();
+        let tree = min_fill_dtree_generation_with_handler(cnf, f, &mut df, &mut NopHandler::new())
+            .unwrap()
+            .result()
+            .expect("nop handler can never abort");
         println!("{}", tree.to_string(&df, f));
     }
 }
