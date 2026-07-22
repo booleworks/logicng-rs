@@ -128,7 +128,7 @@ impl<B> SatSolver<B> {
             backbone_type,
             &mut NopHandler::new(),
         )?;
-        Ok(result .result().expect("nop handler can never abort"))
+        Ok(result.result().expect("nop handler can never abort"))
     }
 
     /// Computes a backbone using a cancelable computation handler.

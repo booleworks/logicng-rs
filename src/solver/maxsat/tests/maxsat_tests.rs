@@ -6,8 +6,8 @@ use std::io::BufRead;
 mod handler_tests {
     use crate::formulas::FormulaFactory;
     use crate::handlers::{CancelableResult, ComputationHandler, LngEvent, TimeoutHandler};
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use crate::solver::maxsat::tests::maxsat_tests::read_cnf_to_solver;
+    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use std::path::Path;
     use std::time::{Duration, Instant};
 
@@ -122,12 +122,12 @@ mod handler_tests {
 mod pure_maxsat_tests {
     use crate::formulas::FormulaFactory;
     use crate::solver::SolverError;
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use crate::solver::maxsat::maxsat_config::{
         CardinalEncoding, GraphType, MaxSatConfig, MergeStrategy, Symmetry, Verbosity,
         WeightStrategy,
     };
     use crate::solver::maxsat::tests::maxsat_tests::read_cnf_to_solver;
+    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
 
     use super::test_on_files;
 
@@ -499,10 +499,10 @@ mod partial_maxsat_tests {
 
 mod partial_weighted_tests {
     use crate::formulas::FormulaFactory;
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use crate::solver::maxsat::maxsat_config::{
         CardinalEncoding, MaxSatConfig, Verbosity, WeightStrategy,
     };
+    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use std::collections::HashSet;
 
     use super::test_on_files;
@@ -677,8 +677,8 @@ mod partial_weighted_tests {
 
 mod long_running_tests {
     use crate::formulas::FormulaFactory;
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use crate::solver::maxsat::tests::maxsat_tests::{read_cnf_to_solver, read_result};
+    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
 
     #[test]
     fn test() {

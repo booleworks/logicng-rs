@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};

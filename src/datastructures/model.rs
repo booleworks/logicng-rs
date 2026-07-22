@@ -68,7 +68,10 @@ impl Model {
         P: Into<Vec<Variable>>,
         N: Into<Vec<Variable>>,
     {
-        Self { pos: pos.into(), neg: neg.into() }
+        Self {
+            pos: pos.into(),
+            neg: neg.into(),
+        }
     }
 
     /// Creates a new model from slices.
