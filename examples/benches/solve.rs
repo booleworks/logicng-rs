@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use itertools::Itertools;
 use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
-use logicng::solver::lng_core_solver::MiniSat;
+use logicng::solver::lng_core_solver::SatSolver;
 
 pub fn main() {
     for threads in &[1, 2, 4, 8] {
@@ -37,7 +37,7 @@ fn solve(thread_count: usize) {
                     break;
                 }
                 let formula = formulas_l[c];
-                let mut solver = MiniSat::new();
+                let mut solver = SatSolver::new();
                 let _ = solver.add(formula, &f_l);
                 let _ = solver.sat();
             }
@@ -49,7 +49,7 @@ fn solve(thread_count: usize) {
         thread.join().expect("thread failed!");
     }
     println!(
-        "MiniSat solve, {thread_count} Threads: {}s",
+        "SAT solve, {thread_count} Threads: {}s",
         start.elapsed().as_secs_f64()
     );
 }

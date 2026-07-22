@@ -1,7 +1,7 @@
 use crate::errors::LngResult;
 use crate::formulas::ToFormula;
 use crate::solver::lng_core_solver::Tristate::{False, True};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
+use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
 use crate::util::test_util::F;
 
 #[test]
@@ -9,8 +9,8 @@ fn test_assume() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
     let solvers = [
-        MiniSat::from_config(MiniSatConfig::default().incremental(true)),
-        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
+        SatSolver::from_config(SatSolverConfig::default().incremental(true)),
+        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
     ];
 
     let assumptions1 = [f.lit("c", true), f.lit("d", true)];

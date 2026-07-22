@@ -1,10 +1,12 @@
 use crate::datastructures::Assignment;
+use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
 use crate::errors::LngResult;
 use crate::formulas::CType::{EQ, GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Literal};
-use crate::encodings::pseudo_booleans::pb_config::{PbAlgorithm, PbConfig};
-use crate::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::lng_core_solver::{MiniSat, Tristate};
+use crate::solver::lng_core_solver::functions::{
+    ModelEnumerationConfig, enumerate_models_with_config,
+};
+use crate::solver::lng_core_solver::{SatSolver, Tristate};
 use crate::util::test_util::F;
 
 fn configs() -> Vec<PbConfig> {
@@ -65,7 +67,7 @@ fn test_pb_eq() -> LngResult<()> {
     for config in configs() {
         let f = &mut FormulaFactory::new();
         f.config.pb_config = config;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
         solver.add(
@@ -81,6 +83,7 @@ fn test_pb_eq() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 9);
@@ -106,6 +109,7 @@ fn test_pb_eq() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 36);
@@ -131,6 +135,7 @@ fn test_pb_eq() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -156,6 +161,7 @@ fn test_pb_eq() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -177,7 +183,7 @@ fn test_pb_less() -> LngResult<()> {
         let mut F = F::new();
         let f = &mut F.f;
         f.config.pb_config = config;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
 
@@ -194,6 +200,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 140);
@@ -215,6 +222,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 140);
@@ -236,6 +244,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -254,6 +263,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -272,6 +282,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -290,6 +301,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -308,6 +320,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 10);
@@ -326,6 +339,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 11);
@@ -344,6 +358,7 @@ fn test_pb_less() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -358,7 +373,7 @@ fn test_pb_greater() -> LngResult<()> {
         let mut F = F::new();
         let f = &mut F.f;
         f.config.pb_config = config;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         let coeffs10: Box<[i64]> = Box::new([3, 2, 2, 2, 2, 2, 2, 2, 2, 2]);
         let literals10 = literals(10, f);
 
@@ -375,6 +390,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -396,6 +412,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 47);
@@ -417,6 +434,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -435,6 +453,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -453,6 +472,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -471,6 +491,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);
@@ -489,6 +510,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 10);
@@ -507,6 +529,7 @@ fn test_pb_greater() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 11);
@@ -521,7 +544,7 @@ fn test_pb_negative() -> LngResult<()> {
         let mut F = F::new();
         let f = &mut F.f;
         f.config.pb_config = config;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         let coeffs10: Box<[i64]> = Box::new([2, 2, 2, 2, 2, 2, 2, 2, 2, -2]);
         let literals10 = literals(10, f);
 
@@ -536,6 +559,7 @@ fn test_pb_negative() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 45);
@@ -555,6 +579,7 @@ fn test_pb_negative() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 120);
@@ -575,6 +600,7 @@ fn test_pb_negative() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 57);
@@ -597,6 +623,7 @@ fn test_pb_negative() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 8);
@@ -619,6 +646,7 @@ fn test_pb_negative() -> LngResult<()> {
                     .map(Literal::variable)
                     .collect::<Box<[_]>>(),
             ),
+            f,
         )
         .unwrap();
         assert_eq!(models.len(), 1);

@@ -1,10 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::iter::repeat_n;
+use std::iter::repeat;
 use std::sync::Arc;
-
-use bitvec::bitvec;
-use bitvec::vec::BitVec;
-use itertools::Itertools;
 
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, FormulaType, Literal, Variable};
@@ -14,7 +10,10 @@ use crate::knowledge_compilation::dnnf::dtree::{
 };
 use crate::operations::predicates::is_sat;
 use crate::operations::transformations::{backbone_simplification, cnf_subsumption};
-use crate::solver::lng_core_solver::{var, MiniSat2Solver, MsVar, Tristate};
+use crate::solver::lng_core_solver::{LngCoreSolver, LngVar, Tristate, var};
+use bitvec::bitvec;
+use bitvec::vec::BitVec;
+use itertools::Itertools;
 
 /// Represents a formula in DNNF.
 ///
@@ -30,17 +29,13 @@ pub struct DnnfFormula {
 }
 
 /// Compiles the given formula to a DNNF instance.
-///
-/// # Errors
-///
-/// Returns an error if CNF conversion, simplification, subsumption, or dtree
-/// generation fails.
 pub fn compile_dnnf(formula: EncodedFormula, f: &FormulaFactory) -> LngResult<DnnfFormula> {
+    // TODO version with handler
     let original_variables = formula.variables(f);
     let cnf = f.cnf_of(formula)?;
-    let simplified = backbone_simplification(cnf, f)?;
-    let subsumption = cnf_subsumption(simplified, f)?;
-    let dnnf = DnnfCompiler::new(subsumption, f).compile()?;
+    let formula = backbone_simplification(cnf, f)?;
+    let formula = cnf_subsumption(formula, f)?;
+    let dnnf = DnnfCompiler::new(formula, f).compile(f)?;
     Ok(DnnfFormula {
         formula: dnnf,
         original_variables,
@@ -62,8 +57,8 @@ impl<'a> DnnfCompiler<'a> {
     fn new(cnf: EncodedFormula, f: &'a FormulaFactory) -> Self {
         let (unit_clauses, non_unit_clauses) = initialize_clauses(cnf, f);
         let number_of_variables = cnf.variables(f).len();
-        let mut solver = DnnfSatSolver::new(MiniSat2Solver::new(), number_of_variables);
-        solver.add(cnf, f).expect("formula is in CNF");
+        let mut solver = DnnfSatSolver::new(LngCoreSolver::new(), number_of_variables);
+        solver.add(cnf, f);
         DnnfCompiler {
             cnf,
             unit_clauses,
@@ -76,34 +71,34 @@ impl<'a> DnnfCompiler<'a> {
         }
     }
 
-    fn compile(&mut self) -> LngResult<EncodedFormula> {
+    fn compile(&mut self, f: &FormulaFactory) -> LngResult<EncodedFormula> {
         if self.non_unit_clauses.is_atomic() {
             Ok(self.cnf)
         } else if !is_sat(self.cnf, self.f)? || !self.solver.start() {
             Ok(self.f.falsum())
         } else {
             let tree = min_fill_dtree_generation(self.cnf, self.f, &mut self.df)?;
-            self.df.finish(tree, &self.solver)?;
-            Ok(self.compile_tree(tree))
+            self.df.finish(tree, &self.solver);
+            Ok(self.compile_tree(tree, f))
         }
     }
 
-    fn compile_tree(&mut self, tree: DTree) -> EncodedFormula {
-        let result = self.cnf2ddnnf(tree);
+    fn compile_tree(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
+        let result = self.cnf2ddnnf(tree, f);
         self.f.and([self.unit_clauses, result])
     }
 
-    fn cnf2ddnnf(&mut self, tree: DTree) -> EncodedFormula {
+    fn cnf2ddnnf(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
         let implied = self.newly_implied_literals(&self.df.static_var_set(tree));
         let separator = self.df.dynamic_separator(tree, &self.solver);
 
         if separator.not_any() {
             match tree {
                 DTree::Leaf(n) => {
-                    let leaf_formula = self.leaf2ddnnf(n);
+                    let leaf_formula = self.leaf2ddnnf(n, f);
                     self.f.and([implied, leaf_formula])
                 }
-                DTree::Node(n) => self.conjoin(implied, self.df.children(n)),
+                DTree::Node(n) => self.conjoin(implied, self.df.children(n), f),
             }
         } else {
             let sep = separator;
@@ -111,14 +106,14 @@ impl<'a> DnnfCompiler<'a> {
 
             // Positive branch
             let positive_dnnf = if self.solver.decide(var, true) {
-                self.cnf2ddnnf(tree)
+                self.cnf2ddnnf(tree, f)
             } else {
                 self.f.falsum()
             };
             self.solver.undo_decide(var);
             if positive_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
-                    self.cnf2ddnnf(tree)
+                    self.cnf2ddnnf(tree, f)
                 } else {
                     self.f.falsum()
                 };
@@ -126,20 +121,20 @@ impl<'a> DnnfCompiler<'a> {
 
             // Negative branch
             let negative_dnnf = if self.solver.decide(var, false) {
-                self.cnf2ddnnf(tree)
+                self.cnf2ddnnf(tree, f)
             } else {
                 self.f.falsum()
             };
             self.solver.undo_decide(var);
             if negative_dnnf.is_falsum() {
                 return if self.solver.at_assertion_level() && self.solver.assert_cd_literal() {
-                    self.cnf2ddnnf(tree)
+                    self.cnf2ddnnf(tree, f)
                 } else {
                     self.f.falsum()
                 };
             }
 
-            let lit = EncodedFormula::from(self.solver.var_for_idx(var).pos_lit());
+            let lit = EncodedFormula::from(self.solver.var_for_idx(var, f).pos_lit());
             let neg_lit = self.f.negate(lit);
             let positive_branch = self.f.and([lit, positive_dnnf]);
             let negative_branch = self.f.and([neg_lit, negative_dnnf]);
@@ -152,7 +147,7 @@ impl<'a> DnnfCompiler<'a> {
         self.solver.newly_implied(known_variables, self.f)
     }
 
-    fn leaf2ddnnf(&self, leaf_index: DTreeIndex) -> EncodedFormula {
+    fn leaf2ddnnf(&mut self, leaf_index: DTreeIndex, f: &FormulaFactory) -> EncodedFormula {
         let leaf = &self.df.leaf_literals[leaf_index as usize];
         let mut leaf_result_operands = Vec::with_capacity(leaf.len());
         let mut leaf_current_literals = Vec::with_capacity(leaf.len());
@@ -161,7 +156,7 @@ impl<'a> DnnfCompiler<'a> {
                 Tristate::True => return self.f.verum(),
                 Tristate::Undef => {
                     let literal = EncodedFormula::from(Literal::new(
-                        self.solver.var_for_idx(var(*lit)),
+                        self.solver.var_for_idx(var(*lit), f),
                         DnnfSatSolver::phase(*lit),
                     ));
                     leaf_current_literals.push(literal);
@@ -175,30 +170,35 @@ impl<'a> DnnfCompiler<'a> {
         self.f.or(&leaf_result_operands)
     }
 
-    fn conjoin(&mut self, implied: EncodedFormula, node: (DTree, DTree)) -> EncodedFormula {
+    fn conjoin(
+        &mut self,
+        implied: EncodedFormula,
+        node: (DTree, DTree),
+        f: &FormulaFactory,
+    ) -> EncodedFormula {
         if implied.is_falsum() {
             return implied;
         }
-        let left = self.cnf_aux(node.0);
+        let left = self.cnf_aux(node.0, f);
         if left.is_falsum() {
             return left;
         }
-        let right = self.cnf_aux(node.1);
+        let right = self.cnf_aux(node.1, f);
         if right.is_falsum() {
             return right;
         }
         self.f.and([implied, left, right])
     }
 
-    fn cnf_aux(&mut self, tree: DTree) -> EncodedFormula {
+    fn cnf_aux(&mut self, tree: DTree, f: &FormulaFactory) -> EncodedFormula {
         match tree {
-            DTree::Leaf(n) => self.leaf2ddnnf(n),
+            DTree::Leaf(n) => self.leaf2ddnnf(n, f),
             DTree::Node(_) => {
                 let key = self.compute_cache_key(tree);
                 if let Some(&cache) = self.cache.get(&key) {
                     cache
                 } else {
-                    let dnnf = self.cnf2ddnnf(tree);
+                    let dnnf = self.cnf2ddnnf(tree, f);
                     if !dnnf.is_falsum() {
                         self.cache.insert(key, dnnf);
                     }
@@ -217,15 +217,15 @@ impl<'a> DnnfCompiler<'a> {
     }
 
     #[allow(clippy::cast_possible_wrap)]
-    fn choose_shannon_variable(&self, tree: DTree, separator: &BitVec) -> MsVar {
+    fn choose_shannon_variable(&self, tree: DTree, separator: &BitVec) -> LngVar {
         // cached allocation as in Java was significantly slower here, so we rather create a new vector on every call
-        let mut occurrences: Vec<isize> = repeat_n(-1, self.number_of_variables).collect();
+        let mut occurrences: Vec<isize> = repeat(-1).take(self.number_of_variables).collect();
         separator.iter_ones().for_each(|n| occurrences[n] = 0);
 
         self.df
             .count_unsubsumed_occurrences(tree, &mut occurrences, &self.solver);
 
-        MsVar(occurrences.iter().position_max().unwrap())
+        LngVar(occurrences.iter().position_max().unwrap())
     }
 }
 
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
     fn test_large_formulas() {
         let f = &FormulaFactory::new();
         let cnf1 = read_cnf("resources/dnnf/both_bdd_dnnf_1.cnf", f).unwrap();
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
+    #[cfg_attr(not(feature = "long_running_tests"), ignore)]
     fn test_all_small_formulas() {
         let f = &FormulaFactory::new();
         BufReader::new(File::open("resources/formulas/small_formulas.txt").unwrap())

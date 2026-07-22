@@ -6,9 +6,9 @@ use std::io::{BufRead, BufReader, Error, Write, stdout};
 use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 
-use logicng::formulas::Variable;
+use logicng::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
+use logicng::solver::lng_core_solver::SatSolver;
 use logicng::solver::lng_core_solver::Tristate::True;
-use logicng::solver::lng_core_solver::{MiniSat2Solver, mk_lit};
 
 #[test]
 #[cfg_attr(not(feature = "long_running_tests"), ignore)]
@@ -49,28 +49,18 @@ fn read_result() -> HashMap<String, bool> {
 fn test_file(file: DimacsFile, expected: bool) {
     println!("Processing file: {}", file.name);
     stdout().flush().unwrap();
-    let mut solver: MiniSat2Solver<()> = MiniSat2Solver::new();
-    for v in 1..(file.max_var + 1) {
-        let index = solver.new_var(true, true);
-        solver.add_variable(Variable::from_index(v as u64), index);
-    }
+    let f = FormulaFactory::new();
+    let mut solver = SatSolver::new();
     for clause in file.clauses {
-        solver.add_clause(
-            clause
-                .iter()
-                .map(|v| {
-                    mk_lit(
-                        solver
-                            .idx_for_variable(Variable::from_index(v.unsigned_abs() as u64))
-                            .unwrap(),
-                        v.is_negative(),
-                    )
-                })
-                .collect(),
-            None,
-        );
+        let literals = clause.iter().map(|v| {
+            EncodedFormula::from(Literal::new(
+                Variable::from_index(v.unsigned_abs() as u64),
+                v.is_positive(),
+            ))
+        });
+        solver.add(f.or(literals), &f).unwrap();
     }
-    let result = solver.solve();
+    let result = solver.sat();
     println!(
         "{:?}{}",
         result,
@@ -109,7 +99,6 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
     );
     let file = File::open(path)?;
     let mut clauses: Vec<Vec<isize>> = Vec::new();
-    let mut max_var: usize = 0;
     for line in BufReader::new(file).lines() {
         match line {
             Ok(line) if !line.is_empty() => {
@@ -118,7 +107,6 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
                     "c" => (),
                     "p" => {
                         clauses.reserve(split[3].parse().unwrap());
-                        max_var = split[2].parse().unwrap();
                     }
                     _ => clauses.push(Vec::<isize>::from_iter(
                         split[0..split.len() - 1].iter().map(|x| x.parse().unwrap()),
@@ -131,12 +119,10 @@ fn read_single_file(path: &PathBuf) -> Result<DimacsFile, Error> {
     Ok(DimacsFile {
         name: path.file_name().unwrap().to_str().unwrap().into(),
         clauses,
-        max_var,
     })
 }
 
 struct DimacsFile {
     name: String,
     clauses: Vec<Vec<isize>>,
-    max_var: usize,
 }

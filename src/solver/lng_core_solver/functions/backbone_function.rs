@@ -1,11 +1,12 @@
-use crate::backbones::Backbone;
-use crate::formulas::Variable;
-use crate::solver::lng_core_solver::functions::backbone_function::BackboneType::PositiveAndNegative;
-use crate::solver::lng_core_solver::MiniSat;
-use BackboneType::{OnlyNegative, OnlyPositive};
+use crate::{
+    backbones::Backbone,
+    formulas::Variable,
+    handlers::{CancelableResult, ComputationHandler},
+    solver::lng_core_solver::SatSolver,
+};
 
 /// Types of backbones
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum BackboneType {
     /// Backbones that only contain positive literals.
     OnlyPositive,
@@ -16,53 +17,29 @@ pub enum BackboneType {
 }
 
 impl BackboneType {
-    /// Returns `true` if and only if the type of backbone contains
+    /// Returns `true` if and only if the type of backbone allows to contains
     /// literals with the given phase.
     pub const fn matches_phase(&self, phase: bool) -> bool {
         match self {
-            OnlyPositive => phase,
-            OnlyNegative => !phase,
-            PositiveAndNegative => true,
+            Self::OnlyPositive => phase,
+            Self::OnlyNegative => !phase,
+            Self::PositiveAndNegative => true,
         }
     }
 }
 
-/// Configuration for backbones.
-#[derive(Eq, PartialEq, Clone, Debug, Hash)]
-pub struct BackboneConfig {
-    variables: Vec<Variable>,
+/// Computes the requested backbone over `variables` without permanently changing the solver.
+pub fn compute_backbone<B, V, I>(
+    solver: &mut SatSolver<B>,
+    variables: I,
     backbone_type: BackboneType,
-}
-
-impl BackboneConfig {
-    /// Construct a new configuration with the given variables.
-    pub fn new(variables: Vec<Variable>) -> Self {
-        Self {
-            variables,
-            backbone_type: PositiveAndNegative,
-        }
-    }
-
-    /// Returns the type of the backbone.
-    #[must_use]
-    pub const fn backbone_type(mut self, backbone_type: BackboneType) -> Self {
-        self.backbone_type = backbone_type;
-        self
-    }
-
-    /// Computes the backbone based on a solver and the configuration.
-    pub fn compute_backbone(self, solver: &mut MiniSat) -> Backbone {
-        let state_before_backbone = if solver.underlying_solver.config.incremental {
-            Some(solver.save_state().expect("we are in incremental mode"))
-        } else {
-            None
-        };
-        let backbone = solver
-            .underlying_solver
-            .compute_backbone(self.variables, self.backbone_type);
-        if let Some(state) = state_before_backbone {
-            let _ = solver.load_state(&state); // we created the state
-        }
-        backbone
-    }
+    handler: &mut dyn ComputationHandler,
+) -> CancelableResult<Backbone>
+where
+    I: IntoIterator<Item = V> + Clone,
+    V: Into<Variable>,
+{
+    solver
+        .underlying_solver()
+        .compute_backbone(variables, backbone_type, handler)
 }

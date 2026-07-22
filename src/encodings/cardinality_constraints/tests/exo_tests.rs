@@ -4,9 +4,11 @@ use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::errors::LngResult;
 use crate::formulas::CType::EQ;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::lng_core_solver::functions::{enumerate_models_with_config, ModelEnumerationConfig};
-use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::SatSolver;
 use crate::solver::lng_core_solver::Tristate::True;
+use crate::solver::lng_core_solver::functions::{
+    ModelEnumerationConfig, enumerate_models_with_config,
+};
 
 fn configs() -> Vec<CcConfig> {
     vec![
@@ -78,7 +80,7 @@ fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
     let problem_lits: Box<[Variable]> = (0..num_lits)
         .map(|i| f.variable(format!("v{i}")).as_variable().unwrap())
         .collect();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     let cc = f.cc(EQ, 1, problem_lits.clone()).unwrap();
     solver.add(cc, f)?;
     assert_eq!(solver.sat(), True);
@@ -87,6 +89,7 @@ fn test_exo(num_lits: usize, f: &FormulaFactory) -> LngResult<()> {
         &ModelEnumerationConfig::default()
             .variables(problem_lits)
             .max_models(12000),
+        f,
     )
     .unwrap();
     assert_eq!(models.len(), num_lits);

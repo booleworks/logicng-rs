@@ -1,6 +1,6 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::propositions::Proposition;
-use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::SatSolver;
 
 /// The result of an encoding.
 ///
@@ -117,13 +117,13 @@ impl EncodingResult for EncodingResultFF<'_> {
 /// the given formula factory.
 pub struct EncodingResultSatSolver<'s, 'f, B> {
     /// The SAT solver which is the destination for the constructed clauses.
-    pub solver: &'s mut MiniSat<B>,
+    pub solver: &'s mut SatSolver<B>,
     proposition: Option<Proposition<B>>,
     f: &'f FormulaFactory,
 }
 
 impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
-    /// Creates a new [`MiniSat`]-based [`EncodingResult`].
+    /// Creates a new [`SatSolver`]-based [`EncodingResult`].
     ///
     /// Optionally, a `proposition` can be defined that is added together with
     /// the clauses when they are added to the solver.
@@ -134,15 +134,15 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     ///
     /// ```
     /// # use logicng::formulas::FormulaFactory;
-    /// # use logicng::solver::lng_core_solver::MiniSat;
+    /// # use logicng::solver::lng_core_solver::SatSolver;
     /// # use logicng::datastructures::EncodingResultSatSolver;
     /// let f = FormulaFactory::new();
-    /// let mut solver = MiniSat::new();
+    /// let mut solver = SatSolver::new();
     /// let mut encoding_result = EncodingResultSatSolver::new(&mut solver, None, &f);
     /// // ...
     /// ```
     pub fn new(
-        solver: &'s mut MiniSat<B>,
+        solver: &'s mut SatSolver<B>,
         proposition: Option<Proposition<B>>,
         f: &'f FormulaFactory,
     ) -> Self {
@@ -160,10 +160,10 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     ///
     /// ```
     /// # use logicng::formulas::FormulaFactory;
-    /// # use logicng::solver::lng_core_solver::MiniSat;
+    /// # use logicng::solver::lng_core_solver::SatSolver;
     /// # use logicng::datastructures::EncodingResultSatSolver;
     /// let f = FormulaFactory::new();
-    /// let mut solver = MiniSat::new();
+    /// let mut solver = SatSolver::new();
     /// let encoding_result = EncodingResultSatSolver::new(&mut solver, None, &f);
     /// assert_eq!(f.id(), encoding_result.factory().id());
     /// ```
@@ -174,20 +174,26 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
 
 impl<B: Clone> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
     fn new_auxiliary_variable(&mut self, aux_type: &str) -> Variable {
-        let initial_phase = self.solver.config.initial_phase;
-        let index = self.solver.underlying_solver.new_var(initial_phase, true);
+        let initial_phase = self.solver.config().initial_phase;
+        let index = self.solver.underlying_solver().new_var(initial_phase, true);
         let variable = self.f.new_auxiliary_variable(aux_type);
-        self.solver.underlying_solver.add_variable(variable, index);
+        self.solver
+            .underlying_solver()
+            .add_variable(variable, index);
         variable
     }
 
     fn add_clause(&mut self, lits: &[Literal]) {
-        let mut exported_lits = Vec::with_capacity(lits.len());
-        for lit in lits {
-            exported_lits.push(self.solver.add_literal(lit));
+        // A formula-factory clause is structurally guaranteed to be a valid clause.
+        let clause = self.f.clause(lits);
+        if let Ok(literals) = clause.literals_for_clause_or_term(self.f) {
+            let exported = crate::solver::lng_core_solver::generate_clause_vector_wo_config(
+                &literals,
+                self.solver.underlying_solver(),
+            );
+            self.solver
+                .underlying_solver()
+                .add_clause(exported, self.proposition.clone());
         }
-        self.solver
-            .underlying_solver
-            .add_clause(exported_lits, self.proposition.clone());
     }
 }

@@ -1,9 +1,8 @@
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
-use crate::solver::lng_core_solver::functions::BackboneConfig;
+use crate::solver::lng_core_solver::SatSolver;
 use crate::solver::lng_core_solver::functions::BackboneType::PositiveAndNegative;
-use crate::solver::lng_core_solver::MiniSat;
 
 /// This function simplifies a formula by computing its backbone and
 /// propagating it through the formula.
@@ -32,14 +31,14 @@ pub fn backbone_simplification(
     formula: EncodedFormula,
     f: &FormulaFactory,
 ) -> LngResult<EncodedFormula> {
+    // TODO version with handler
     match f.caches.backbone_simps.get(formula) {
         Some(c) => Ok(c),
         None => {
-            let mut solver = MiniSat::new();
-            solver.add(formula, f)?;
-            let backbone = BackboneConfig::new(formula.variables(f).iter().copied().collect())
-                .backbone_type(PositiveAndNegative)
-                .compute_backbone(&mut solver);
+            let mut solver = SatSolver::<()>::new();
+            solver.add_formula(formula, f)?;
+            let variables = formula.variables(f);
+            let backbone = solver.backbone(variables.iter().copied(), PositiveAndNegative)?;
             let result = if !backbone.sat {
                 f.falsum()
             } else if !backbone.is_empty() {

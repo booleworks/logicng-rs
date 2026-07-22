@@ -9,36 +9,36 @@ use crate::formulas::CType::{EQ, GE};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_cnf;
 use crate::solver::SolverError;
-use crate::solver::lng_core_solver::functions::{
-    ModelEnumerationConfig, enumerate_models, enumerate_models_with_config,
-};
-use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
 use crate::solver::lng_core_solver::ClauseMinimization;
+use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
 use crate::solver::lng_core_solver::Tristate::{False, True};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
+use crate::solver::lng_core_solver::functions::{
+    ModelEnumerationConfig, enumerate_models_with_config,
+};
 use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
+use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
 use crate::util::test_util::{lits, lits_list, vars_list};
 
-fn solvers() -> [MiniSat; 5] {
+fn solvers() -> [SatSolver; 5] {
     [
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(FactoryCnf)
                 .incremental(true),
         ),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(FactoryCnf)
                 .incremental(false),
         ),
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(SatSolverConfig::default().cnf_method(PgOnSolver)),
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(PgOnSolver)
                 .auxiliary_variables_in_models(false),
         ),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(FullPgOnSolver)
                 .auxiliary_variables_in_models(false),
         ),
@@ -184,7 +184,9 @@ fn test_formula2() -> LngResult<()> {
                 "(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f),
                 f,
             )?;
-            let models = enumerate_models(&mut solver).unwrap();
+            let models =
+                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                    .unwrap();
             assert_eq!(models.len(), 1);
             let model = Assignment::from(&models[0]);
             assert!(!model.evaluate_lit(f.lit("x", true)));
@@ -204,7 +206,9 @@ fn test_formula3() -> LngResult<()> {
     for mut solver in solvers() {
         if solver.config.incremental {
             solver.add("a | b".to_formula(f), f)?;
-            let models = enumerate_models(&mut solver).unwrap();
+            let models =
+                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                    .unwrap();
             assert_eq!(models.len(), 3);
             assert_eq!(models[0].len(), 2);
             assert_eq!(models[1].len(), 2);
@@ -228,6 +232,7 @@ fn test_cc1() -> LngResult<()> {
             let models = enumerate_models_with_config(
                 &mut solver,
                 &ModelEnumerationConfig::default().variables(vars),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 100);
@@ -275,7 +280,7 @@ fn test_partial_model() -> LngResult<()> {
 #[test]
 fn test_variables_removed_by_simplification_occurs_in_models() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver));
+    let mut solver = SatSolver::from_config(SatSolverConfig::default().cnf_method(PgOnSolver));
     let a = f.var("A");
     let b = f.var("B");
     let formula = "A & B => A".to_formula(f);
@@ -300,7 +305,7 @@ fn test_variables_removed_by_simplification_occurs_in_models() -> LngResult<()> 
 #[test]
 fn test_unknown_variable_not_occurring_in_model() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     let a = "A".to_formula(f);
     solver.add(a, f)?;
     assert_eq!(True, solver.sat());
@@ -363,9 +368,9 @@ fn test_pigeon_hole_large() -> LngResult<()> {
 fn test_different_clause_minimizations() -> LngResult<()> {
     let f = &FormulaFactory::new();
     let solvers = [
-        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::None)),
-        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::Basic)),
-        MiniSat::from_config(MiniSatConfig::default().clause_min(ClauseMinimization::Deep)),
+        SatSolver::from_config(SatSolverConfig::default().clause_min(ClauseMinimization::None)),
+        SatSolver::from_config(SatSolverConfig::default().clause_min(ClauseMinimization::Basic)),
+        SatSolver::from_config(SatSolverConfig::default().clause_min(ClauseMinimization::Deep)),
     ];
     for mut solver in solvers {
         solver.add(generate_pigeon_hole(7, f), f)?;
@@ -425,6 +430,7 @@ fn test_model_enumeration() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(first_five)
                     .additional_variables(vars.clone()),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 32);
@@ -445,7 +451,11 @@ fn test_empty_enumeration() -> LngResult<()> {
     for mut solver in solvers() {
         if solver.config.incremental {
             solver.add(f.falsum(), f)?;
-            assert!(enumerate_models(&mut solver).unwrap().is_empty());
+            assert!(
+                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                    .unwrap()
+                    .is_empty()
+            );
         }
     }
 
@@ -464,6 +474,7 @@ fn test_number_of_models_handler() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(vars.clone())
                     .max_models(100),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 100);
@@ -476,6 +487,7 @@ fn test_number_of_models_handler() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(vars.clone())
                     .max_models(200),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 100);
@@ -488,6 +500,7 @@ fn test_number_of_models_handler() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(vars.clone())
                     .max_models(50),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 50);
@@ -500,6 +513,7 @@ fn test_number_of_models_handler() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(vars.clone())
                     .max_models(1),
+                f,
             )
             .unwrap();
             assert_eq!(models.len(), 1);
@@ -511,14 +525,14 @@ fn test_number_of_models_handler() -> LngResult<()> {
 
 #[test]
 fn test_model_before_solving() {
-    let res = MiniSat::new().model(None);
+    let res = SatSolver::new().model(None);
     assert!(res.is_err());
 }
 
 #[test]
 fn test_known_variables() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     let phi = "x1 & x2 & x3 & (x4 | ~x5)".to_formula(f);
     let mut vars = phi.variables(f).iter().copied().collect::<Vec<Variable>>();
     solver.add(phi, f)?;
@@ -539,7 +553,7 @@ fn test_known_variables() -> LngResult<()> {
 #[test]
 fn test_up_zero_literals_for_undef_state() -> LngResult<()> {
     let f = &FormulaFactory::new();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     solver.add("a & b".to_formula(f), f)?;
     let res = solver.up_zero_literals();
     assert_eq!(res, Err(SolverError::NotSolved.into()));
@@ -708,7 +722,6 @@ fn test_selection_order_simple02() -> LngResult<()> {
 #[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 fn test_dimacs_files_with_selection_order() -> LngResult<()> {
-    let f = &FormulaFactory::new();
     let expected_results: HashMap<String, bool> =
         BufReader::new(File::open("resources/sat/results.txt").unwrap())
             .lines()
@@ -725,6 +738,7 @@ fn test_dimacs_files_with_selection_order() -> LngResult<()> {
         let file = file.unwrap();
         let file_name = file.file_name().to_str().unwrap().to_string();
         if file_name.ends_with(".cnf") {
+            let f = &FormulaFactory::new();
             let cnf = read_cnf(file.path().to_str().unwrap(), f).unwrap();
             for mut solver in solvers() {
                 for &clause in &cnf {
@@ -763,6 +777,7 @@ fn test_model_enumeration_with_additional_variables() -> LngResult<()> {
                 &ModelEnumerationConfig::default()
                     .variables(vars_list("a b", f))
                     .additional_variables(vars_list("b c", f)),
+                f,
             )
             .unwrap();
             for model in models {
@@ -777,7 +792,7 @@ fn test_model_enumeration_with_additional_variables() -> LngResult<()> {
     Ok(())
 }
 
-fn test_local_minimum(solver: &mut MiniSat, model: &Model, selection_order: &[Literal]) {
+fn test_local_minimum(solver: &mut SatSolver, model: &Model, selection_order: &[Literal]) {
     let model_lits: HashSet<Literal> = model.literals().iter().copied().collect();
     for &lit in selection_order {
         if !model_lits.contains(&lit) {
@@ -796,7 +811,7 @@ fn test_local_minimum(solver: &mut MiniSat, model: &Model, selection_order: &[Li
 }
 
 fn test_highest_lexicographical_assignment(
-    solver: &mut MiniSat,
+    solver: &mut SatSolver,
     model: &Model,
     selection_order: &[Literal],
 ) {

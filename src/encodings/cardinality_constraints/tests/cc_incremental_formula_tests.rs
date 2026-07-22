@@ -3,7 +3,7 @@ use crate::encodings::cardinality_constraints::cc_encoder::CcEncoder;
 use crate::errors::LngResult;
 use crate::formulas::CType::{GE, GT, LE, LT};
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::SatSolver;
 use crate::solver::lng_core_solver::Tristate::{False, True};
 
 const fn encoders() -> [CcEncoder; 3] {
@@ -103,7 +103,7 @@ fn test_simple_incremental_amk() -> LngResult<()> {
     for encoder in encoders() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(
             &f.cc(GE, 4, vars.clone())
                 .unwrap()
@@ -158,7 +158,7 @@ fn test_simple_incremental_alk() -> LngResult<()> {
     for encoder in encoders() {
         let f = &FormulaFactory::new();
         let vars: Box<[Variable]> = (0..10).map(|i| f.var(format!("v{i}"))).collect();
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(
             &f.cc(GE, 4, vars.clone())
                 .unwrap()
@@ -218,7 +218,7 @@ fn test_large_upper_bound_amk() -> LngResult<()> {
         let num_lits = 100;
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = num_lits - 1;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(
             &f.cc(GE, 42, vars.clone())
                 .unwrap()
@@ -253,7 +253,7 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
         let num_lits = 100;
         let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
         let mut current_bound = 2;
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(
             &f.cc(LE, 87, vars.clone())
                 .unwrap()
@@ -281,14 +281,14 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
 }
 
 #[test]
-#[ignore = "Too large for MiniSat, requires Glucose"]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_very_large_modular_totalizer_amk() -> LngResult<()> {
     let encoder = encoders()[2].clone();
     let f = &FormulaFactory::new();
     let num_lits = 300;
     let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     solver.add(f.cc(GE, 234, vars.clone()).unwrap(), f)?;
 
     let (cc, inc_data_option) = encoder

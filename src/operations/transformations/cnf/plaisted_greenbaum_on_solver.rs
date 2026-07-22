@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use Literal::{Neg, Pos};
 
 use crate::errors::LngResult;
-use crate::formulas::{AUX_CNF, EncodedFormula, Formula, FormulaFactory, Literal, Variable};
+use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal};
 use crate::operations::predicates::contains_pbc;
 use crate::propositions::Proposition;
-use crate::solver::lng_core_solver::{MiniSat2Solver, mk_lit};
+use crate::solver::lng_core_solver::{
+    LngCoreSolver, LngLit, generate_clause_vector_wo_config, mk_lit, not, solver_literal_default,
+};
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -42,8 +44,19 @@ impl Default for PgOnSolverConfig {
     }
 }
 
-pub fn add_cnf_to_solver<B>(
-    solver: &mut MiniSat2Solver<B>,
+pub(crate) fn add_cnf_to_solver<B>(
+    solver: &mut LngCoreSolver<B>,
+    formula: EncodedFormula,
+    proposition: Option<Proposition<B>>,
+    f: &FormulaFactory,
+    cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
+    config: PgOnSolverConfig,
+) -> LngResult<()> {
+    add_cnf_to_solver_internal(solver, formula, proposition, f, cache, config)
+}
+
+fn add_cnf_to_solver_internal<B>(
+    solver: &mut LngCoreSolver<B>,
     formula: EncodedFormula,
     proposition: Option<Proposition<B>>,
     f: &FormulaFactory,
@@ -56,7 +69,7 @@ pub fn add_cnf_to_solver<B>(
         formula
     };
     if working_formula.is_cnf(f) {
-        add_cnf(solver, working_formula, proposition, f, config);
+        add_cnf(solver, working_formula, proposition, f);
     } else if let Some(top_level_vars) = compute_transformation(
         working_formula,
         proposition.clone(),
@@ -67,30 +80,37 @@ pub fn add_cnf_to_solver<B>(
         true,
         true,
     ) {
-        add_clause(solver, &top_level_vars, proposition, config);
+        add_to_solver(solver, top_level_vars, proposition);
     }
     Ok(())
 }
 
 fn add_cnf<B>(
-    solver: &mut MiniSat2Solver<B>,
+    solver: &mut LngCoreSolver<B>,
     cnf: EncodedFormula,
     proposition: Option<Proposition<B>>,
     f: &FormulaFactory,
-    config: PgOnSolverConfig,
 ) {
     use Formula::{And, False, Lit, Or, True};
     match cnf.unpack(f) {
         True => {}
         False | Lit(_) | Or(_) => {
-            add_clause(solver, &*cnf.literals(f), proposition, config);
+            let c = generate_clause_vector_wo_config(
+                &cnf.literals(f).iter().copied().collect::<Box<[_]>>(),
+                solver,
+            );
+            add_to_solver(solver, c, proposition);
         }
         And(operands) => {
             for clause in operands {
-                add_clause(solver, &*clause.literals(f), proposition.clone(), config);
+                let c = generate_clause_vector_wo_config(
+                    &clause.literals(f).iter().copied().collect::<Box<[_]>>(),
+                    solver,
+                );
+                add_to_solver(solver, c, proposition.clone());
             }
         }
-        _ => panic!("Unexpected formula type: {}", cnf.to_string(f)),
+        _ => panic_unexpected_formula_type(cnf, Some(f)),
     }
 }
 
@@ -98,17 +118,23 @@ fn add_cnf<B>(
 fn compute_transformation<B>(
     formula: EncodedFormula,
     proposition: Option<Proposition<B>>,
-    solver: &mut MiniSat2Solver<B>,
+    solver: &mut LngCoreSolver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
     polarity: bool,
     top_level: bool,
-) -> Option<Vec<Literal>> {
+) -> Option<Vec<LngLit>> {
     use Formula::{And, Equiv, Impl, Lit, Not, Or};
     match formula.unpack(f) {
-        Lit(Pos(var)) => Some(vec![Literal::new(var, polarity)]),
-        Lit(Neg(var)) => Some(vec![Literal::new(var, !polarity)]),
+        Lit(Pos(var)) => Some(vec![solver_literal_default(
+            Literal::new(var, polarity),
+            solver,
+        )]),
+        Lit(Neg(var)) => Some(vec![solver_literal_default(
+            Literal::new(var, !polarity),
+            solver,
+        )]),
         Not(op) => compute_transformation(
             op,
             proposition,
@@ -157,24 +183,25 @@ fn compute_transformation<B>(
 fn handle_equiv<B>(
     equiv: EncodedFormula,
     proposition: Option<Proposition<B>>,
-    solver: &mut MiniSat2Solver<B>,
+    solver: &mut LngCoreSolver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
     polarity: bool,
     top_level: bool,
-) -> Option<Vec<Literal>> {
+) -> Option<Vec<LngLit>> {
     let skip_pg = top_level;
     let (was_cached, pg_lit) = if skip_pg {
         (false, None)
     } else {
-        get_pg_var(equiv, f, polarity, cache)
+        let (c, l) = get_pg_var(solver, equiv, polarity, cache);
+        (c, Some(l))
     };
     if was_cached {
         if polarity {
             Some(vec![pg_lit.unwrap()])
         } else {
-            Some(vec![pg_lit.unwrap().negate()])
+            Some(vec![not(pg_lit.unwrap())])
         }
     } else {
         let mut left_pos = compute_transformation(
@@ -225,45 +252,33 @@ fn handle_equiv<B>(
             left_neg.extend(right_pos);
             left_pos.extend(right_neg);
             if top_level {
-                add_clause(solver, &left_neg, proposition.clone(), config);
-                add_clause(solver, &left_pos, proposition, config);
+                add_to_solver(solver, left_neg, proposition.clone());
+                add_to_solver(solver, left_pos, proposition);
                 None
             } else {
-                add_clause(
+                add_to_solver(
                     solver,
-                    &vector(pg_lit.unwrap().negate(), left_neg),
+                    vector(not(pg_lit.unwrap()), left_neg),
                     proposition.clone(),
-                    config,
                 );
-                add_clause(
-                    solver,
-                    &vector(pg_lit.unwrap().negate(), left_pos),
-                    proposition,
-                    config,
-                );
+                add_to_solver(solver, vector(not(pg_lit.unwrap()), left_pos), proposition);
                 Some(vec![pg_lit.unwrap()])
             }
         } else {
             left_pos.extend(right_pos);
             left_neg.extend(right_neg);
             if top_level {
-                add_clause(solver, &left_pos, proposition.clone(), config);
-                add_clause(solver, &left_neg, proposition, config);
+                add_to_solver(solver, left_pos, proposition.clone());
+                add_to_solver(solver, left_neg, proposition);
                 None
             } else {
-                add_clause(
+                add_to_solver(
                     solver,
-                    &vector(pg_lit.unwrap(), left_pos),
+                    vector(pg_lit.unwrap(), left_pos),
                     proposition.clone(),
-                    config,
                 );
-                add_clause(
-                    solver,
-                    &vector(pg_lit.unwrap(), left_neg),
-                    proposition,
-                    config,
-                );
-                Some(vec![pg_lit.unwrap().negate()])
+                add_to_solver(solver, vector(pg_lit.unwrap(), left_neg), proposition);
+                Some(vec![not(pg_lit.unwrap())])
             }
         }
     }
@@ -273,24 +288,25 @@ fn handle_equiv<B>(
 fn handle_impl<B>(
     implication: EncodedFormula,
     proposition: Option<Proposition<B>>,
-    solver: &mut MiniSat2Solver<B>,
+    solver: &mut LngCoreSolver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
     polarity: bool,
     top_level: bool,
-) -> Option<Vec<Literal>> {
+) -> Option<Vec<LngLit>> {
     let skip_pg = polarity || top_level;
     let (was_cached, pg_lit) = if skip_pg {
         (false, None)
     } else {
-        get_pg_var(implication, f, polarity, cache)
+        let (c, l) = get_pg_var(solver, implication, polarity, cache);
+        (c, Some(l))
     };
     if was_cached {
         if polarity {
             Some(vec![pg_lit.unwrap()])
         } else {
-            Some(vec![pg_lit.unwrap().negate()])
+            Some(vec![not(pg_lit.unwrap())])
         }
     } else if polarity {
         // pg => (~left | right) = ~pg | ~left | right
@@ -342,26 +358,20 @@ fn handle_impl<B>(
         );
         if top_level {
             if let Some(l) = left {
-                add_clause(solver, &l, proposition.clone(), config);
+                add_to_solver(solver, l, proposition.clone());
             }
             if let Some(r) = right {
-                add_clause(solver, &r, proposition, config);
+                add_to_solver(solver, r, proposition);
             }
             None
         } else {
-            add_clause(
+            add_to_solver(
                 solver,
-                &vector(pg_lit.unwrap(), left.unwrap()),
+                vector(pg_lit.unwrap(), left.unwrap()),
                 proposition.clone(),
-                config,
             );
-            add_clause(
-                solver,
-                &vector(pg_lit.unwrap(), right.unwrap()),
-                proposition,
-                config,
-            );
-            Some(vec![pg_lit.unwrap().negate()])
+            add_to_solver(solver, vector(pg_lit.unwrap(), right.unwrap()), proposition);
+            Some(vec![not(pg_lit.unwrap())])
         }
     }
 }
@@ -370,24 +380,25 @@ fn handle_impl<B>(
 fn handle_nary<B>(
     formula: EncodedFormula,
     proposition: Option<&Proposition<B>>,
-    solver: &mut MiniSat2Solver<B>,
+    solver: &mut LngCoreSolver<B>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
     polarity: bool,
     top_level: bool,
-) -> Option<Vec<Literal>> {
+) -> Option<Vec<LngLit>> {
     let skip_pg = top_level || formula.is_and() && !polarity || formula.is_or() && polarity;
     let (was_cached, pg_lit) = if skip_pg {
         (false, None)
     } else {
-        get_pg_var(formula, f, polarity, cache)
+        let (c, l) = get_pg_var(solver, formula, polarity, cache);
+        (c, Some(l))
     };
     if was_cached {
         if polarity {
             Some(vec![pg_lit.unwrap()])
         } else {
-            Some(vec![pg_lit.unwrap().negate()])
+            Some(vec![not(pg_lit.unwrap())])
         }
     } else if formula.is_and() {
         if polarity {
@@ -405,14 +416,13 @@ fn handle_nary<B>(
                 );
                 if top_level {
                     if let Some(lits) = op_pg_vars {
-                        add_clause(solver, &lits, proposition.cloned(), config);
+                        add_to_solver(solver, lits, proposition.cloned());
                     }
                 } else {
-                    add_clause(
+                    add_to_solver(
                         solver,
-                        &vector(pg_lit.unwrap().negate(), op_pg_vars.unwrap()),
+                        vector(not(pg_lit.unwrap()), op_pg_vars.unwrap()),
                         proposition.cloned(),
-                        config,
                     );
                 }
             }
@@ -478,21 +488,20 @@ fn handle_nary<B>(
                 );
                 if top_level {
                     if let Some(lits) = op_pg_lits {
-                        add_clause(solver, &lits, proposition.cloned(), config);
+                        add_to_solver(solver, lits, proposition.cloned());
                     }
                 } else {
-                    add_clause(
+                    add_to_solver(
                         solver,
-                        &vector(pg_lit.unwrap(), op_pg_lits.unwrap()),
+                        vector(pg_lit.unwrap(), op_pg_lits.unwrap()),
                         proposition.cloned(),
-                        config,
                     );
                 }
             }
             if top_level {
                 None
             } else {
-                Some(vec![pg_lit.unwrap().negate()])
+                Some(vec![not(pg_lit.unwrap())])
             }
         }
     } else {
@@ -500,50 +509,34 @@ fn handle_nary<B>(
     }
 }
 
-fn add_clause<'a, B, L>(
-    solver: &mut MiniSat2Solver<B>,
-    clause: L,
+fn add_to_solver<B>(
+    solver: &mut LngCoreSolver<B>,
+    clause: Vec<LngLit>,
     proposition: Option<Proposition<B>>,
-    config: PgOnSolverConfig,
-) where
-    L: IntoIterator<Item = &'a Literal>,
-{
-    let clause_vec = clause
-        .into_iter()
-        .map(|lit| {
-            let variable = lit.variable();
-            let index = solver.idx_for_variable(variable).unwrap_or_else(|| {
-                let new_index = solver.new_var(!config.initial_phase, true);
-                solver.add_variable(variable, new_index);
-                new_index
-            });
-            mk_lit(index, !lit.phase())
-        })
-        .collect();
-    solver.add_clause(clause_vec, proposition);
+) {
+    solver.add_clause(clause, proposition);
 }
 
-fn get_pg_var(
+fn get_pg_var<B>(
+    solver: &mut LngCoreSolver<B>,
     formula: EncodedFormula,
-    f: &FormulaFactory,
     polarity: bool,
     variable_cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
-) -> (bool, Option<Literal>) {
-    if let Some(cache) = variable_cache.get_mut(&formula) {
-        (
-            cache.set_polarity_cached(polarity),
-            Some(cache.variable.pos_lit()),
-        )
-    } else {
-        let pg_var = f.new_auxiliary_variable(AUX_CNF);
-        let mut new = VarCacheEntry::new(pg_var);
-        new.set_polarity_cached(polarity);
-        variable_cache.insert(formula, new);
-        (false, Some(pg_var.pos_lit()))
-    }
+) -> (bool, LngLit) {
+    let entry = variable_cache
+        .entry(formula)
+        .or_insert_with(|| VarCacheEntry::new(new_solver_variable(solver)));
+    let was_cached = entry.set_polarity_cached(polarity);
+    let pg_var = entry.variable;
+    (was_cached, pg_var)
 }
 
-fn vector(elt: Literal, a: Vec<Literal>) -> Vec<Literal> {
+fn new_solver_variable<B>(solver: &mut LngCoreSolver<B>) -> LngLit {
+    let index = solver.new_var(!solver.config.initial_phase, true);
+    mk_lit(index, false)
+}
+
+fn vector(elt: LngLit, a: Vec<LngLit>) -> Vec<LngLit> {
     let mut result = Vec::with_capacity(a.len() + 1);
     result.push(elt);
     result.extend(a);
@@ -551,13 +544,13 @@ fn vector(elt: Literal, a: Vec<Literal>) -> Vec<Literal> {
 }
 
 pub struct VarCacheEntry {
-    variable: Variable,
+    variable: LngLit,
     pos_polarity_cached: bool,
     neg_polarity_cached: bool,
 }
 
 impl VarCacheEntry {
-    const fn new(variable: Variable) -> Self {
+    const fn new(variable: LngLit) -> Self {
         Self {
             variable,
             pos_polarity_cached: false,
@@ -581,12 +574,11 @@ impl VarCacheEntry {
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
-    use crate::errors::LngResult;
     use crate::formulas::{AUX_PREFIX, ToFormula, Variable};
-    use crate::solver::lng_core_solver::functions::{
+    use crate::solver::lng_core_solver::functions::model_enumeration_function::{
         ModelEnumerationConfig, enumerate_models_for_formula_with_config,
     };
-    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SolverCnfMethod};
+    use crate::solver::lng_core_solver::{CnfMethod, SatSolver, SatSolverConfig};
     use crate::util::test_util::F;
     use std::collections::BTreeSet;
 
@@ -595,24 +587,25 @@ mod tests {
     fn pg_on_solver(
         formula: EncodedFormula,
         f: &FormulaFactory,
-        method: SolverCnfMethod,
-    ) -> LngResult<EncodedFormula> {
-        let mut solver = MiniSat::from_config(MiniSatConfig::default().cnf_method(method));
-        solver.add(formula, f)?;
-        let clauses = solver.formula_on_solver(f);
-        Ok(f.and(clauses.iter()))
+        method: CnfMethod,
+    ) -> EncodedFormula {
+        let mut solver =
+            SatSolver::<()>::from_config(SatSolverConfig::default().with_cnf_method(method));
+        solver.add_formula(formula, f).unwrap();
+        let clauses = solver.formula_on_solver(f).unwrap();
+        f.and(clauses.iter().copied())
     }
 
-    fn test_formula(f: &FormulaFactory, formula: EncodedFormula) -> LngResult<()> {
-        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver)?;
-        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver)?;
+    fn test_formula(f: &FormulaFactory, formula: EncodedFormula) {
+        let pg = pg_on_solver(formula, f, CnfMethod::PgOnSolver);
+        let full_pg = pg_on_solver(formula, f, CnfMethod::FullPgOnSolver);
         assert!(pg.is_cnf(f));
         assert!(full_pg.is_cnf(f));
         println!("formula: {}", formula.to_string(f));
         println!("pg: {}", pg.to_string(f));
         println!("full_pg: {}", full_pg.to_string(f));
         let vars: Box<[Variable]> = formula.variables(f).iter().copied().collect();
-        let config = ModelEnumerationConfig::default().variables(vars.clone());
+        let config = ModelEnumerationConfig::new(vars.clone());
         let original_models =
             enumerate_models_for_formula_with_config(formula, f, &config).unwrap();
         let pg_models = enumerate_models_for_formula_with_config(pg, f, &config).unwrap();
@@ -629,7 +622,6 @@ mod tests {
             original_models.len(),
             full_pg_models.len() * 2_usize.pow(full_pg_missed_vars)
         );
-        Ok(())
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -645,71 +637,58 @@ mod tests {
                 .count()) as u32
     }
 
-    fn test_formula_eq(
-        f: &FormulaFactory,
-        formula: EncodedFormula,
-        expected: EncodedFormula,
-    ) -> LngResult<()> {
-        let pg = pg_on_solver(formula, f, SolverCnfMethod::PgOnSolver)?;
-        let full_pg = pg_on_solver(formula, f, SolverCnfMethod::FullPgOnSolver)?;
+    fn test_formula_eq(f: &FormulaFactory, formula: EncodedFormula, expected: EncodedFormula) {
+        let pg = pg_on_solver(formula, f, CnfMethod::PgOnSolver);
+        let full_pg = pg_on_solver(formula, f, CnfMethod::FullPgOnSolver);
         assert_eq!(pg, expected);
         assert_eq!(full_pg, expected);
-        Ok(())
     }
 
     #[test]
-    fn test_constants() -> LngResult<()> {
+    fn test_constants() {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.TRUE, F.TRUE)?;
-        test_formula_eq(f, F.FALSE, F.FALSE)?;
-
-        Ok(())
+        test_formula_eq(f, F.TRUE, F.TRUE);
+        test_formula_eq(f, F.FALSE, F.FALSE);
     }
 
     #[test]
-    fn test_literals() -> LngResult<()> {
+    fn test_literals() {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.A, F.A)?;
-        test_formula_eq(f, F.NA, F.NA)?;
-
-        Ok(())
+        test_formula_eq(f, F.A, F.A);
+        test_formula_eq(f, F.NA, F.NA);
     }
 
     #[test]
-    fn test_binary_operators() -> LngResult<()> {
+    fn test_binary_operators() {
         let F = F::new();
         let f = &F.f;
-        test_formula(f, F.IMP1)?;
-        test_formula(f, F.IMP2)?;
-        test_formula(f, F.IMP3)?;
-        test_formula(f, F.EQ1)?;
-        test_formula(f, F.EQ2)?;
-        test_formula(f, F.EQ3)?;
-        test_formula(f, F.EQ4)?;
-
-        Ok(())
+        test_formula(f, F.IMP1);
+        test_formula(f, F.IMP2);
+        test_formula(f, F.IMP3);
+        test_formula(f, F.EQ1);
+        test_formula(f, F.EQ2);
+        test_formula(f, F.EQ3);
+        test_formula(f, F.EQ4);
     }
 
     #[test]
-    fn test_nary_operators() -> LngResult<()> {
+    fn test_nary_operators() {
         let F = F::new();
         let f = &F.f;
-        test_formula_eq(f, F.AND1, F.AND1)?;
-        test_formula_eq(f, F.OR1, F.OR1)?;
+        test_formula_eq(f, F.AND1, F.AND1);
+        test_formula_eq(f, F.OR1, F.OR1);
         let f1 = "(a & b & x) | (c & d & ~y)".to_formula(f);
         let f2 = "(a & b & x) | (c & d & ~y) | (~z | (c & d & ~y)) ".to_formula(f);
         let f3 = "a | b | (~x & ~y)".to_formula(f);
-        test_formula(f, f1)?;
-        test_formula(f, f2)?;
-        test_formula(f, f3)?;
-
-        Ok(())
+        test_formula(f, f1);
+        test_formula(f, f2);
+        test_formula(f, f3);
     }
 
     #[test]
-    fn test_not_nary() -> LngResult<()> {
+    fn test_not_nary() {
         let f = &FormulaFactory::new();
         let f1 = "~(~a | b)".to_formula(f);
         let f2 = "~((a | b) | ~(x | y))".to_formula(f);
@@ -718,57 +697,49 @@ mod tests {
         let f5 = "~(a & b & ~x & ~y)".to_formula(f);
         let f6 = "~(a | b | ~x | ~y)".to_formula(f);
         let f7 = "~(a & b) & (c | (a & b))".to_formula(f);
-        test_formula(f, f1)?;
-        test_formula(f, f2)?;
-        test_formula(f, f3)?;
-        test_formula(f, f4)?;
-        test_formula(f, f5)?;
-        test_formula(f, f6)?;
-        test_formula(f, f7)?;
-
-        Ok(())
+        test_formula(f, f1);
+        test_formula(f, f2);
+        test_formula(f, f3);
+        test_formula(f, f4);
+        test_formula(f, f5);
+        test_formula(f, f6);
+        test_formula(f, f7);
     }
 
     #[test]
-    fn test_not_binary() -> LngResult<()> {
+    fn test_not_binary() {
         let f = &FormulaFactory::new();
         let f1 = "~(~(a | b) => ~(x | y))".to_formula(f);
         let f2 = "~(a <=> b)".to_formula(f);
         let f3 = "~(~(a | b) <=> ~(x | y))".to_formula(f);
-        test_formula(f, f1)?;
-        test_formula(f, f2)?;
-        test_formula(f, f3)?;
-
-        Ok(())
+        test_formula(f, f1);
+        test_formula(f, f2);
+        test_formula(f, f3);
     }
 
     #[test]
-    fn test_cc() -> LngResult<()> {
+    fn test_cc() {
         let f = &FormulaFactory::with_id("");
         let f1 = "a <=> (1 * b <= 1)".to_formula(f);
         let f2 = "~(1 * b <= 1)".to_formula(f);
         let f3 = "(1 * b + 1 * c + 1 * d <= 1)".to_formula(f);
         let f4 = "~(1 * b + 1 * c + 1 * d <= 1)".to_formula(f);
-        test_formula(f, f1)?;
-        test_formula(f, f2)?;
-        test_formula(f, f3)?;
-        test_formula(f, f4)?;
-
-        Ok(())
+        test_formula(f, f1);
+        test_formula(f, f2);
+        test_formula(f, f3);
+        test_formula(f, f4);
     }
 
     #[test]
-    fn test_formulas() -> LngResult<()> {
+    fn test_formulas() {
         let f = &FormulaFactory::with_id("");
         let f1 = "(a | b) => c".to_formula(f);
         let f2 = "~x & ~y".to_formula(f);
         let f3 = "d & ((a | b) => c)".to_formula(f);
         let f4 = "d & ((a | b) => c) | ~x & ~y".to_formula(f);
-        test_formula(f, f1)?;
-        test_formula(f, f2)?;
-        test_formula(f, f3)?;
-        test_formula(f, f4)?;
-
-        Ok(())
+        test_formula(f, f1);
+        test_formula(f, f2);
+        test_formula(f, f3);
+        test_formula(f, f4);
     }
 }

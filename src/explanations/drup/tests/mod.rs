@@ -4,24 +4,24 @@ mod drup_tests {
     use crate::formulas::{EncodedFormula, FormulaFactory, ToFormula};
     use crate::io::{read_cnf, read_cnf_with_prefix};
     use crate::propositions::{Proposition, StandardProposition};
+    use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, PgOnSolver};
+    use crate::solver::lng_core_solver::Tristate::{False, True};
+    use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
     use std::collections::HashSet;
     use std::fmt::Debug;
     use std::fs::read_dir;
     use std::hash::Hash;
-    use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig, SatBuilder};
-    use crate::solver::lng_core_solver::SolverCnfMethod::{FactoryCnf, PgOnSolver};
-    use crate::solver::lng_core_solver::Tristate::{False, True};
 
-    fn solvers() -> [MiniSat<String>; 2] {
+    fn solvers() -> [SatSolver<String>; 2] {
         [
-            MiniSat::from_config_with_backpack(
-                MiniSatConfig::default()
+            SatSolver::from_config_with_backpack(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(FactoryCnf),
             ),
-            MiniSat::from_config_with_backpack(
-                MiniSatConfig::default()
+            SatSolver::from_config_with_backpack(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(FactoryCnf),
@@ -244,14 +244,14 @@ mod drup_tests {
     fn test_core_and_assumptions() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -285,14 +285,14 @@ mod drup_tests {
     fn test_core_and_assumptions2() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -321,14 +321,14 @@ mod drup_tests {
         // Unit test for DRUP issue which led to java.lang.ArrayIndexOutOfBoundsException: -1
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -363,14 +363,14 @@ mod drup_tests {
     fn test_core_and_assumptions4() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -398,8 +398,8 @@ mod drup_tests {
     #[test]
     fn test_with_cc_propositions() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let mut solver = MiniSat::from_config_with_backpack(
-            MiniSatConfig::default()
+        let mut solver = SatSolver::from_config_with_backpack(
+            SatSolverConfig::default()
                 .proof_generation(true)
                 .cnf_method(PgOnSolver),
         );
@@ -421,14 +421,14 @@ mod drup_tests {
     fn test_with_special_unit_case_mini_sat() -> LngResult<()> {
         let f = &FormulaFactory::new();
         let solvers = [
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(true)
                     .cnf_method(PgOnSolver),
             ),
-            MiniSat::from_config(
-                MiniSatConfig::default()
+            SatSolver::from_config(
+                SatSolverConfig::default()
                     .proof_generation(true)
                     .incremental(false)
                     .cnf_method(PgOnSolver),
@@ -502,7 +502,7 @@ mod drup_tests {
             core.iter().all(|c| cnf_set.contains(c)),
             "Core must contain only original clauses"
         );
-        let mut solver = MiniSat::new();
+        let mut solver = SatSolver::new();
         solver.add_all(&core, f)?;
         assert_eq!(solver.sat(), False, "Core must be unsatisfiable");
 
@@ -510,7 +510,7 @@ mod drup_tests {
     }
 
     fn assert_unsat_core<B: Clone + PartialEq + Eq + Hash + Debug>(
-        solver: &mut MiniSat<B>,
+        solver: &mut SatSolver<B>,
         expected: &[Proposition<B>],
         f: &FormulaFactory,
     ) {

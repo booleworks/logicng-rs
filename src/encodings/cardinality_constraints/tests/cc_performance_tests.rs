@@ -2,8 +2,8 @@ use crate::encodings::cardinality_constraints::cc_config::{AlkEncoder, AmkEncode
 use crate::errors::LngResult;
 use crate::formulas::CType::LE;
 use crate::formulas::{FormulaFactory, Variable};
-use crate::solver::lng_core_solver::MiniSat;
-use crate::solver::lng_core_solver::Tristate::{True};
+use crate::solver::lng_core_solver::SatSolver;
+use crate::solver::lng_core_solver::Tristate::True;
 
 const fn configs() -> [CcConfig; 3] {
     [
@@ -33,7 +33,7 @@ fn test_amk_performance() -> LngResult<()> {
 
 fn test_build_amk(num_lits: u32, f: &FormulaFactory) -> LngResult<()> {
     let problem_lits: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     for i in (10..100).step_by(10) {
         let cc = f.cc(LE, i, problem_lits.clone()).unwrap();
         solver.add(cc, f)?;

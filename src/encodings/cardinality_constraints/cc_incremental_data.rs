@@ -3,7 +3,7 @@ use crate::encodings::cardinality_constraints::error::CcError;
 use crate::datastructures::{EncodingResult, EncodingResultFF, EncodingResultSatSolver};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal};
-use crate::solver::lng_core_solver::MiniSat;
+use crate::solver::lng_core_solver::SatSolver;
 use itertools::Itertools;
 
 /// Incremental data for an at-most-k cardinality constraint. When an
@@ -111,7 +111,7 @@ impl CcIncrementalData {
     /// be represented on this architecture.
     pub fn new_upper_bound_for_solver(
         &mut self,
-        solver: &mut MiniSat,
+        solver: &mut SatSolver,
         f: &FormulaFactory,
         rhs: u32,
     ) -> LngResult<()> {
@@ -187,7 +187,7 @@ impl CcIncrementalData {
     /// be represented on this architecture.
     pub fn new_lower_bound_for_solver<B: Clone>(
         &mut self,
-        solver: &mut MiniSat<B>,
+        solver: &mut SatSolver<B>,
         f: &FormulaFactory,
         rhs: u32,
     ) -> LngResult<()> {

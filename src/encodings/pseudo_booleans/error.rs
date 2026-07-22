@@ -16,4 +16,7 @@ pub enum PbcError {
 
     #[error("integer overflow while normalizing pseudo-boolean constraint: {operation}")]
     NormalizationOverflow { operation: &'static str },
+
+    #[error("normalization produced an unexpected formula type")]
+    UnexpectedNormalizedFormula,
 }

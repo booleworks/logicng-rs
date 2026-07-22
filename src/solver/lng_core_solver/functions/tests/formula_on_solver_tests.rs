@@ -5,23 +5,24 @@ use itertools::Itertools;
 use crate::datastructures::Assignment;
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, FormulaFactory, Variable};
-use crate::solver::lng_core_solver::functions::{ModelEnumerationConfig,
-enumerate_models_for_formula_with_config};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
-use crate::solver::lng_core_solver::SolverCnfMethod::{FullPgOnSolver, PgOnSolver};
+use crate::solver::lng_core_solver::CnfMethod::{FullPgOnSolver, PgOnSolver};
+use crate::solver::lng_core_solver::functions::{
+    ModelEnumerationConfig, enumerate_models_for_formula_with_config,
+};
+use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig};
 
-fn solvers() -> [MiniSat; 5] {
+fn solvers() -> [SatSolver; 5] {
     [
-        MiniSat::from_config(MiniSatConfig::default().incremental(true)),
-        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
-        MiniSat::from_config(MiniSatConfig::default().cnf_method(PgOnSolver)),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(SatSolverConfig::default().incremental(true)),
+        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
+        SatSolver::from_config(SatSolverConfig::default().cnf_method(PgOnSolver)),
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(PgOnSolver)
                 .auxiliary_variables_in_models(false),
         ),
-        MiniSat::from_config(
-            MiniSatConfig::default()
+        SatSolver::from_config(
+            SatSolverConfig::default()
                 .cnf_method(FullPgOnSolver)
                 .auxiliary_variables_in_models(false),
         ),
@@ -39,17 +40,17 @@ fn test_formula_on_solver() -> LngResult<()> {
             f.parse("A").unwrap(),
         ];
         solver.add_all(&formulas, f)?;
-        compare_formulas(&formulas, &solver.formula_on_solver(f), f);
+        compare_formulas(&formulas, &solver.formula_on_solver(f)?, f)?;
 
         formulas.push(f.parse("~A | C").unwrap());
         solver.reset();
         solver.add_all(&formulas, f)?;
-        compare_formulas(&formulas, &solver.formula_on_solver(f), f);
+        compare_formulas(&formulas, &solver.formula_on_solver(f)?, f)?;
 
         let formula = f.parse("C + D + E <= 2").unwrap();
         formulas.push(formula);
         solver.add(formula, f)?;
-        compare_formulas(&formulas, &solver.formula_on_solver(f), f);
+        compare_formulas(&formulas, &solver.formula_on_solver(f)?, f)?;
     }
 
     Ok(())
@@ -63,23 +64,21 @@ fn test_formula_on_solver_with_contradiction() -> LngResult<()> {
         solver.add(f.parse("B").unwrap(), f)?;
         solver.add(f.parse("C & (~A | ~B)").unwrap(), f)?;
         assert_eq!(
-            solver.formula_on_solver(f).as_ref(),
-            &[
+            solver.formula_on_solver(f)?,
+            [
                 f.variable("A"),
                 f.variable("B"),
                 f.variable("C"),
                 f.falsum()
             ]
+            .into_iter()
+            .collect()
         );
 
         solver.reset();
         solver.add(f.parse("A <=> B").unwrap(), f)?;
         solver.add(f.parse("B <=> ~A").unwrap(), f)?;
-        let on_solver = solver
-            .formula_on_solver(f)
-            .iter()
-            .copied()
-            .collect::<HashSet<EncodedFormula>>();
+        let on_solver = solver.formula_on_solver(f)?;
         let expected = [
             f.parse("A | B").unwrap(),
             f.parse("~A | B").unwrap(),
@@ -95,11 +94,7 @@ fn test_formula_on_solver_with_contradiction() -> LngResult<()> {
         }
 
         solver.sat();
-        let on_solver = solver
-            .formula_on_solver(f)
-            .iter()
-            .copied()
-            .collect::<HashSet<EncodedFormula>>();
+        let on_solver = solver.formula_on_solver(f)?;
         let expected = [
             f.parse("A | B").unwrap(),
             f.parse("~A | B").unwrap(),
@@ -123,9 +118,9 @@ fn test_formula_on_solver_with_contradiction() -> LngResult<()> {
 
 fn compare_formulas(
     original: &[EncodedFormula],
-    from_solver: &[EncodedFormula],
+    from_solver: &HashSet<EncodedFormula>,
     f: &FormulaFactory,
-) {
+) -> LngResult<()> {
     let vars: Box<[Variable]> = original
         .iter()
         .flat_map(|formula| (*formula.variables(f)).clone())
@@ -135,17 +130,15 @@ fn compare_formulas(
         f.and(original),
         f,
         &ModelEnumerationConfig::default().variables(vars.clone()),
-    )
-    .unwrap()
+    )?
     .iter()
     .map(Assignment::from)
     .collect::<HashSet<Assignment>>();
     let models2 = enumerate_models_for_formula_with_config(
-        f.and(from_solver),
+        f.and(from_solver.iter()),
         f,
         &ModelEnumerationConfig::default().variables(vars),
-    )
-    .unwrap()
+    )?
     .iter()
     .map(Assignment::from)
     .collect::<HashSet<Assignment>>();
@@ -153,4 +146,5 @@ fn compare_formulas(
     for m in &models1 {
         assert!(models2.contains(m));
     }
+    Ok(())
 }

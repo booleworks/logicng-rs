@@ -3,7 +3,7 @@ use crate::errors::LngResult;
 use crate::formulas::CType::{GE, LE};
 use crate::formulas::{FormulaFactory, Variable};
 use crate::solver::lng_core_solver::Tristate::{False, True};
-use crate::solver::lng_core_solver::{MiniSat, MiniSatConfig};
+use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig};
 
 const fn configs() -> [CcConfig; 3] {
     [
@@ -19,10 +19,10 @@ const fn configs() -> [CcConfig; 3] {
     ]
 }
 
-fn solvers() -> [MiniSat; 2] {
+fn solvers() -> [SatSolver; 2] {
     [
-        MiniSat::from_config(MiniSatConfig::default()),
-        MiniSat::from_config(MiniSatConfig::default().incremental(false)),
+        SatSolver::from_config(SatSolverConfig::default()),
+        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
     ]
 }
 
@@ -165,14 +165,14 @@ fn test_large_lower_bound_alk() -> LngResult<()> {
 }
 
 #[test]
-#[ignore = "Too large for MiniSat, requires Glucose"]
+#[cfg_attr(not(feature = "long_running_tests"), ignore = "long running test")]
 fn test_very_large_modular_totalizer_amk() -> LngResult<()> {
     let f = &mut FormulaFactory::new();
     f.config.cc_config = configs()[2].clone();
     let num_lits = 300;
     let vars: Box<[Variable]> = (0..num_lits).map(|i| f.var(format!("v{i}"))).collect();
     let mut current_bound = num_lits - 1;
-    let mut solver = MiniSat::new();
+    let mut solver = SatSolver::new();
     solver.add(f.cc(GE, 234, vars.clone()).unwrap(), f)?;
     let mut inc_data = solver
         .add_incremental_cc(&f.cc(LE, current_bound, vars).unwrap().as_cc(f).unwrap(), f)

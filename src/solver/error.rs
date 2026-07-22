@@ -3,16 +3,11 @@
 use logicng_open_wbo_sys::ffi;
 use thiserror::Error;
 
-use crate::formulas::EncodedFormula;
-
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SolverError {
     #[error("solver is in undef state, call 'sat' before")]
     NotSolved,
-
-    #[error("unexpected formula in cnf: {formula:?}")]
-    NotInCnf { formula: EncodedFormula },
 
     #[error("invalid solver state")]
     InvalidSolverState,
@@ -31,6 +26,21 @@ pub enum SolverError {
 
     #[error("bound for optimization function was too large: {bound:?}")]
     OptimizationBoundTooLarge { bound: usize },
+
+    #[error("optimization requires a satisfiable solver state")]
+    OptimizationOnUnsat,
+
+    #[error("solver reported satisfiable but did not provide a model")]
+    MissingModel,
+
+    #[error("proof data is inconsistent with the solver state")]
+    InvalidProofData,
+
+    #[error("Plaisted-Greenbaum transformation violated an internal invariant")]
+    InvalidPgTransformation,
+
+    #[error("SAT solver violated an internal invariant")]
+    InternalInvariant,
 
     #[cfg(feature = "open_wbo")]
     #[error("openwbo error: {error:?}")]
