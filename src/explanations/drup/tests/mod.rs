@@ -12,21 +12,12 @@ mod drup_tests {
     use std::fs::read_dir;
     use std::hash::Hash;
 
-    fn solvers() -> [SatSolver<String>; 2] {
-        [
-            SatSolver::from_config_with_backpack(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(FactoryCnf),
-            ),
-            SatSolver::from_config_with_backpack(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(FactoryCnf),
-            ),
-        ]
+    fn solvers() -> [SatSolver<String>; 1] {
+        [SatSolver::from_config_with_backpack(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(FactoryCnf),
+        )]
     }
 
     #[test]
@@ -243,20 +234,11 @@ mod drup_tests {
     #[test]
     fn test_core_and_assumptions() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let solvers = [
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(PgOnSolver),
-            ),
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(PgOnSolver),
-            ),
-        ];
+        let solvers = [SatSolver::from_config(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        )];
 
         for mut solver in solvers {
             let p1 = Proposition::new("A => B".to_formula(f));
@@ -284,20 +266,11 @@ mod drup_tests {
     #[test]
     fn test_core_and_assumptions2() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let solvers = [
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(PgOnSolver),
-            ),
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(PgOnSolver),
-            ),
-        ];
+        let solvers = [SatSolver::from_config(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        )];
 
         for mut solver in solvers {
             solver.add_proposition(Proposition::new("~C => D".to_formula(f)), f)?;
@@ -320,20 +293,11 @@ mod drup_tests {
     fn test_core_and_assumptions3() -> LngResult<()> {
         // Unit test for DRUP issue which led to java.lang.ArrayIndexOutOfBoundsException: -1
         let f = &FormulaFactory::new();
-        let solvers = [
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(PgOnSolver),
-            ),
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(PgOnSolver),
-            ),
-        ];
+        let solvers = [SatSolver::from_config(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        )];
 
         for mut solver in solvers {
             solver.add_proposition(Proposition::new("X => Y".to_formula(f)), f)?;
@@ -362,20 +326,11 @@ mod drup_tests {
     #[test]
     fn test_core_and_assumptions4() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let solvers = [
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(PgOnSolver),
-            ),
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(PgOnSolver),
-            ),
-        ];
+        let solvers = [SatSolver::from_config(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        )];
 
         for mut solver in solvers {
             solver.add_proposition(Proposition::new("~X1".to_formula(f)), f)?;
@@ -420,20 +375,11 @@ mod drup_tests {
     #[test]
     fn test_with_special_unit_case_mini_sat() -> LngResult<()> {
         let f = &FormulaFactory::new();
-        let solvers = [
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(true)
-                    .cnf_method(PgOnSolver),
-            ),
-            SatSolver::from_config(
-                SatSolverConfig::default()
-                    .proof_generation(true)
-                    .incremental(false)
-                    .cnf_method(PgOnSolver),
-            ),
-        ];
+        let solvers = [SatSolver::from_config(
+            SatSolverConfig::default()
+                .proof_generation(true)
+                .cnf_method(PgOnSolver),
+        )];
 
         for mut solver in solvers {
             let p1 = Proposition::new("a => b".to_formula(f));

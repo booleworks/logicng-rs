@@ -16,10 +16,9 @@ use std::fs::File;
 use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 
-fn solvers() -> [SatSolver; 4] {
+fn solvers() -> [SatSolver; 3] {
     [
-        SatSolver::from_config(SatSolverConfig::default().initial_phase(true)),
-        SatSolver::from_config(SatSolverConfig::default().initial_phase(false)),
+        SatSolver::from_config(SatSolverConfig::default()),
         SatSolver::from_config(
             SatSolverConfig::default()
                 .initial_phase(true)
@@ -155,7 +154,7 @@ fn test_random_small() -> LngResult<()> {
 #[test]
 #[allow(clippy::cognitive_complexity)]
 fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
-    for solver in &mut solvers().iter_mut().filter(|s| s.config.incremental) {
+    for solver in &mut solvers() {
         let f = &FormulaFactory::new();
         let formula = f.parse("(a|b|c|d|e) & (p|q) & (x|y|z)").unwrap();
         let mut literals: Vec<Literal> =

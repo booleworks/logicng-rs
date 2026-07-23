@@ -12,9 +12,6 @@ pub enum SolverError {
     #[error("invalid solver state")]
     InvalidSolverState,
 
-    #[error("save/load state requires incremental mode")]
-    StateRequiresIncrementalMode,
-
     #[error("unsat core cannot be computed when proof generation is not enabled")]
     ProofGenerationRequired,
 

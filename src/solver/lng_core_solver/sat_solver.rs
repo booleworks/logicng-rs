@@ -93,17 +93,12 @@ impl<B> SatSolver<B> {
 
     /// Saves the current incremental state.
     pub fn save_state(&mut self) -> LngResult<SolverState> {
-        if !self.config().incremental {
-            return Err(crate::solver::SolverError::StateRequiresIncrementalMode.into());
-        }
-        Ok(self.underlying_solver.save_state())
+        let mut state = self.underlying_solver().save_state();
+        Ok(state)
     }
 
     /// Restores a previously saved incremental state.
     pub fn load_state(&mut self, state: &SolverState) -> LngResult<()> {
-        if !self.config().incremental {
-            return Err(crate::solver::SolverError::StateRequiresIncrementalMode.into());
-        }
         self.underlying_solver
             .load_state(state)
             .map_err(|_| crate::solver::SolverError::InvalidSolverState)?;

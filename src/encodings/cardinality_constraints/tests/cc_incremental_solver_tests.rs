@@ -19,11 +19,8 @@ const fn configs() -> [CcConfig; 3] {
     ]
 }
 
-fn solvers() -> [SatSolver; 2] {
-    [
-        SatSolver::from_config(SatSolverConfig::default()),
-        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
-    ]
+fn solvers() -> [SatSolver; 1] {
+    [SatSolver::from_config(SatSolverConfig::default())]
 }
 
 #[test]
@@ -52,16 +49,13 @@ fn test_simple_incremental_amk() -> LngResult<()> {
             assert_eq!(solver.sat(), True);
             inc_data.new_upper_bound_for_solver(solver, f, 4)?;
             assert_eq!(solver.sat(), True);
-
-            if solver.underlying_solver.config.incremental {
-                let state = solver.save_state().unwrap();
-                inc_data.new_upper_bound_for_solver(solver, f, 3)?;
-                assert_eq!(solver.sat(), False);
-                solver.load_state(&state)?;
-                assert_eq!(solver.sat(), True);
-                inc_data.new_upper_bound_for_solver(solver, f, 2)?;
-                assert_eq!(solver.sat(), False);
-            }
+            let state = solver.save_state().unwrap();
+            inc_data.new_upper_bound_for_solver(solver, f, 3)?;
+            assert_eq!(solver.sat(), False);
+            solver.load_state(&state)?;
+            assert_eq!(solver.sat(), True);
+            inc_data.new_upper_bound_for_solver(solver, f, 2)?;
+            assert_eq!(solver.sat(), False);
         }
     }
 
@@ -94,16 +88,13 @@ fn test_simple_incremental_alk() -> LngResult<()> {
             assert_eq!(solver.sat(), True);
             inc_data.new_lower_bound_for_solver(solver, f, 7)?;
             assert_eq!(solver.sat(), True);
-
-            if solver.underlying_solver.config.incremental {
-                let state = solver.save_state().unwrap();
-                inc_data.new_lower_bound_for_solver(solver, f, 8)?;
-                assert_eq!(solver.sat(), False);
-                solver.load_state(&state)?;
-                assert_eq!(solver.sat(), True);
-                inc_data.new_lower_bound_for_solver(solver, f, 9)?;
-                assert_eq!(solver.sat(), False);
-            }
+            let state = solver.save_state().unwrap();
+            inc_data.new_lower_bound_for_solver(solver, f, 8)?;
+            assert_eq!(solver.sat(), False);
+            solver.load_state(&state)?;
+            assert_eq!(solver.sat(), True);
+            inc_data.new_lower_bound_for_solver(solver, f, 9)?;
+            assert_eq!(solver.sat(), False);
         }
     }
 

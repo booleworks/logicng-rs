@@ -195,16 +195,13 @@ fn test_simple_incremental_alk() -> LngResult<()> {
         assert_eq!(solver.sat(), True);
         solver.add_all(&inc_data.new_lower_bound(f, 7).unwrap(), f)?;
         assert_eq!(solver.sat(), True);
-
-        if solver.underlying_solver.config.incremental {
-            let state = solver.save_state().unwrap();
-            solver.add_all(&inc_data.new_lower_bound(f, 8).unwrap(), f)?;
-            assert_eq!(solver.sat(), False);
-            solver.load_state(&state)?;
-            assert_eq!(solver.sat(), True);
-            solver.add_all(&inc_data.new_lower_bound(f, 9).unwrap(), f)?;
-            assert_eq!(solver.sat(), False);
-        }
+        let state = solver.save_state().unwrap();
+        solver.add_all(&inc_data.new_lower_bound(f, 8).unwrap(), f)?;
+        assert_eq!(solver.sat(), False);
+        solver.load_state(&state)?;
+        assert_eq!(solver.sat(), True);
+        solver.add_all(&inc_data.new_lower_bound(f, 9).unwrap(), f)?;
+        assert_eq!(solver.sat(), False);
     }
 
     Ok(())

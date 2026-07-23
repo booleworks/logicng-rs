@@ -1,8 +1,6 @@
 /// Configuration for the high-level SAT solver and its CNF integration.
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub struct SatSolverConfig {
-    /// Whether incremental save/load operations are enabled.
-    pub incremental: bool,
     /// Whether auxiliary variables are included in returned models.
     pub auxiliary_variables_in_models: bool,
     /// Whether the solver records a proof for unsatisfiable-core extraction.
@@ -29,7 +27,6 @@ impl SatSolverConfig {
     /// Creates a solver configuration with the standard defaults.
     pub fn new() -> Self {
         Self {
-            incremental: true,
             auxiliary_variables_in_models: false,
             proof_generation: false,
             use_at_most_clauses: false,
@@ -54,12 +51,6 @@ impl SatSolverConfig {
     /// Sets whether proof generation is enabled.
     pub const fn proof_generation(self, proof_generation: bool) -> Self {
         self.with_proof_generation(proof_generation)
-    }
-
-    /// Sets whether incremental solver states are enabled.
-    pub const fn incremental(mut self, incremental: bool) -> Self {
-        self.incremental = incremental;
-        self
     }
 
     /// Sets whether returned models contain auxiliary variables.
