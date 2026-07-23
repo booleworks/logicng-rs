@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     pub fn test() {
-        let mut solver = LngCoreSolver::<()>::new();
+        let mut solver = LngCoreSolver::new();
         solver.new_var(true, true);
         solver.new_var(true, true);
         solver.new_var(true, true);

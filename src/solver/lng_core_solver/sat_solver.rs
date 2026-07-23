@@ -11,6 +11,7 @@ use crate::{
     handlers::{CancelableResult, ComputationHandler, NopHandler},
     operations::transformations::{PgOnSolverConfig, VarCacheEntry, add_cnf_to_solver},
     propositions::Proposition,
+    solver::lng_core_solver::PropositionID,
     util::exceptions::panic_unexpected_formula_type,
 };
 
@@ -27,12 +28,13 @@ use super::{
 /// High-level SAT solver supporting formulas, incremental states, and model operations.
 pub struct SatSolver<B = ()> {
     /// Low-level CDCL solver used by this facade.
-    pub underlying_solver: LngCoreSolver<B>,
+    pub underlying_solver: LngCoreSolver,
     /// Configuration with which the solver was created.
     pub config: SatSolverConfig,
     last_result: Tristate,
     pg_variable_cache: HashMap<EncodedFormula, VarCacheEntry>,
     full_pg_variable_cache: HashMap<EncodedFormula, VarCacheEntry>,
+    propositions: Vec<Proposition<B>>,
 }
 
 impl<B> SatSolver<B> {
@@ -42,7 +44,7 @@ impl<B> SatSolver<B> {
     }
 
     /// Wraps an existing low-level core solver.
-    pub fn from_core_solver(core_solver: LngCoreSolver<B>) -> Self {
+    pub fn from_core_solver(core_solver: LngCoreSolver) -> Self {
         let config = core_solver.config().clone();
         Self {
             underlying_solver: core_solver,
@@ -50,6 +52,7 @@ impl<B> SatSolver<B> {
             last_result: Tristate::Undef,
             pg_variable_cache: HashMap::new(),
             full_pg_variable_cache: HashMap::new(),
+            propositions: Vec::new(),
         }
     }
 
@@ -61,7 +64,7 @@ impl<B> SatSolver<B> {
     pub(crate) fn add_clause_set(
         &mut self,
         formula: EncodedFormula,
-        proposition: Option<Proposition<B>>,
+        proposition: Option<PropositionID>,
         f: &FormulaFactory,
     ) {
         match formula.unpack(f) {
@@ -81,7 +84,7 @@ impl<B> SatSolver<B> {
     pub(crate) fn add_clause(
         &mut self,
         formula: EncodedFormula,
-        proposition: Option<Proposition<B>>,
+        proposition: Option<PropositionID>,
         f: &FormulaFactory,
     ) {
         let literals = formula
@@ -94,6 +97,7 @@ impl<B> SatSolver<B> {
     /// Saves the current incremental state.
     pub fn save_state(&mut self) -> LngResult<SolverState> {
         let mut state = self.underlying_solver().save_state();
+        state.propositions_size = self.propositions.len();
         Ok(state)
     }
 
@@ -104,6 +108,7 @@ impl<B> SatSolver<B> {
             .map_err(|_| crate::solver::SolverError::InvalidSolverState)?;
         self.pg_variable_cache.clear();
         self.full_pg_variable_cache.clear();
+        self.propositions.truncate(state.propositions_size);
         Ok(())
     }
 
@@ -146,14 +151,14 @@ impl<B> SatSolver<B> {
     }
 
     /// Returns mutable access to the low-level core solver.
-    pub fn underlying_solver(&mut self) -> &mut LngCoreSolver<B> {
+    pub fn underlying_solver(&mut self) -> &mut LngCoreSolver {
         &mut self.underlying_solver
     }
 
     pub(crate) fn add_formula_as_cnf(
         &mut self,
         formula: EncodedFormula,
-        proposition: Option<Proposition<B>>,
+        proposition: Option<PropositionID>,
         f: &FormulaFactory,
     ) -> LngResult<()> {
         match self.config().configured_cnf_method() {
@@ -189,21 +194,7 @@ impl<B> SatSolver<B> {
         }
         Ok(())
     }
-}
 
-impl SatSolver<()> {
-    /// Creates a solver without proposition backpack data.
-    pub fn new() -> Self {
-        Self::new_with_backpack()
-    }
-
-    /// Creates a solver without proposition backpack data using `config`.
-    pub fn from_config(config: SatSolverConfig) -> Self {
-        Self::from_config_with_backpack(config)
-    }
-}
-
-impl<B> SatSolver<B> {
     /// Adds every formula produced by `formulas` to the solver.
     pub fn add_formulas<E, I>(&mut self, formulas: I, f: &FormulaFactory) -> LngResult<()>
     where
@@ -233,7 +224,8 @@ impl<B> SatSolver<B> {
         proposition: Proposition<B>,
         f: &FormulaFactory,
     ) -> LngResult<()> {
-        self.add_intern(formula, Some(proposition), f)
+        let prop_id = self.register_proposition(proposition);
+        self.add_intern(formula, Some(prop_id), f)
     }
 
     /// Adds a formula without proposition metadata.
@@ -244,7 +236,7 @@ impl<B> SatSolver<B> {
     pub(crate) fn add_intern(
         &mut self,
         formula: EncodedFormula,
-        proposition: Option<Proposition<B>>,
+        proposition: Option<PropositionID>,
         f: &FormulaFactory,
     ) -> LngResult<()> {
         // Keep every user variable visible to model-related operations even when
@@ -285,16 +277,17 @@ impl<B> SatSolver<B> {
                             .add_at_most(c.clone(), cc.rhs as usize);
                         self.underlying_solver.add_clause(c, proposition);
                     } else {
-                        let mut dest = EncodingResultSatSolver::new(self, proposition, f);
+                        let mut dest =
+                            EncodingResultSatSolver::new_with_prop_id(self, proposition, f);
                         CcEncoder::default().encode_on(&mut dest, cc)?;
                     }
                 } else {
-                    let mut dest = EncodingResultSatSolver::new(self, proposition, f);
+                    let mut dest = EncodingResultSatSolver::new_with_prop_id(self, proposition, f);
                     CcEncoder::default().encode_on(&mut dest, cc)?;
                 }
             }
             Formula::Pbc(pbc) => {
-                let mut dest = EncodingResultSatSolver::new(self, proposition, f);
+                let mut dest = EncodingResultSatSolver::new_with_prop_id(self, proposition, f);
                 PbEncoder::default().encode_on(pbc, &mut dest, f)?;
             }
             _ => self.add_formula_as_cnf(formula, proposition, f)?,
@@ -319,7 +312,9 @@ impl<B> SatSolver<B> {
         proposition: Proposition<B>,
         f: &FormulaFactory,
     ) -> LngResult<()> {
-        self.add_intern(proposition.formula, Some(proposition), f)
+        let formula = proposition.formula;
+        let prop_id = self.register_proposition(proposition);
+        self.add_intern(formula, Some(prop_id), f)
     }
 
     /// Adds a formula relaxed by the given variable.
@@ -343,6 +338,25 @@ impl<B> SatSolver<B> {
             self.add_formula_with_relaxation(relaxation_var, formula, f)?;
         }
         Ok(())
+    }
+
+    pub(crate) fn register_proposition(&mut self, proposition: Proposition<B>) -> PropositionID {
+        let id = self.propositions.len();
+        self.propositions.push(proposition);
+        PropositionID(id)
+    }
+
+    pub(crate) fn get_proposition(&self, id: PropositionID) -> &Proposition<B> {
+        &self.propositions[id.0]
+    }
+
+    /// Returns all propositions currently known by the solver.
+    pub fn propositions(&self) -> &Vec<Proposition<B>> {
+        &self.propositions
+    }
+
+    pub(crate) fn propositions_mut(&mut self) -> &mut Vec<Proposition<B>> {
+        &mut self.propositions
     }
 
     /// Adds an incremental cardinality constraint and returns its refinement data.
@@ -477,6 +491,18 @@ impl<B> SatSolver<B> {
                 Ok(Some(result))
             }
         }
+    }
+}
+
+impl SatSolver<()> {
+    /// Creates a solver without proposition backpack data.
+    pub fn new() -> Self {
+        Self::new_with_backpack()
+    }
+
+    /// Creates a solver without proposition backpack data using `config`.
+    pub fn from_config(config: SatSolverConfig) -> Self {
+        Self::from_config_with_backpack(config)
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
 use crate::propositions::Proposition;
-use crate::solver::lng_core_solver::SatSolver;
+use crate::solver::lng_core_solver::{PropositionID, SatSolver};
 
 /// The result of an encoding.
 ///
@@ -118,7 +118,7 @@ impl EncodingResult for EncodingResultFF<'_> {
 pub struct EncodingResultSatSolver<'s, 'f, B> {
     /// The SAT solver which is the destination for the constructed clauses.
     pub solver: &'s mut SatSolver<B>,
-    proposition: Option<Proposition<B>>,
+    proposition: Option<PropositionID>,
     f: &'f FormulaFactory,
 }
 
@@ -144,6 +144,15 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
     pub fn new(
         solver: &'s mut SatSolver<B>,
         proposition: Option<Proposition<B>>,
+        f: &'f FormulaFactory,
+    ) -> Self {
+        let prop_id = proposition.map(|p| solver.register_proposition(p));
+        Self::new_with_prop_id(solver, prop_id, f)
+    }
+
+    pub fn new_with_prop_id(
+        solver: &'s mut SatSolver<B>,
+        proposition: Option<PropositionID>,
         f: &'f FormulaFactory,
     ) -> Self {
         Self {
@@ -193,7 +202,7 @@ impl<B> EncodingResult for EncodingResultSatSolver<'_, '_, B> {
             );
             self.solver
                 .underlying_solver()
-                .add_clause(exported, self.proposition.clone());
+                .add_clause(exported, self.proposition);
         }
     }
 }

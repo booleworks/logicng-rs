@@ -2,6 +2,7 @@ use crate::formulas::{EncodedFormula, FormulaFactory};
 
 mod assume_tests;
 mod inc_dec_tests;
+mod proposition_tests;
 mod sat_tests;
 
 pub fn generate_pigeon_hole(n: usize, f: &FormulaFactory) -> EncodedFormula {

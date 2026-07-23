@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::backbones::Backbone;
 use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent};
-use crate::solver::lng_core_solver::not;
+use crate::solver::lng_core_solver::{PropositionID, not};
 use std::cmp::Ordering::{Greater, Less};
 use std::cmp::{Ordering, min};
 use std::collections::{BTreeSet, HashMap};
@@ -10,7 +10,6 @@ use std::error::Error;
 
 use crate::collections::LNG_VEC_INIT_SIZE;
 use crate::formulas::{FormulaFactory, Literal, Variable};
-use crate::propositions::Proposition;
 
 use super::functions::backbone_function::BackboneType;
 use super::{
@@ -29,7 +28,7 @@ pub const AUX_LNG_CORE_SOLVER: &str = "LNG_CORE_SOLVER";
 
 /// Low-level CDCL solver implementing propagation, learning, and incremental state.
 #[allow(clippy::struct_excessive_bools)]
-pub struct LngCoreSolver<B> {
+pub struct LngCoreSolver {
     pub(crate) config: SatSolverConfig,
 
     // mapping of variable names to variable indices
@@ -57,7 +56,7 @@ pub struct LngCoreSolver<B> {
     pub(crate) dnnf_assignment: Option<Vec<Tristate>>,
     pub(crate) assumptions_conflict: Vec<LngLit>,
     pub(crate) assumptions: Vec<LngLit>,
-    pub(crate) assumption_propositions: Vec<Proposition<B>>,
+    pub(crate) assumption_propositions: Vec<PropositionID>,
     pub(crate) seen: Vec<bool>,
     pub(crate) analyze_bt_level: usize,
     pub(crate) cla_inc: f64,
@@ -67,7 +66,7 @@ pub struct LngCoreSolver<B> {
     pub(crate) learnts_literals: usize,
 
     // Proof generating information
-    pub(crate) pg_original_clauses: Vec<ProofInformation<B>>,
+    pub(crate) pg_original_clauses: Vec<ProofInformation>,
     pub(crate) pg_proof: Vec<Vec<isize>>,
 
     // backbone computation
@@ -95,13 +94,13 @@ pub struct LngCoreSolver<B> {
     pub(crate) cur_restart: usize,
 }
 
-impl<B> Default for LngCoreSolver<B> {
+impl Default for LngCoreSolver {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<B> LngCoreSolver<B> {
+impl LngCoreSolver {
     /// Constructs a new solver with default configuration.
     #[must_use]
     pub fn new() -> Self {
@@ -245,13 +244,13 @@ impl<B> LngCoreSolver<B> {
     }
 
     /// Adds a unit clause and immediately propagates it at decision level zero.
-    pub fn add_unit_clause(&mut self, lit: LngLit, proposition: Option<Proposition<B>>) {
+    pub fn add_unit_clause(&mut self, lit: LngLit, proposition: Option<PropositionID>) {
         let unit = vec![lit];
         self.add_clause(unit, proposition);
     }
 
     /// Adds a clause to this solver.
-    pub fn add_clause(&mut self, mut ps: Vec<LngLit>, proposition: Option<Proposition<B>>) -> bool {
+    pub fn add_clause(&mut self, mut ps: Vec<LngLit>, proposition: Option<PropositionID>) -> bool {
         assert!(self.decision_level() == 0);
 
         if self.config.proof_generation {
@@ -423,6 +422,7 @@ impl<B> LngCoreSolver<B> {
             } else {
                 0
             },
+            propositions_size: usize::MAX,
         }
     }
 
@@ -970,11 +970,11 @@ impl<B> LngCoreSolver<B> {
     }
 
     /// Returns the original clauses recorded for proof generation.
-    pub const fn pg_original_clauses(&self) -> &Vec<ProofInformation<B>> {
+    pub const fn pg_original_clauses(&self) -> &Vec<ProofInformation> {
         &self.pg_original_clauses
     }
 
-    pub(crate) fn pg_original_clauses_mut(&mut self) -> &mut Vec<ProofInformation<B>> {
+    pub(crate) fn pg_original_clauses_mut(&mut self) -> &mut Vec<ProofInformation> {
         &mut self.pg_original_clauses
     }
 
@@ -1947,7 +1947,7 @@ impl<B> LngCoreSolver<B> {
     }
 }
 
-impl<B> std::fmt::Debug for LngCoreSolver<B> {
+impl std::fmt::Debug for LngCoreSolver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -1973,9 +1973,9 @@ impl<B> std::fmt::Debug for LngCoreSolver<B> {
 }
 
 /// Converts external literals to an internal clause, creating variables as required.
-pub fn generate_clause_vector<B>(
+pub fn generate_clause_vector(
     literals: &[Literal],
-    solver: &mut LngCoreSolver<B>,
+    solver: &mut LngCoreSolver,
     initial_phase: bool,
     decision_var: bool,
 ) -> Vec<LngLit> {
@@ -1987,17 +1987,17 @@ pub fn generate_clause_vector<B>(
 }
 
 /// Converts external literals using the solver's initial phase and decision settings.
-pub fn generate_clause_vector_wo_config<B>(
+pub fn generate_clause_vector_wo_config(
     literals: &[Literal],
-    solver: &mut LngCoreSolver<B>,
+    solver: &mut LngCoreSolver,
 ) -> Vec<LngLit> {
     generate_clause_vector(literals, solver, solver.config.initial_phase, true)
 }
 
 /// Converts an external literal to its internal representation.
-pub fn solver_literal<B>(
+pub fn solver_literal(
     lit: Literal,
-    solver: &mut LngCoreSolver<B>,
+    solver: &mut LngCoreSolver,
     initial_phase: bool,
     decision_var: bool,
 ) -> LngLit {
@@ -2012,7 +2012,7 @@ pub fn solver_literal<B>(
 }
 
 /// Converts an external literal using the solver's default variable settings.
-pub fn solver_literal_default<B>(lit: Literal, solver: &mut LngCoreSolver<B>) -> LngLit {
+pub fn solver_literal_default(lit: Literal, solver: &mut LngCoreSolver) -> LngLit {
     solver_literal(lit, solver, solver.config.initial_phase, true)
 }
 

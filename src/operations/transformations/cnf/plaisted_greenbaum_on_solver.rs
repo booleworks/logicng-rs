@@ -5,9 +5,9 @@ use Literal::{Neg, Pos};
 use crate::errors::LngResult;
 use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Literal};
 use crate::operations::predicates::contains_pbc;
-use crate::propositions::Proposition;
 use crate::solver::lng_core_solver::{
-    LngCoreSolver, LngLit, generate_clause_vector_wo_config, mk_lit, not, solver_literal_default,
+    LngCoreSolver, LngLit, PropositionID, generate_clause_vector_wo_config, mk_lit, not,
+    solver_literal_default,
 };
 use crate::util::exceptions::panic_unexpected_formula_type;
 
@@ -44,10 +44,10 @@ impl Default for PgOnSolverConfig {
     }
 }
 
-pub(crate) fn add_cnf_to_solver<B>(
-    solver: &mut LngCoreSolver<B>,
+pub(crate) fn add_cnf_to_solver(
+    solver: &mut LngCoreSolver,
     formula: EncodedFormula,
-    proposition: Option<Proposition<B>>,
+    proposition: Option<PropositionID>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -55,10 +55,10 @@ pub(crate) fn add_cnf_to_solver<B>(
     add_cnf_to_solver_internal(solver, formula, proposition, f, cache, config)
 }
 
-fn add_cnf_to_solver_internal<B>(
-    solver: &mut LngCoreSolver<B>,
+fn add_cnf_to_solver_internal(
+    solver: &mut LngCoreSolver,
     formula: EncodedFormula,
-    proposition: Option<Proposition<B>>,
+    proposition: Option<PropositionID>,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -85,10 +85,10 @@ fn add_cnf_to_solver_internal<B>(
     Ok(())
 }
 
-fn add_cnf<B>(
-    solver: &mut LngCoreSolver<B>,
+fn add_cnf(
+    solver: &mut LngCoreSolver,
     cnf: EncodedFormula,
-    proposition: Option<Proposition<B>>,
+    proposition: Option<PropositionID>,
     f: &FormulaFactory,
 ) {
     use Formula::{And, False, Lit, Or, True};
@@ -107,7 +107,7 @@ fn add_cnf<B>(
                     &clause.literals(f).iter().copied().collect::<Box<[_]>>(),
                     solver,
                 );
-                add_to_solver(solver, c, proposition.clone());
+                add_to_solver(solver, c, proposition);
             }
         }
         _ => panic_unexpected_formula_type(cnf, Some(f)),
@@ -115,10 +115,10 @@ fn add_cnf<B>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn compute_transformation<B>(
+fn compute_transformation(
     formula: EncodedFormula,
-    proposition: Option<Proposition<B>>,
-    solver: &mut LngCoreSolver<B>,
+    proposition: Option<PropositionID>,
+    solver: &mut LngCoreSolver,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -147,7 +147,7 @@ fn compute_transformation<B>(
         ),
         Or(_) | And(_) => handle_nary(
             formula,
-            proposition.as_ref(),
+            proposition,
             solver,
             f,
             cache,
@@ -180,10 +180,10 @@ fn compute_transformation<B>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_equiv<B>(
+fn handle_equiv(
     equiv: EncodedFormula,
-    proposition: Option<Proposition<B>>,
-    solver: &mut LngCoreSolver<B>,
+    proposition: Option<PropositionID>,
+    solver: &mut LngCoreSolver,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -285,10 +285,10 @@ fn handle_equiv<B>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_impl<B>(
+fn handle_impl(
     implication: EncodedFormula,
-    proposition: Option<Proposition<B>>,
-    solver: &mut LngCoreSolver<B>,
+    proposition: Option<PropositionID>,
+    solver: &mut LngCoreSolver,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -377,10 +377,10 @@ fn handle_impl<B>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn handle_nary<B>(
+fn handle_nary(
     formula: EncodedFormula,
-    proposition: Option<&Proposition<B>>,
-    solver: &mut LngCoreSolver<B>,
+    proposition: Option<PropositionID>,
+    solver: &mut LngCoreSolver,
     f: &FormulaFactory,
     cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
     config: PgOnSolverConfig,
@@ -406,7 +406,7 @@ fn handle_nary<B>(
             for &op in &*formula.operands(f) {
                 let op_pg_vars = compute_transformation(
                     op,
-                    proposition.cloned(),
+                    proposition,
                     solver,
                     f,
                     cache,
@@ -416,13 +416,13 @@ fn handle_nary<B>(
                 );
                 if top_level {
                     if let Some(lits) = op_pg_vars {
-                        add_to_solver(solver, lits, proposition.cloned());
+                        add_to_solver(solver, lits, proposition);
                     }
                 } else {
                     add_to_solver(
                         solver,
                         vector(not(pg_lit.unwrap()), op_pg_vars.unwrap()),
-                        proposition.cloned(),
+                        proposition,
                     );
                 }
             }
@@ -437,17 +437,8 @@ fn handle_nary<B>(
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
                 single_clause.extend(
-                    compute_transformation(
-                        op,
-                        proposition.cloned(),
-                        solver,
-                        f,
-                        cache,
-                        config,
-                        false,
-                        false,
-                    )
-                    .unwrap(),
+                    compute_transformation(op, proposition, solver, f, cache, config, false, false)
+                        .unwrap(),
                 );
             }
             Some(single_clause)
@@ -459,17 +450,8 @@ fn handle_nary<B>(
             let mut single_clause = Vec::new();
             for &op in &*formula.operands(f) {
                 single_clause.extend(
-                    compute_transformation(
-                        op,
-                        proposition.cloned(),
-                        solver,
-                        f,
-                        cache,
-                        config,
-                        true,
-                        false,
-                    )
-                    .unwrap(),
+                    compute_transformation(op, proposition, solver, f, cache, config, true, false)
+                        .unwrap(),
                 );
             }
             Some(single_clause)
@@ -478,7 +460,7 @@ fn handle_nary<B>(
             for &op in &*formula.operands(f) {
                 let op_pg_lits = compute_transformation(
                     op,
-                    proposition.cloned(),
+                    proposition,
                     solver,
                     f,
                     cache,
@@ -488,13 +470,13 @@ fn handle_nary<B>(
                 );
                 if top_level {
                     if let Some(lits) = op_pg_lits {
-                        add_to_solver(solver, lits, proposition.cloned());
+                        add_to_solver(solver, lits, proposition);
                     }
                 } else {
                     add_to_solver(
                         solver,
                         vector(pg_lit.unwrap(), op_pg_lits.unwrap()),
-                        proposition.cloned(),
+                        proposition,
                     );
                 }
             }
@@ -509,16 +491,16 @@ fn handle_nary<B>(
     }
 }
 
-fn add_to_solver<B>(
-    solver: &mut LngCoreSolver<B>,
+fn add_to_solver(
+    solver: &mut LngCoreSolver,
     clause: Vec<LngLit>,
-    proposition: Option<Proposition<B>>,
+    proposition: Option<PropositionID>,
 ) {
     solver.add_clause(clause, proposition);
 }
 
-fn get_pg_var<B>(
-    solver: &mut LngCoreSolver<B>,
+fn get_pg_var(
+    solver: &mut LngCoreSolver,
     formula: EncodedFormula,
     polarity: bool,
     variable_cache: &mut HashMap<EncodedFormula, VarCacheEntry>,
@@ -531,7 +513,7 @@ fn get_pg_var<B>(
     (was_cached, pg_var)
 }
 
-fn new_solver_variable<B>(solver: &mut LngCoreSolver<B>) -> LngLit {
+fn new_solver_variable(solver: &mut LngCoreSolver) -> LngLit {
     let index = solver.new_var(!solver.config.initial_phase, true);
     mk_lit(index, false)
 }

@@ -23,7 +23,10 @@ pub fn compute_unsat_core<B: PartialEq>(
     let mut clauses = Vec::with_capacity(solver.underlying_solver().pg_original_clauses.len());
     for pi in solver.underlying_solver().pg_original_clauses.clone() {
         let clause = get_formula_for_vector(solver, &pi.clause, f);
-        let proposition = pi.proposition.unwrap_or_else(|| Proposition::new(clause));
+        let proposition = pi
+            .proposition
+            .map(|p| solver.get_proposition(p).clone())
+            .unwrap_or_else(|| Proposition::new(clause));
         clauses.push(pi.clause);
         clause2propositions.insert(clause, proposition);
     }
@@ -68,12 +71,12 @@ fn handle_trivial_case<B: PartialEq>(
                 let ci_clone = ci.clone();
                 let cj_clone = cj.clone();
                 let pi = if let Some(prop) = ci_clone.proposition {
-                    prop
+                    solver.get_proposition(prop).clone()
                 } else {
                     Proposition::new(get_formula_for_vector(solver, &ci_clone.clause, f))
                 };
                 let pj = if let Some(prop) = cj_clone.proposition {
-                    prop
+                    solver.get_proposition(prop).clone()
                 } else {
                     Proposition::new(get_formula_for_vector(solver, &cj_clone.clause, f))
                 };
