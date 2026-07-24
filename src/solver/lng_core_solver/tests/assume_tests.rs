@@ -8,10 +8,7 @@ use crate::util::test_util::F;
 fn test_assume() -> LngResult<()> {
     let ff = F::new();
     let f = &ff.f;
-    let solvers = [
-        SatSolver::from_config(SatSolverConfig::default().incremental(true)),
-        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
-    ];
+    let solvers = [SatSolver::from_config(SatSolverConfig::default())];
 
     let assumptions1 = [f.lit("c", true), f.lit("d", true)];
     let assumptions2 = [f.lit("x", false), f.lit("y", true), f.lit("d", true)];

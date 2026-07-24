@@ -1,5 +1,7 @@
 use std::borrow::Borrow;
 
+use itertools::Itertools;
+
 use crate::{
     collections::LNG_VEC_INIT_SIZE,
     datastructures::Model,
@@ -20,6 +22,7 @@ pub struct SatCall<'s, B> {
     solver: &'s mut SatSolver<B>,
     initial_state: Option<SolverState>,
     pg_original_clauses_length: Option<usize>,
+    propositions_length: usize,
     sat_result: LngResult<CancelableResult<bool>>,
 }
 
@@ -33,6 +36,7 @@ impl<'s, B> SatCall<'s, B> {
     ) -> LngResult<Self> {
         let mut initial_state = None;
         let mut pg_original_clauses_length = None;
+        let propositions_length = solver.propositions().len();
         if solver.config().proof_generation {
             pg_original_clauses_length =
                 Some(solver.underlying_solver().pg_original_clauses().len());
@@ -44,8 +48,11 @@ impl<'s, B> SatCall<'s, B> {
                 &additionals.additional_literals,
                 solver.underlying_solver(),
             );
-            solver.underlying_solver().assumption_propositions =
-                additionals.propositions_for_literals;
+            solver.underlying_solver().assumption_propositions = additionals
+                .propositions_for_literals
+                .into_iter()
+                .map(|p| solver.register_proposition(p))
+                .collect_vec();
         }
         if !additionals.additional_formulas.is_empty() {
             initial_state = Some(solver.save_state()?);
@@ -69,6 +76,7 @@ impl<'s, B> SatCall<'s, B> {
             solver,
             initial_state,
             pg_original_clauses_length,
+            propositions_length,
             sat_result: Ok(sat_result),
         })
     }
@@ -151,6 +159,9 @@ impl<'s, B> Drop for SatCall<'s, B> {
         if let Some(initial_state) = &self.initial_state {
             let _ = self.solver.load_state(initial_state);
         }
+        self.solver
+            .propositions_mut()
+            .truncate(self.propositions_length);
     }
 }
 

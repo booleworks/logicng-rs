@@ -19,18 +19,9 @@ use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
 use crate::solver::lng_core_solver::{SatBuilder, SatSolver, SatSolverConfig};
 use crate::util::test_util::{lits, lits_list, vars_list};
 
-fn solvers() -> [SatSolver; 5] {
+fn solvers() -> [SatSolver; 4] {
     [
-        SatSolver::from_config(
-            SatSolverConfig::default()
-                .cnf_method(FactoryCnf)
-                .incremental(true),
-        ),
-        SatSolver::from_config(
-            SatSolverConfig::default()
-                .cnf_method(FactoryCnf)
-                .incremental(false),
-        ),
+        SatSolver::from_config(SatSolverConfig::default().cnf_method(FactoryCnf)),
         SatSolver::from_config(SatSolverConfig::default().cnf_method(PgOnSolver)),
         SatSolver::from_config(
             SatSolverConfig::default()
@@ -179,22 +170,20 @@ fn test_formula1() -> LngResult<()> {
 fn test_formula2() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add(
-                "(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f),
-                f,
-            )?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
-                    .unwrap();
-            assert_eq!(models.len(), 1);
-            let model = Assignment::from(&models[0]);
-            assert!(!model.evaluate_lit(f.lit("x", true)));
-            assert!(model.evaluate_lit(f.lit("y", true)));
-            assert!(model.evaluate_lit(f.lit("z", true)));
-            solver.add(f.literal("x", true), f)?;
-            assert_eq!(solver.sat(), False);
-        }
+        solver.add(
+            "(x => y) & (~x => y) & (y => z) & (z => ~x)".to_formula(f),
+            f,
+        )?;
+        let models =
+            enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                .unwrap();
+        assert_eq!(models.len(), 1);
+        let model = Assignment::from(&models[0]);
+        assert!(!model.evaluate_lit(f.lit("x", true)));
+        assert!(model.evaluate_lit(f.lit("y", true)));
+        assert!(model.evaluate_lit(f.lit("z", true)));
+        solver.add(f.literal("x", true), f)?;
+        assert_eq!(solver.sat(), False);
     }
 
     Ok(())
@@ -204,16 +193,14 @@ fn test_formula2() -> LngResult<()> {
 fn test_formula3() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add("a | b".to_formula(f), f)?;
-            let models =
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
-                    .unwrap();
-            assert_eq!(models.len(), 3);
-            assert_eq!(models[0].len(), 2);
-            assert_eq!(models[1].len(), 2);
-            assert_eq!(models[2].len(), 2);
-        }
+        solver.add("a | b".to_formula(f), f)?;
+        let models =
+            enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                .unwrap();
+        assert_eq!(models.len(), 3);
+        assert_eq!(models[0].len(), 2);
+        assert_eq!(models[1].len(), 2);
+        assert_eq!(models[2].len(), 2);
     }
 
     Ok(())
@@ -223,21 +210,19 @@ fn test_formula3() -> LngResult<()> {
 fn test_cc1() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            let vars = (0..100)
-                .map(|i| f.var(format!("x{i}")))
-                .collect::<Box<[_]>>();
-            solver.add(f.exo(vars.clone()), f)?;
-            // TODO fix this with the new model enumeration
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default().variables(vars),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 100);
-            assert!(models.iter().all(|m| m.pos().len() == 1));
-        }
+        let vars = (0..100)
+            .map(|i| f.var(format!("x{i}")))
+            .collect::<Box<[_]>>();
+        solver.add(f.exo(vars.clone()), f)?;
+        // TODO fix this with the new model enumeration
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default().variables(vars),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 100);
+        assert!(models.iter().all(|m| m.pos().len() == 1));
     }
 
     Ok(())
@@ -423,21 +408,19 @@ fn test_model_enumeration() -> LngResult<()> {
     let vars: Box<[Variable]> = (0..20).map(|i| f.var(format!("x{i}"))).collect();
     let first_five = &vars[..5];
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add(f.cc(GE, 1, vars.clone()).unwrap(), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(first_five)
-                    .additional_variables(vars.clone()),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 32);
-            for model in models {
-                for var in &*vars {
-                    assert!(model.pos().contains(var) || model.neg().contains(var));
-                }
+        solver.add(f.cc(GE, 1, vars.clone()).unwrap(), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(first_five)
+                .additional_variables(vars.clone()),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 32);
+        for model in models {
+            for var in &*vars {
+                assert!(model.pos().contains(var) || model.neg().contains(var));
             }
         }
     }
@@ -449,14 +432,12 @@ fn test_model_enumeration() -> LngResult<()> {
 fn test_empty_enumeration() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add(f.falsum(), f)?;
-            assert!(
-                enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
-                    .unwrap()
-                    .is_empty()
-            );
-        }
+        solver.add(f.falsum(), f)?;
+        assert!(
+            enumerate_models_with_config(&mut solver, &ModelEnumerationConfig::default(), f)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     Ok(())
@@ -467,57 +448,55 @@ fn test_number_of_models_handler() -> LngResult<()> {
     let f = &FormulaFactory::new();
     let vars: Box<[Variable]> = (0..100).map(|i| f.var(format!("x{i}"))).collect();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add(f.exo(vars.clone()), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(vars.clone())
-                    .max_models(100),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 100);
-            assert!(models.iter().all(|m| m.pos().len() == 1));
-            solver.reset();
+        solver.add(f.exo(vars.clone()), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(vars.clone())
+                .max_models(100),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 100);
+        assert!(models.iter().all(|m| m.pos().len() == 1));
+        solver.reset();
 
-            solver.add(f.exo(vars.clone()), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(vars.clone())
-                    .max_models(200),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 100);
-            assert!(models.iter().all(|m| m.pos().len() == 1));
-            solver.reset();
+        solver.add(f.exo(vars.clone()), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(vars.clone())
+                .max_models(200),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 100);
+        assert!(models.iter().all(|m| m.pos().len() == 1));
+        solver.reset();
 
-            solver.add(f.exo(vars.clone()), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(vars.clone())
-                    .max_models(50),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 50);
-            assert!(models.iter().all(|m| m.pos().len() == 1));
-            solver.reset();
+        solver.add(f.exo(vars.clone()), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(vars.clone())
+                .max_models(50),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 50);
+        assert!(models.iter().all(|m| m.pos().len() == 1));
+        solver.reset();
 
-            solver.add(f.exo(vars.clone()), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(vars.clone())
-                    .max_models(1),
-                f,
-            )
-            .unwrap();
-            assert_eq!(models.len(), 1);
-        }
+        solver.add(f.exo(vars.clone()), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(vars.clone())
+                .max_models(1),
+            f,
+        )
+        .unwrap();
+        assert_eq!(models.len(), 1);
     }
 
     Ok(())
@@ -770,22 +749,20 @@ fn test_dimacs_files_with_selection_order() -> LngResult<()> {
 fn test_model_enumeration_with_additional_variables() -> LngResult<()> {
     let f = &FormulaFactory::new();
     for mut solver in solvers() {
-        if solver.config.incremental {
-            solver.add("A | B | C | D | E".to_formula(f), f)?;
-            let models = enumerate_models_with_config(
-                &mut solver,
-                &ModelEnumerationConfig::default()
-                    .variables(vars_list("a b", f))
-                    .additional_variables(vars_list("b c", f)),
-                f,
-            )
-            .unwrap();
-            for model in models {
-                let pos_count_b = model.pos().iter().filter(|&&v| v.name(f) == "B").count();
-                let neg_count_b = model.neg().iter().filter(|&&v| v.name(f) == "B").count();
-                assert!(pos_count_b < 2);
-                assert!(neg_count_b < 2);
-            }
+        solver.add("A | B | C | D | E".to_formula(f), f)?;
+        let models = enumerate_models_with_config(
+            &mut solver,
+            &ModelEnumerationConfig::default()
+                .variables(vars_list("a b", f))
+                .additional_variables(vars_list("b c", f)),
+            f,
+        )
+        .unwrap();
+        for model in models {
+            let pos_count_b = model.pos().iter().filter(|&&v| v.name(f) == "B").count();
+            let neg_count_b = model.neg().iter().filter(|&&v| v.name(f) == "B").count();
+            assert!(pos_count_b < 2);
+            assert!(neg_count_b < 2);
         }
     }
 

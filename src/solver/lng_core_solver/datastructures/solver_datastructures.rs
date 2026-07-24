@@ -66,6 +66,8 @@ pub struct SolverState {
     pub pg_original_size: usize,
     /// Number of generated proof entries in the saved state.
     pub pg_proof_size: usize,
+    /// Number of propositions stored on the solver.
+    pub propositions_size: usize,
 }
 
 /// Internal representation of a clause and its solver metadata.
@@ -243,30 +245,25 @@ impl Tristate {
 }
 
 /// Class containing the information required for generating a proof.
-#[derive(PartialEq, Eq, Debug)]
-pub struct ProofInformation<Backpack> {
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct ProofInformation {
     pub(crate) clause: Vec<isize>,
-    pub(crate) proposition: Option<Proposition<Backpack>>,
+    pub(crate) proposition: Option<PropositionID>,
 }
 
-impl<Backpack> Clone for ProofInformation<Backpack> {
-    fn clone(&self) -> Self {
-        Self {
-            clause: self.clause.clone(),
-            proposition: self.proposition.clone(),
-        }
-    }
-}
-
-impl<B> ProofInformation<B> {
+impl ProofInformation {
     /// Constructs new proof information object.
-    pub const fn new(clause: Vec<isize>, proposition: Option<Proposition<B>>) -> Self {
+    pub const fn new(clause: Vec<isize>, proposition: Option<PropositionID>) -> Self {
         Self {
             clause,
             proposition,
         }
     }
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PropositionID(pub(crate) usize);
 
 #[cfg(test)]
 mod tests {

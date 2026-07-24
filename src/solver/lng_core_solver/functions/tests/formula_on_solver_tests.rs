@@ -11,10 +11,9 @@ use crate::solver::lng_core_solver::functions::{
 };
 use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig};
 
-fn solvers() -> [SatSolver; 5] {
+fn solvers() -> [SatSolver; 4] {
     [
-        SatSolver::from_config(SatSolverConfig::default().incremental(true)),
-        SatSolver::from_config(SatSolverConfig::default().incremental(false)),
+        SatSolver::from_config(SatSolverConfig::default()),
         SatSolver::from_config(SatSolverConfig::default().cnf_method(PgOnSolver)),
         SatSolver::from_config(
             SatSolverConfig::default()

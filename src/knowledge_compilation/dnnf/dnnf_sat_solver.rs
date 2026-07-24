@@ -12,14 +12,14 @@ use crate::solver::lng_core_solver::{
 use crate::util::exceptions::panic_unexpected_formula_type;
 
 pub struct DnnfSatSolver {
-    internal_solver: LngCoreSolver<()>,
+    internal_solver: LngCoreSolver,
     newly_implied_dirty: bool,
     assertion_level: isize,
     last_learnt: Option<Vec<LngLit>>,
 }
 
 impl DnnfSatSolver {
-    pub fn new(mut internal_solver: LngCoreSolver<()>, number_of_variables: usize) -> Self {
+    pub fn new(mut internal_solver: LngCoreSolver, number_of_variables: usize) -> Self {
         let assignment = repeat(Tristate::Undef)
             .take(2 * number_of_variables)
             .collect();

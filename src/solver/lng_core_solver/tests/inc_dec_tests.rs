@@ -118,9 +118,3 @@ fn test_inc_dec_deep_3() -> LngResult<()> {
 
     Ok(())
 }
-
-#[test]
-fn test_not_incremental_1() {
-    let mut s = SatSolver::from_config(SatSolverConfig::default().incremental(false));
-    assert!(s.save_state().is_err());
-}
