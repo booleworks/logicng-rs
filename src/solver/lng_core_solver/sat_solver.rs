@@ -105,7 +105,7 @@ impl<B> SatSolver<B> {
     pub fn load_state(&mut self, state: &SolverState) -> LngResult<()> {
         self.underlying_solver
             .load_state(state)
-            .map_err(|_| crate::solver::SolverError::InvalidSolverState)?;
+            .map_err(|_| crate::solver::lng_core_solver::SatError::InvalidSolverState)?;
         self.pg_variable_cache.clear();
         self.full_pg_variable_cache.clear();
         self.propositions.truncate(state.propositions_size);
@@ -406,7 +406,7 @@ impl<B> SatSolver<B> {
     pub fn model(&mut self, variables: Option<&[Variable]>) -> LngResult<Option<Model>> {
         match self.last_result {
             Tristate::False => Ok(None),
-            Tristate::Undef => Err(crate::solver::SolverError::NotSolved.into()),
+            Tristate::Undef => Err(crate::solver::lng_core_solver::SatError::NotSolved.into()),
             Tristate::True => {
                 let requested: Vec<Variable> = variables.map_or_else(
                     || {
@@ -479,7 +479,7 @@ impl<B> SatSolver<B> {
     /// Returns literals propagated at level zero by the last satisfiable call.
     pub fn up_zero_literals(&mut self) -> LngResult<Option<BTreeSet<Literal>>> {
         match self.last_result {
-            Tristate::Undef => Err(crate::solver::SolverError::NotSolved.into()),
+            Tristate::Undef => Err(crate::solver::lng_core_solver::SatError::NotSolved.into()),
             Tristate::False => Ok(None),
             Tristate::True => {
                 let mut result = BTreeSet::new();
@@ -549,10 +549,10 @@ impl<B: PartialEq> SatSolver<B> {
         f: &FormulaFactory,
     ) -> LngResult<crate::explanations::UnsatCore<B>> {
         if self.last_result == Tristate::True {
-            return Err(crate::solver::SolverError::UnsatCoreOnSatFormula.into());
+            return Err(crate::solver::lng_core_solver::SatError::UnsatCoreOnSatFormula.into());
         }
         if self.last_result == Tristate::Undef {
-            return Err(crate::solver::SolverError::NotSolved.into());
+            return Err(crate::solver::lng_core_solver::SatError::NotSolved.into());
         }
         super::functions::unsat_core_function::compute_unsat_core(self, f)
     }

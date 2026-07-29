@@ -5,20 +5,14 @@ use logicng::formulas::FormulaFactory;
 use logicng::io::read_formula;
 use logicng::operations::functions::{ModelCountAlgorithm, count_models};
 use logicng::solver::lng_core_solver::SatSolver;
-
-#[cfg(feature = "open_wbo")]
-use logicng::solver::maxsat::{Algorithm, MaxSatSolver};
+use logicng::solver::maxsat::{MaxSatSolver, OpenWboConfig, RustOpenWboFactory};
 
 fn main() {
     parse();
     parse();
     sat();
     model_counting();
-
-    #[cfg(feature = "open_wbo")]
-    {
-        maximize_maxsat();
-    }
+    maximize_maxsat();
 }
 
 fn sat() {
@@ -70,7 +64,6 @@ fn model_counting() {
     );
 }
 
-#[cfg(feature = "open_wbo")]
 fn maximize_maxsat() {
     let f = FormulaFactory::new();
     let formulas = fs::read_dir("./resources/formula_suite_1/")
@@ -81,7 +74,8 @@ fn maximize_maxsat() {
     let start = std::time::Instant::now();
     for formula in formulas {
         let variables = formula.variables(&f);
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let cfg = OpenWboConfig::default();
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         solver.add_hard_formula(formula, &f).unwrap();
         for var in &*variables {
             solver

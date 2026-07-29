@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::solver::lng_core_solver::SatSolver;
+use crate::solver::lng_core_solver::{SatError, SatSolver};
 use crate::{
     datastructures::Model,
     errors::LngResult,
@@ -129,25 +129,25 @@ impl OptimizationFunction {
             }
             CancelableResult::Ok(res) => {
                 if !res {
-                    return Err(crate::solver::SolverError::OptimizationOnUnsat.into());
+                    return Err(SatError::OptimizationOnUnsat.into());
                 }
             }
         }
         let mut last_result_model = Rc::new(
             sat_call
                 .model(&result_model_variables_vec, f)?
-                .ok_or(crate::solver::SolverError::MissingModel)?,
+                .ok_or(SatError::MissingModel)?,
         );
         let mut current_selector_model = sat_call
             .model(&selectors, f)?
-            .ok_or(crate::solver::SolverError::MissingModel)?;
+            .ok_or(SatError::MissingModel)?;
         if current_selector_model.pos().len() == selector_map.len() {
             // all optimization literals satisfied -- no need for further
             // optimization
             return Ok(CancelableResult::Ok(Rc::new(
                 sat_call
                     .model(&result_model_variables_vec, f)?
-                    .ok_or(crate::solver::SolverError::MissingModel)?,
+                    .ok_or(SatError::MissingModel)?,
             )));
         }
         drop(sat_call);
@@ -168,32 +168,31 @@ impl OptimizationFunction {
                     last_result_model = Rc::new(
                         sat_call
                             .model(&result_model_variables_vec, f)?
-                            .ok_or(crate::solver::SolverError::MissingModel)?,
+                            .ok_or(SatError::MissingModel)?,
                     );
                     current_selector_model = sat_call
                         .model(&selectors, f)?
-                        .ok_or(crate::solver::SolverError::MissingModel)?;
+                        .ok_or(SatError::MissingModel)?;
                     current_bound = current_selector_model.pos().len();
                 }
             }
         }
-        let bound = u32::try_from(current_bound).map_err(|_| {
-            crate::solver::SolverError::OptimizationBoundTooLarge {
+        let bound =
+            u32::try_from(current_bound).map_err(|_| SatError::OptimizationBoundTooLarge {
                 bound: current_bound,
-            }
-        })?;
+            })?;
         let cc_formula = f.cc(
             CType::GE,
             bound
                 .checked_add(1)
-                .ok_or(crate::solver::SolverError::OptimizationBoundTooLarge {
+                .ok_or(SatError::OptimizationBoundTooLarge {
                     bound: current_bound,
                 })?,
             selectors.clone(),
         )?;
         let cc = cc_formula
             .as_cc(f)
-            .ok_or(crate::solver::SolverError::InvalidExternalResponse)?;
+            .ok_or(SatError::InvalidExternalResponse)?;
         let Some(mut incremental_data) = solver.add_incremental_cc(&cc, f)? else {
             let mut sat_call = solver.sat_call().handler(handler).solve(f)?;
             return match sat_call.get_sat_result()? {
@@ -204,7 +203,7 @@ impl OptimizationFunction {
                 CancelableResult::Ok(true) => Ok(CancelableResult::Ok(Rc::new(
                     sat_call
                         .model(&result_model_variables_vec, f)?
-                        .ok_or(crate::solver::SolverError::MissingModel)?,
+                        .ok_or(SatError::MissingModel)?,
                 ))),
             };
         };
@@ -213,8 +212,7 @@ impl OptimizationFunction {
                 .sat_call()
                 .handler(handler)
                 .solve_and_get_handler(f)?;
-            let handler =
-                returned_handler.ok_or(crate::solver::SolverError::InvalidExternalResponse)?;
+            let handler = returned_handler.ok_or(SatError::InvalidExternalResponse)?;
             let sat_result = sat_call.get_sat_result()?;
             match sat_result {
                 CancelableResult::Canceled(lng_event) | CancelableResult::Partial(_, lng_event) => {
@@ -227,7 +225,7 @@ impl OptimizationFunction {
                     last_result_model = Rc::new(
                         sat_call
                             .model(&result_model_variables_vec, f)?
-                            .ok_or(crate::solver::SolverError::MissingModel)?,
+                            .ok_or(SatError::MissingModel)?,
                     );
                     let better_bound_event =
                         LngEvent::OptimizationFoundBetterBound((*last_result_model).clone());
@@ -239,7 +237,7 @@ impl OptimizationFunction {
                     }
                     current_selector_model = sat_call
                         .model(&selectors, f)?
-                        .ok_or(crate::solver::SolverError::MissingModel)?;
+                        .ok_or(SatError::MissingModel)?;
                     current_bound = current_selector_model.pos().len();
                     if current_bound == selectors.len() {
                         return Ok(CancelableResult::Ok(last_result_model));
@@ -247,19 +245,18 @@ impl OptimizationFunction {
                 }
             }
             drop(sat_call);
-            let bound = u32::try_from(current_bound).map_err(|_| {
-                crate::solver::SolverError::OptimizationBoundTooLarge {
+            let bound =
+                u32::try_from(current_bound).map_err(|_| SatError::OptimizationBoundTooLarge {
                     bound: current_bound,
-                }
-            })?;
+                })?;
             incremental_data.new_lower_bound_for_solver(
                 solver,
                 f,
-                bound.checked_add(1).ok_or(
-                    crate::solver::SolverError::OptimizationBoundTooLarge {
+                bound
+                    .checked_add(1)
+                    .ok_or(SatError::OptimizationBoundTooLarge {
                         bound: current_bound,
-                    },
-                )?,
+                    })?,
             )?;
         }
     }

@@ -41,6 +41,13 @@ pub enum IoError {
         literal: String,
     },
 
+    #[error("invalid WCNF in file {path:?} on line {line}: {reason}")]
+    InvalidWcnf {
+        path: String,
+        line: usize,
+        reason: String,
+    },
+
     #[error("path is not valid UTF-8")]
     InvalidPath,
 }

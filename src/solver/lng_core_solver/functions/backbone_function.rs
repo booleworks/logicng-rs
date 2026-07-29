@@ -45,5 +45,5 @@ where
             .underlying_solver()
             .compute_backbone(variables, backbone_type, handler)
     }))
-    .map_err(|_| crate::solver::SolverError::InternalInvariant.into())
+    .map_err(|_| crate::solver::lng_core_solver::SatError::InternalInvariant.into())
 }

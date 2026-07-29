@@ -1,8 +1,8 @@
 use crate::errors::LngResult;
+use crate::solver::lng_core_solver::SatSolver;
 use crate::solver::lng_core_solver::Tristate;
 use crate::solver::lng_core_solver::Tristate::False;
 use crate::solver::lng_core_solver::tests::generate_pigeon_hole;
-use crate::solver::lng_core_solver::{SatSolver, SatSolverConfig};
 use crate::util::test_util::F;
 use Tristate::True;
 

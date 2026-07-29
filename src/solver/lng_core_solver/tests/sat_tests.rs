@@ -8,9 +8,9 @@ use crate::errors::LngResult;
 use crate::formulas::CType::{EQ, GE};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, ToFormula, Variable};
 use crate::io::read_cnf;
-use crate::solver::SolverError;
 use crate::solver::lng_core_solver::ClauseMinimization;
 use crate::solver::lng_core_solver::CnfMethod::{FactoryCnf, FullPgOnSolver, PgOnSolver};
+use crate::solver::lng_core_solver::SatError;
 use crate::solver::lng_core_solver::Tristate::{False, True};
 use crate::solver::lng_core_solver::functions::{
     ModelEnumerationConfig, enumerate_models_with_config,
@@ -535,7 +535,7 @@ fn test_up_zero_literals_for_undef_state() -> LngResult<()> {
     let mut solver = SatSolver::new();
     solver.add("a & b".to_formula(f), f)?;
     let res = solver.up_zero_literals();
-    assert_eq!(res, Err(SolverError::NotSolved.into()));
+    assert_eq!(res, Err(SatError::NotSolved.into()));
 
     Ok(())
 }

@@ -14,6 +14,8 @@ extern crate pest_derive;
 
 /// Backbone computation.
 pub mod backbones;
+/// Backends for computations.
+pub mod backends;
 mod collections;
 /// Various datastructures.
 pub mod datastructures;

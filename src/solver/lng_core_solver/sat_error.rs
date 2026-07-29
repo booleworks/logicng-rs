@@ -1,11 +1,10 @@
 #![allow(missing_docs)]
-#[cfg(feature = "open_wbo")]
-use logicng_open_wbo_sys::ffi;
 use thiserror::Error;
 
+/// Errors produced by SAT solvers and SAT-based solver functions.
 #[derive(Debug, Error, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum SolverError {
+pub enum SatError {
     #[error("solver is in undef state, call 'sat' before")]
     NotSolved,
 
@@ -22,7 +21,10 @@ pub enum SolverError {
     UnsatCoreWithAssumptions,
 
     #[error("bound for optimization function was too large: {bound:?}")]
-    OptimizationBoundTooLarge { bound: usize },
+    OptimizationBoundTooLarge {
+        /// Bound which could not be represented.
+        bound: usize,
+    },
 
     #[error("optimization requires a satisfiable solver state")]
     OptimizationOnUnsat,
@@ -39,22 +41,6 @@ pub enum SolverError {
     #[error("SAT solver violated an internal invariant")]
     InternalInvariant,
 
-    #[cfg(feature = "open_wbo")]
-    #[error("openwbo error: {error:?}")]
-    ExternalError { error: ffi::OpenWboError },
-
-    #[error("invalid openwbo response")]
+    #[error("invalid SAT solver response")]
     InvalidExternalResponse,
-
-    #[error("illegal openwbo configuration")]
-    IllegalConfig,
-
-    #[error("openwbo configuration does not support weighted clauses")]
-    IllegalWeightedClause,
-
-    #[error("openwbo solver does not have a model")]
-    IllegalModelRequest,
-
-    #[error("failed to initialize the openwbo solver")]
-    InitializationError,
 }

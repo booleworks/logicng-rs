@@ -1,388 +1,122 @@
-use crate::datastructures::{Assignment, Model};
-use crate::errors::LngResult;
-use crate::formulas::{EncodedFormula, Formula, FormulaFactory, Variable};
-use crate::handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler};
-use crate::solver::maxsat::maxsat_ffi::OpenWboSolver;
-use crate::solver::maxsat::{MaxSatConfig, PbEncoding};
-use std::collections::BTreeSet;
-use std::fmt::Debug;
+use std::{
+    any::Any,
+    collections::BTreeSet,
+    ops::{Deref, DerefMut},
+};
 
-/// Algorithms support for solving the MaxSAT problem with a [`MaxSatSolver`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Algorithm {
-    /// Weighted Boolean Optimization
-    Wbo,
-    /// OLL
-    Oll,
-    /// Linear Sat-Unsat
-    LinearSu,
-    /// Partial Seminal-core guided algorithm
-    PartMsu3,
-    /// Seminal-core guided algorithm
-    Msu3,
-}
+use crate::{
+    backends::{
+        BackendId, Capabilities, ComputationContext, MaxSatBackend, MaxSatBackendFactory,
+        MaxSatResult,
+    },
+    errors::LngResult,
+    formulas::{EncodedFormula, Formula, FormulaFactory, Variable},
+    handlers::{CancelableResult, ComputationHandler, LngComputation, LngEvent, NopHandler},
+    solver::maxsat::MaxSatError,
+    util::exceptions::panic_unexpected_formula_type,
+};
 
-impl Algorithm {
-    /// Returns `true` if this algorithm supports with the given configuration
-    /// the weighted MaxSAT problem. Otherwise, it returns `false`.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default();
-    ///
-    /// assert!(Algorithm::Wbo.weighted(&config));
-    /// assert!(!Algorithm::Msu3.weighted(&config));
-    /// ```
-    pub fn weighted(&self, config: &MaxSatConfig) -> bool {
-        match self {
-            Self::Wbo | Self::Oll => true,
-            Self::LinearSu => config.pb_encoding != PbEncoding::Adder,
-            Self::PartMsu3 | Self::Msu3 => false,
-        }
-    }
-}
-
-/// Stores different metrics measured during the execution of the MaxSAT
-/// algorithm.
-#[derive(Debug, Clone, PartialEq)]
-pub struct MaxSatStats {
-    /// Upper bound cost.
-    pub ub_cost: Option<u64>,
-    /// Number of satisfiable calls.
-    pub nb_satisfied: u64,
-    /// Number of cores.
-    pub nb_cores: u64,
-    /// Average of the sizes of cores.
-    pub avg_core_size: f64,
-    /// Number of symmetry clauses.
-    pub nb_sym_clauses: u64,
-}
-
-/// Result returned by an MaxSAT algorithm.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum MaxSatResult {
-    /// The hard clauses on the solver are already unsatisfiable, optimization
-    /// could not be performed.
-    Unsatisfiable,
-    /// An optimal solution was found + the result as value.
-    Optimum(u64),
-    /// If no search has been executed yet or the search was aborted by the
-    /// algorithm and yielded no result.
-    Undef,
-}
-
-const SEL_PREFIX: &str = "@SEL_SOFT_";
-
-/// A solver for the MaxSAT problem.
+/// A backend-independent MaxSAT solver.
 ///
-/// [`MaxSatSolver`] does not implement the algorithms itself, but makes use of
-/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as a library. `OpenWBO` allows
-/// you to use different algorithms, depending on your MaxSAT flavor and your
-/// specific use case.
-///
-/// For more information about the general MaxSAT problem read the documentation of the [`maxsat module`](crate::solver::maxsat)
-///
-/// # Usage
-///
-/// You can create a new instance by using
-/// [`MaxSatSolver::new`](crate::solver::maxsat::MaxSatSolver::new) or
-/// [`MaxSatSolver::from_config`](crate::solver::maxsat::MaxSatSolver::from_config).
-/// Both constructors take an [`Algorithm`](crate::solver::maxsat::Algorithm) as
-/// argument, which will be used by the solver. Additionally, `from_config`
-/// takes a `MaxSatConfig`, which allows you to configure certain details
-/// (encodings, strategies) of the algorithm. Solver created by `new` use a
-/// default configuration. Once you have created a solver, you can no longer
-/// modify the algorithm or the configuration.
-///
-/// ```
-/// # use logicng::solver::maxsat::*;
-/// # use std::error::Error;
-/// # fn main() -> Result<(), Box<dyn Error>> {
-/// let solver1 = MaxSatSolver::new(Algorithm::Oll)?; //Solver with default configuration
-///
-/// let config = MaxSatConfig::default()
-///                 .cardinal(CardinalEncoding::MTotalizer)
-///                 .pb(PbEncoding::Gte);
-/// let solver2 = MaxSatSolver::from_config(Algorithm::LinearSu, config)?; //With custom configuration
-/// # Ok(())
-/// # }
-/// ```
-///
-/// Hard formulas are added with the method
-/// [`MaxSatSolver::add_hard_formula`](crate::solver::maxsat::MaxSatSolver::add_hard_formula),
-/// soft clauses are added with
-/// [`MaxSatSolver::add_soft_formula`](crate::solver::maxsat::MaxSatSolver::add_soft_formula),
-/// which takes a positive weight. For an unweighted clause, use the weight 1.
-/// After you added all formulas, you can use the method `MaxSatSolver::solve`
-/// to solve the problem.
+/// The solver owns a low-level backend and provides the public convenience
+/// operations for formula encoding, solving, cancellation, and reset.
+/// Applications usually use [`Self::add_hard_formula`],
+/// [`Self::add_soft_formula`], [`Self::solve`], and
+/// [`Self::solve_with_handler`].
 pub struct MaxSatSolver {
-    algorithm: Algorithm,
-    config: MaxSatConfig,
-    solver: OpenWboSolver,
-    selector_variables: BTreeSet<Variable>,
+    backend: Box<dyn MaxSatBackend>,
+    context: MaxSatContext,
 }
 
 impl MaxSatSolver {
-    /// Creating a new [`MaxSatSolver`] instance with the given algorithm and the default configuration.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the OpenWBO solver cannot be initialized for the
-    /// chosen algorithm and default configuration.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn new(algorithm: Algorithm) -> LngResult<Self> {
-        Self::from_config(algorithm, MaxSatConfig::default())
+    /// Creates a solver which delegates its low-level operations to `backend`.
+    pub fn new(backend: Box<dyn MaxSatBackend>) -> Self {
+        Self {
+            backend,
+            context: MaxSatContext::default(),
+        }
     }
 
-    /// Creating a new [`MaxSatSolver`] instance with given algorithm and configuration.
+    /// Creates a solver using a backend factory.
     ///
     /// # Errors
     ///
-    /// Returns an error if the configuration is invalid or the OpenWBO solver
+    /// Returns an error if the backend cannot be initialized.
+    pub fn from_factory(factory: &dyn MaxSatBackendFactory) -> LngResult<Self> {
+        Ok(Self::new(factory.new_backend()?))
+    }
+
+    /// Creates a solver using the MaxSAT backend in a computation context.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no MaxSAT backend is configured or if the backend
     /// cannot be initialized.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let config = MaxSatConfig::default();
-    ///
-    /// let solver = MaxSatSolver::from_config(Algorithm::Oll, config);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn from_config(algorithm: Algorithm, config: MaxSatConfig) -> LngResult<Self> {
-        let solver = OpenWboSolver::new(&algorithm, &config)?;
-
-        Ok(Self {
-            algorithm,
-            config,
-            solver,
-            selector_variables: BTreeSet::new(),
-        })
+    pub fn from_context(context: &ComputationContext) -> LngResult<Self> {
+        let factory = context
+            .backends
+            .maxsat
+            .as_deref()
+            // TODO default Rust implementation later
+            .ok_or(MaxSatError::NoBackendConfigured)?;
+        Self::from_factory(factory)
     }
 
-    /// Returns `true` if this solver is capable of solving the weighted MaxSAT
-    /// problem.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let solver1 = MaxSatSolver::new(Algorithm::Oll)?;
-    /// let solver2 = MaxSatSolver::new(Algorithm::Msu3)?;
-    ///
-    /// assert!(solver1.is_weighted());
-    /// assert!(!solver2.is_weighted());
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn is_weighted(&self) -> bool {
-        self.algorithm.weighted(&self.config)
+    /// Returns the identifier of this solver.
+    pub fn id(&self) -> BackendId {
+        self.backend.backend_id()
     }
 
-    /// Resets the solver.
-    ///
-    /// This will keep the algorithm and configuration, but will clear all
-    /// results and formulas on the solver.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{FormulaFactory, ToFormula};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    ///
-    /// solver.add_hard_formula("A".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(1, "~A".to_formula(&f), &f)?;
-    /// let res = solver.solve()?;
-    /// assert_eq!(res, MaxSatResult::Optimum(1));
-    ///
-    /// solver.reset();
-    ///
-    /// solver.add_hard_formula("A".to_formula(&f), &f)?;
-    /// let res = solver.solve()?;
-    /// assert_eq!(res, MaxSatResult::Optimum(0));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn reset(&mut self) {
-        // Algorithm and Config can not be changed. Therefore, we can expect that we can create this solver,
-        // because otherwise it would have failed in the constructor.
-        self.solver = OpenWboSolver::new(&self.algorithm, &self.config)
-            .expect("Failed to reset the MaxSAT solver!");
-        self.selector_variables.clear();
+    /// Returns the features supported by this solver's current configuration.
+    pub fn capabilities(&self) -> Capabilities {
+        self.backend.backend_capabilities()
     }
 
-    /// Adds a hard formula to the solver.
+    /// Returns this solver as an incremental/decremental solver, if supported.
     ///
-    /// Every result of a MaxSAT problem must fulfill all hard formulas on the solver.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the formula cannot be encoded as CNF or if OpenWBO
-    /// rejects one of the resulting hard clauses.
+    /// A return value of `None` means that states cannot be saved and restored
+    /// for this solver.
     ///
     /// # Example
     ///
-    /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{FormulaFactory, ToFormula};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    ///
-    /// solver.add_hard_formula("A".to_formula(&f), &f)?;
-    /// # Ok(())
+    /// # fn supports_state_restoration(solver: &mut MaxSatSolver) -> bool {
+    /// solver.as_inc_dec().is_some()
     /// # }
     /// ```
-    pub fn add_hard_formula(
-        &mut self,
-        formula: EncodedFormula,
-        f: &FormulaFactory,
-    ) -> LngResult<()> {
-        self.add_cnf(None, f.cnf_of(formula)?, f)
-    }
-
-    /// Adds a soft formula to the solver.
-    ///
-    /// A soft formula is associated with a weight. The MaxSAT solver minimizes
-    /// the sum of weights of unsatisfied soft formula. If an algorithm does not
-    /// support the weighted MaxSAT problem, the weight must be equals to 1.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{FormulaFactory, ToFormula};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    ///
-    /// solver.add_soft_formula(1, "A".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(2, "~A".to_formula(&f), &f)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// Adding a weighted formula to a non-weighted algorithm, will return a
-    /// [`MaxSatError::IllegalWeightedClause`](`MaxSatError`) error:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{FormulaFactory, ToFormula};
-    /// # use logicng::solver::SolverError;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Msu3)?;
-    /// assert!(!solver.is_weighted());
-    ///
-    /// let res = solver.add_soft_formula(3, "A".to_formula(&f), &f);
-    /// assert_eq!(res, Err(SolverError::IllegalWeightedClause.into()));
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the weight is invalid for the selected algorithm, if
-    /// the formula cannot be encoded as CNF, or if OpenWBO rejects one of the
-    /// resulting clauses.
-    pub fn add_soft_formula(
-        &mut self,
-        weight: u64,
-        formula: EncodedFormula,
-        f: &FormulaFactory,
-    ) -> LngResult<()> {
-        if (formula.is_or() || formula.is_literal()) && formula.is_cnf(f) {
-            self.add_clause(Some(weight), formula, f)
-        } else {
-            let sel_var_name = format!("{SEL_PREFIX}{}", self.selector_variables.len());
-            let sel_var = f.var(sel_var_name);
-            self.selector_variables.insert(sel_var);
-            let f1 = f.or([sel_var.negate().into(), formula]);
-            let neg_f = f.negate(formula);
-            let f2 = f.or([neg_f, sel_var.into()]);
-            self.add_hard_formula(f1, f)?;
-            self.add_hard_formula(f2, f)?;
-            self.add_clause(Some(weight), sel_var.into(), f)
-        }
-    }
-
-    /// Solves the MaxSAT problem on this solver and returns the result.
-    ///
-    /// The result of the search is cached. Every additional call to `solve`
-    /// will return that cached value. Furthermore, you can also use [`MaxSatSolver::status`]
-    /// to get the cached value once there is one.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{ToFormula, FormulaFactory};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// solver.add_hard_formula("A & B & (C | D)".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(2, "A => ~B".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(4, "~C".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(8, "~D".to_formula(&f), &f)?;
-    ///
-    /// let result = solver.solve()?;
-    /// assert_eq!(result, MaxSatResult::Optimum(6));
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if OpenWBO reports an error or returns an unexpected
-    /// status.
-    pub fn solve(&mut self) -> LngResult<MaxSatResult> {
-        let status = self.solver.status();
-        if status == Ok(MaxSatResult::Undef) {
-            self.solve_with_handler(&mut NopHandler::new())
-                .map(|result| result.result().expect("nop handler can never abort"))
-        } else {
-            status
-        }
+    pub fn as_inc_dec(&mut self) -> Option<IncDecMaxSatSolver<'_>> {
+        self.backend.as_inc_dec()?;
+        Some(IncDecMaxSatSolver { solver: self })
     }
 
     /// Solves the MaxSAT problem with a computation handler.
     ///
     /// If the computation is canceled after a model was found, the current best
-    /// bound is returned as a [`CancelableResult::Partial`]. The corresponding
-    /// best model can then be obtained with [`Self::model`].
+    /// bound and model are returned as a [`CancelableResult::Partial`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::handlers::{CancelableResult, NopHandler};
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::errors::LngResult;
+    /// # fn solve(solver: &mut MaxSatSolver, f: &FormulaFactory) -> LngResult<()> {
+    /// solver.add_soft_formula(1, "A".to_formula(f), f)?;
+    ///
+    /// let result = solver.solve_with_handler(&mut NopHandler::new())?;
+    /// assert!(matches!(
+    ///     result,
+    ///     CancelableResult::Ok(MaxSatResult::Optimum { bound: 0, .. })
+    /// ));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the backend fails or returns an invalid response.
     pub fn solve_with_handler(
         &mut self,
         handler: &mut dyn ComputationHandler,
@@ -392,20 +126,13 @@ impl MaxSatSolver {
             return Ok(CancelableResult::Canceled(started));
         }
 
-        let status = self.solver.status()?;
-        let result = if status == MaxSatResult::Undef {
-            self.solver.search(handler)?
-        } else {
-            CancelableResult::Ok(status)
-        };
-
+        let result = self.backend.search(handler)?;
+        let result = self.without_selectors(result);
         if result.is_success() {
             let finished = LngEvent::ComputationFinished(LngComputation::MaxSat);
             if !handler.should_resume(finished.clone()) {
                 return Ok(match result.result() {
-                    Some(MaxSatResult::Optimum(bound)) => {
-                        CancelableResult::Partial(MaxSatResult::Optimum(bound), finished)
-                    }
+                    Some(res) => CancelableResult::Partial(res, finished),
                     _ => CancelableResult::Canceled(finished),
                 });
             }
@@ -413,184 +140,340 @@ impl MaxSatSolver {
         Ok(result)
     }
 
-    /// Returns the result of the last search.
-    ///
-    /// If there has not been a search yet, it will return
-    /// [`MaxSatResult::Undef`](`MaxSatResult`).
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{ToFormula, FormulaFactory};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// solver.add_hard_formula("A & B & (C | D)".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(2, "A => ~B".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(4, "~C".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(8, "~D".to_formula(&f), &f)?;
-    ///
-    /// assert_eq!(solver.solve()?, MaxSatResult::Optimum(6));
-    /// assert_eq!(solver.status()?, MaxSatResult::Optimum(6));
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if OpenWBO reports an error or returns an unexpected
-    /// status.
-    pub fn status(&self) -> LngResult<MaxSatResult> {
-        self.solver.status()
-    }
-
-    /// Returns a model (as [`Model`]) which yields the optimal result, if there is one.
-    ///
-    /// If the search has not been executed yet or the result is not an optimum,
-    /// this function returns a
-    /// [`MaxSatError::IllegalModelRequest`](`MaxSatError`) error.
-    ///
-    /// If you need an [`Assignment`] you can use [`MaxSatSolver::assignment`].
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{ToFormula, FormulaFactory};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// solver.add_hard_formula("A & B & (C | D)".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(2, "A => ~B".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(4, "~C".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(8, "~D".to_formula(&f), &f)?;
-    ///
-    /// if let MaxSatResult::Optimum(_) = solver.solve()? {
-    ///     let model = solver.model()?;
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if no optimum model is available or if OpenWBO reports
-    /// an error while extracting the model.
-    pub fn model(&mut self) -> LngResult<Model> {
-        self.solver.model(&self.selector_variables)
-    }
-
-    /// Returns a model (as [`Assignment`]) which yields the optimal result, if
-    /// there is one.
-    ///
-    /// If the search has not been executed yet or the result is not an optimum,
-    /// this function returns a
-    /// [`MaxSatError::IllegalModelRequest`](`MaxSatError`) error.
-    ///
-    /// If you need a [`Model`] you can use [`MaxSatSolver::model`].
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use logicng::formulas::{ToFormula, FormulaFactory};
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let f = FormulaFactory::new();
-    /// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// solver.add_hard_formula("A & B & (C | D)".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(2, "A => ~B".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(4, "~C".to_formula(&f), &f)?;
-    /// solver.add_soft_formula(8, "~D".to_formula(&f), &f)?;
-    ///
-    /// if let MaxSatResult::Optimum(_) = solver.solve()? {
-    ///     let model = solver.assignment()?;
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if no optimum model is available or if OpenWBO reports
-    /// an error while extracting the assignment.
-    pub fn assignment(&mut self) -> LngResult<Assignment> {
-        self.solver.assignment(&self.selector_variables)
-    }
-
-    /// Returns the algorithm used by this solver.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// assert_eq!(solver.algorithm(), Algorithm::Oll);
-    /// # Ok(())
-    /// # }
-    pub fn algorithm(&self) -> Algorithm {
-        self.algorithm.clone()
-    }
-
-    /// Returns stats measured during the search.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// # use std::error::Error;
-    /// # fn main() -> Result<(), Box<dyn Error>> {
-    /// let solver = MaxSatSolver::new(Algorithm::Oll)?;
-    /// // ...
-    /// // solver.search()?;
-    /// // ...
-    /// solver.stats();
-    /// # Ok(())
-    /// # }
-    pub fn stats(&self) -> MaxSatStats {
-        self.solver.stats()
-    }
-
-    fn add_cnf(
-        &mut self,
-        weight: Option<u64>,
-        formula: EncodedFormula,
-        f: &FormulaFactory,
-    ) -> LngResult<()> {
-        match formula.unpack(f) {
-            Formula::True => Ok(()),
-            Formula::False | Formula::Lit(_) | Formula::Or(_) => {
-                self.add_clause(weight, formula, f)
+    fn without_selectors(
+        &self,
+        result: CancelableResult<MaxSatResult>,
+    ) -> CancelableResult<MaxSatResult> {
+        match result {
+            CancelableResult::Ok(result) => {
+                CancelableResult::Ok(self.result_without_selectors(result))
             }
-            Formula::And(ops) => {
-                for op in ops {
-                    self.add_clause(weight, op, f)?;
+            CancelableResult::Partial(result, event) => {
+                CancelableResult::Partial(self.result_without_selectors(result), event)
+            }
+            CancelableResult::Canceled(event) => CancelableResult::Canceled(event),
+        }
+    }
+
+    fn result_without_selectors(&self, result: MaxSatResult) -> MaxSatResult {
+        match result {
+            MaxSatResult::Optimum { bound, model } => {
+                let pos = model
+                    .pos()
+                    .iter()
+                    .filter(|variable| !self.context.selectors.contains(variable))
+                    .copied()
+                    .collect::<Vec<_>>();
+                let neg = model
+                    .neg()
+                    .iter()
+                    .filter(|variable| !self.context.selectors.contains(variable))
+                    .copied()
+                    .collect::<Vec<_>>();
+                MaxSatResult::Optimum {
+                    bound,
+                    model: crate::datastructures::Model::new(pos, neg),
                 }
-                Ok(())
             }
-            _ => panic!("Formula must be in cnf form!"),
+            other => other,
         }
     }
 
-    fn add_clause(
+    /// Solves the MaxSAT problem on this solver and returns the result.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::formulas::{ToFormula, FormulaFactory};
+    /// # use logicng::errors::LngResult;
+    /// # fn solve(solver: &mut MaxSatSolver, f: &FormulaFactory) -> LngResult<()> {
+    /// solver.add_hard_formula("A & B & (C | D)".to_formula(f), f)?;
+    /// solver.add_soft_formula(2, "A => ~B".to_formula(f), f)?;
+    /// solver.add_soft_formula(4, "~C".to_formula(f), f)?;
+    /// solver.add_soft_formula(8, "~D".to_formula(f), f)?;
+    ///
+    /// let result = solver.solve()?;
+    /// assert!(matches!(
+    ///     result,
+    ///     MaxSatResult::Optimum { bound: 6, .. }
+    /// ));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the solver backend fails or returns an invalid
+    /// response.
+    pub fn solve(&mut self) -> LngResult<MaxSatResult> {
+        Ok(self
+            .solve_with_handler(&mut NopHandler::new())?
+            .result()
+            .expect("nop handler can never abort"))
+    }
+
+    /// Adds a hard formula to the solver.
+    ///
+    /// Every result of a MaxSAT problem must fulfill all hard formulas on the solver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the formula cannot be encoded as CNF or if the
+    /// solver backend rejects one of the resulting hard clauses.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::errors::LngResult;
+    /// # fn add(solver: &mut MaxSatSolver, f: &FormulaFactory) -> LngResult<()> {
+    ///
+    /// solver.add_hard_formula("A".to_formula(f), f)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn add_hard_formula(
         &mut self,
-        weight: Option<u64>,
         formula: EncodedFormula,
         f: &FormulaFactory,
     ) -> LngResult<()> {
-        match weight {
-            Some(w) => self.solver.add_soft_clause(w, &formula, f),
-            None => self.solver.add_hard_clause(&formula, f),
+        add_cnf(self, None, f.cnf_of(formula)?, f)
+    }
+
+    /// Adds a soft formula to the solver.
+    ///
+    /// A soft formula is associated with a weight. The MaxSAT solver minimizes
+    /// the sum of the weights of unsatisfied soft formulas. If an algorithm
+    /// does not support weighted MaxSAT, every soft formula must have weight 1.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::errors::LngResult;
+    /// # fn add(solver: &mut MaxSatSolver, f: &FormulaFactory) -> LngResult<()> {
+    ///
+    /// solver.add_soft_formula(1, "A".to_formula(f), f)?;
+    /// solver.add_soft_formula(2, "~A".to_formula(f), f)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Adding a weighted formula to an algorithm which only supports
+    /// unweighted MaxSAT returns [`MaxSatError::IllegalWeightedClause`]:
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::solver::maxsat::MaxSatError;
+    /// # fn check(solver: &mut MaxSatSolver, f: &FormulaFactory) {
+    /// if !solver.capabilities().weights {
+    ///     let result = solver.add_soft_formula(3, "A".to_formula(f), f);
+    ///     assert_eq!(result, Err(MaxSatError::IllegalWeightedClause.into()));
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the weight is invalid for the selected algorithm, if
+    /// the formula cannot be encoded as CNF, or if the solver backend rejects
+    /// one of the resulting clauses.
+    pub fn add_soft_formula(
+        &mut self,
+        weight: u64,
+        formula: EncodedFormula,
+        f: &FormulaFactory,
+    ) -> LngResult<()> {
+        if weight != 1 && !self.backend.backend_capabilities().weights {
+            return Err(MaxSatError::IllegalWeightedClause.into());
         }
+        if (formula.is_or() || formula.is_literal()) && formula.is_cnf(f) {
+            add_clause(self, Some(weight), formula, f)
+        } else {
+            let sel_var = f.new_auxiliary_variable("AUX_MAXSAT");
+            self.context.selectors.insert(sel_var);
+            let f1 = f.or([sel_var.negate().into(), formula]);
+            let neg_f = f.negate(formula);
+            let f2 = f.or([neg_f, sel_var.into()]);
+            self.add_hard_formula(f1, f)?;
+            self.add_hard_formula(f2, f)?;
+            add_clause(self, Some(weight), sel_var.into(), f)
+        }
+    }
+
+    /// Clears all formulas, auxiliary state, and results from this solver.
+    ///
+    /// The concrete solver type and its configuration are retained.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::solver::maxsat::*;
+    /// # use logicng::errors::LngResult;
+    /// # fn reuse(solver: &mut MaxSatSolver, f: &FormulaFactory) -> LngResult<()> {
+    /// solver.add_hard_formula("A".to_formula(f), f)?;
+    ///
+    /// solver.reset();
+    /// solver.add_hard_formula("~A".to_formula(f), f)?;
+    /// assert!(matches!(solver.solve()?, MaxSatResult::Optimum { .. }));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn reset(&mut self) {
+        self.backend.reset();
+        self.context.clear();
+    }
+}
+
+/// State owned by the backend-independent MaxSAT convenience layer.
+#[derive(Clone, Default)]
+struct MaxSatContext {
+    selectors: BTreeSet<Variable>,
+}
+
+impl MaxSatContext {
+    fn clear(&mut self) {
+        self.selectors.clear();
+    }
+}
+
+/// Opaque snapshot of an incremental/decremental MaxSAT solver.
+///
+/// A state is created with [`IncDecMaxSatSolver::save_state`] and can later be
+/// passed to [`IncDecMaxSatSolver::load_state`]. The payload is owned and
+/// interpreted by the backend identified by [`Self::backend`].
+pub struct MaxSatState {
+    backend: BackendId,
+    payload: Box<dyn Any + Send>,
+    context: MaxSatContext,
+}
+
+impl MaxSatState {
+    /// Returns the identifier of the backend which created this state.
+    pub const fn backend(&self) -> BackendId {
+        self.backend
+    }
+}
+
+/// A temporary view of a solver whose backend supports saving and restoring
+/// state.
+pub struct IncDecMaxSatSolver<'a> {
+    solver: &'a mut MaxSatSolver,
+}
+
+impl IncDecMaxSatSolver<'_> {
+    /// Saves the current solver state.
+    ///
+    /// The returned state can be used to discard formulas added afterwards by
+    /// restoring it with [`Self::load_state`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use logicng::errors::LngResult;
+    /// # use logicng::formulas::{FormulaFactory, ToFormula};
+    /// # use logicng::solver::maxsat::*;
+    /// # fn temporarily_add_formula(
+    /// #     solver: &mut IncDecMaxSatSolver<'_>,
+    /// #     f: &FormulaFactory,
+    /// # ) -> LngResult<()> {
+    /// let state = solver.save_state();
+    /// solver.add_hard_formula("A".to_formula(f), f)?;
+    ///
+    /// solver.load_state(&state)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn save_state(&mut self) -> MaxSatState {
+        let backend = self.solver.backend.backend_id();
+        let payload = self
+            .solver
+            .backend
+            .as_inc_dec()
+            .expect("incremental capability was checked when creating the view")
+            .save_state();
+        MaxSatState {
+            backend,
+            payload,
+            context: self.solver.context.clone(),
+        }
+    }
+
+    /// Restores a previously saved solver state.
+    ///
+    /// Formulas and solver data introduced after the corresponding call to
+    /// [`Self::save_state`] are discarded.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the state was produced by an incompatible backend,
+    /// is invalid for this solver configuration, or cannot be restored.
+    pub fn load_state(&mut self, state: &MaxSatState) -> LngResult<()> {
+        if state.backend != self.solver.backend.backend_id() {
+            return Err(MaxSatError::InvalidState {
+                expected: self.solver.backend.backend_id(),
+                actual: state.backend,
+            }
+            .into());
+        }
+        self.solver
+            .backend
+            .as_inc_dec()
+            .expect("incremental capability was checked when creating the view")
+            .load_state(state.payload.as_ref())?;
+        self.solver.context = state.context.clone();
+        Ok(())
+    }
+}
+
+impl Deref for IncDecMaxSatSolver<'_> {
+    type Target = MaxSatSolver;
+
+    fn deref(&self) -> &Self::Target {
+        self.solver
+    }
+}
+
+impl DerefMut for IncDecMaxSatSolver<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.solver
+    }
+}
+
+fn add_cnf(
+    solver: &mut MaxSatSolver,
+    weight: Option<u64>,
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+) -> LngResult<()> {
+    match formula.unpack(f) {
+        Formula::True => Ok(()),
+        Formula::False | Formula::Lit(_) | Formula::Or(_) => add_clause(solver, weight, formula, f),
+        Formula::And(ops) => {
+            for op in ops {
+                add_clause(solver, weight, op, f)?;
+            }
+            Ok(())
+        }
+        _ => panic_unexpected_formula_type(formula, Some(f)),
+    }
+}
+
+fn add_clause(
+    solver: &mut MaxSatSolver,
+    weight: Option<u64>,
+    formula: EncodedFormula,
+    f: &FormulaFactory,
+) -> LngResult<()> {
+    match weight {
+        Some(w) => solver.backend.add_soft_clause(w, formula, f),
+        None => solver.backend.add_hard_clause(formula, f),
     }
 }

@@ -132,7 +132,7 @@ impl<'s, B: PartialEq> SatCall<'s, B> {
     /// Returns the unsatisfiable core when proof generation is enabled and the call was unsatisfiable.
     pub fn unsat_core(&mut self, f: &FormulaFactory) -> LngResult<Option<UnsatCore<B>>> {
         if !self.solver.config().proof_generation {
-            Err(crate::solver::SolverError::ProofGenerationRequired.into())
+            Err(crate::solver::lng_core_solver::SatError::ProofGenerationRequired.into())
         } else if !matches!(
             self.sat_result.as_ref().map_err(Clone::clone)?.result_ref(),
             Some(false)

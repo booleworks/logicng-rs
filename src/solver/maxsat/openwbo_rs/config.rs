@@ -1,3 +1,39 @@
+/// Algorithms supported by the Rust OpenWBO backend.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Algorithm {
+    /// Weighted Boolean Optimization
+    Wbo,
+    /// OLL
+    Oll,
+    /// Linear Sat-Unsat
+    LinearSu,
+    /// Core-guided MSU3 algorithm.
+    Msu3,
+}
+
+impl Algorithm {
+    /// Returns whether this algorithm supports weighted MaxSAT with the given
+    /// configuration.
+    ///
+    /// # Example
+    ///
+    /// Basic usage:
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// let config = OpenWboConfig::default();
+    ///
+    /// assert!(Algorithm::Wbo.weighted(&config));
+    /// assert!(!Algorithm::Msu3.weighted(&config));
+    /// ```
+    pub fn weighted(&self, config: &OpenWboConfig) -> bool {
+        match self {
+            Self::Wbo | Self::Oll => true,
+            Self::LinearSu => config.pb_encoding != PbEncoding::Adder,
+            Self::Msu3 => false,
+        }
+    }
+}
+
 /// The pseudo-boolean encoding.
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum PbEncoding {
@@ -7,6 +43,19 @@ pub enum PbEncoding {
     Gte,
     /// Adder encoding.
     Adder,
+}
+
+/// The incremental strategy for cardinality and pseudo-Boolean encodings.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum IncrementalStrategy {
+    /// No incremental encoding.
+    None,
+    /// Blocking incremental encoding.
+    Blocking,
+    /// Weakening incremental encoding.
+    Weakening,
+    /// Iterative incremental encoding.
+    Iterative,
 }
 
 /// The cardinality encoding.
@@ -49,30 +98,7 @@ pub enum Symmetry {
     Sym(i32),
 }
 
-/// Merge strategy of the solver.
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
-pub enum MergeStrategy {
-    /// Sequential strategy.
-    Sequential,
-    /// Sequential sorted strategy.
-    SequentialSorted,
-    /// Binary strategy.
-    Binary,
-}
-
-/// Graph type used by the solver.
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
-pub enum GraphType {
-    /// Vig.
-    Vig,
-    /// CVig.
-    CVig,
-    /// Res.
-    Res,
-}
-
-/// Configuration for
-/// [`MaxSatSolver`](crate::solver::maxsat::MaxSatSolver).
+/// Configuration for the Rust OpenWBO backend.
 ///
 /// # Usage
 ///
@@ -80,53 +106,69 @@ pub enum GraphType {
 /// ```
 /// # use logicng::solver::maxsat::*;
 ///
-/// let default_config = MaxSatConfig::default();
-/// let custom_config = MaxSatConfig::default()
+/// let default_config = OpenWboConfig::default();
+/// let custom_config = OpenWboConfig::default()
 ///                 .cardinal(CardinalEncoding::MTotalizer)
 ///                 .pb(PbEncoding::Gte);
 /// ```
 ///
-/// Warning: Not all configurations allowed by `MaxSatConfig` are valid
-/// configurations. Some algorithms do only work under certain combinations of
-/// settings and the algorithms will ignore settings which are not relevant for
-/// it. The default configuration works for all algorithms.
+/// Not every option applies to every algorithm. Algorithms ignore settings
+/// which are not relevant to them. Use [`Algorithm::weighted`] to determine
+/// whether a selected algorithm and encoding support weighted clauses. The
+/// default configuration is valid for every algorithm.
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
-pub struct MaxSatConfig {
-    /// Pseudo-boolean encoding
+pub struct OpenWboConfig {
+    /// The MaxSAT algorithm.
+    pub algorithm: Algorithm,
+    /// Pseudo-Boolean encoding.
     pub pb_encoding: PbEncoding,
-    /// Cardinality encoding
+    /// Cardinality encoding.
     pub cardinal_encoding: CardinalEncoding,
-    /// Weight strategy
+    /// Incremental encoding strategy.
+    pub incremental_strategy: IncrementalStrategy,
+    /// Weight strategy used by WBO.
     pub weight_strategy: WeightStrategy,
-    /// Merge strategy
-    pub merge_strategy: MergeStrategy,
-    /// Graph type
-    pub graph_type: GraphType,
-    /// Print verbosity
-    pub verbosity: Verbosity,
-    /// Symmetry
+    /// Symmetry-breaking configuration used by WBO.
     pub symmetry: Symmetry,
-    /// bmo
+    /// Whether LinearSU may use bounded multilevel optimization.
     pub bmo: bool,
 }
 
-impl Default for MaxSatConfig {
+impl Default for OpenWboConfig {
     fn default() -> Self {
         Self {
+            algorithm: Algorithm::Oll,
             pb_encoding: PbEncoding::Swc,
             cardinal_encoding: CardinalEncoding::Totalizer,
+            incremental_strategy: IncrementalStrategy::None,
             weight_strategy: WeightStrategy::None,
-            merge_strategy: MergeStrategy::Binary,
-            graph_type: GraphType::Res,
             symmetry: Symmetry::Sym(i32::MAX),
-            verbosity: Verbosity::None,
             bmo: true,
         }
     }
 }
 
-impl MaxSatConfig {
-    /// Updates [`PbEncoding`].
+impl OpenWboConfig {
+    /// Selects the MaxSAT algorithm.
+    ///
+    /// The chosen algorithm determines which other configuration options and
+    /// weighted-problem variants are supported.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use logicng::solver::maxsat::*;
+    /// let config = OpenWboConfig::default().algorithm(Algorithm::Msu3);
+    ///
+    /// assert_eq!(config.algorithm, Algorithm::Msu3);
+    /// ```
+    #[must_use]
+    pub const fn algorithm(mut self, algorithm: Algorithm) -> Self {
+        self.algorithm = algorithm;
+        self
+    }
+
+    /// Selects the pseudo-Boolean encoding.
     ///
     /// Possible values:
     /// - `Swc` (default)
@@ -136,14 +178,14 @@ impl MaxSatConfig {
     /// `PbEncoding` is used by
     /// [`Algorithm::LinearSu`](crate::solver::maxsat::Algorithm).
     /// `LinearSu` in combination with the `Adder` encoding does not support
-    /// weighted ``MaxSat`` problems.
+    /// weighted MaxSAT problems.
     ///
     /// # Example
     ///
     /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
+    /// let config = OpenWboConfig::default()
     ///         // ...
     ///         .pb(PbEncoding::Adder)
     ///         // ...
@@ -155,7 +197,7 @@ impl MaxSatConfig {
         self
     }
 
-    /// Updates [`CardinalEncoding`].
+    /// Selects the cardinality encoding.
     ///
     /// Possible values:
     /// - `CNetworks`
@@ -170,7 +212,7 @@ impl MaxSatConfig {
     /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
+    /// let config = OpenWboConfig::default()
     ///         // ...
     ///         .cardinal(CardinalEncoding::CNetworks)
     ///         // ...
@@ -182,7 +224,7 @@ impl MaxSatConfig {
         self
     }
 
-    /// Updates [`WeightStrategy`].
+    /// Selects WBO's weight strategy.
     ///
     /// Possible values:
     /// - `None` (default)
@@ -197,7 +239,7 @@ impl MaxSatConfig {
     /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
+    /// let config = OpenWboConfig::default()
     ///         // ...
     ///         .weight(WeightStrategy::Diversify)
     ///         // ...
@@ -209,61 +251,7 @@ impl MaxSatConfig {
         self
     }
 
-    /// Updates [`MergeStrategy`].
-    ///
-    /// Possible values:
-    /// - `Sequential`
-    /// - `SequentialSorted`
-    /// - `Binary` (default)
-    ///
-    /// `MergeStrategy` is used by
-    /// [`Algorithm::PartMsu3`](crate::solver::maxsat::Algorithm).
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
-    ///         // ...
-    ///         .merge(MergeStrategy::Sequential)
-    ///         // ...
-    ///         ;
-    /// ```
-    #[must_use]
-    pub const fn merge(mut self, merge_strategy: MergeStrategy) -> Self {
-        self.merge_strategy = merge_strategy;
-        self
-    }
-
-    /// Updates [`GraphType`].
-    ///
-    /// Possible values:
-    /// - `Vig`
-    /// - `CVig`
-    /// - `Res` (default)
-    ///
-    /// `GraphType` is used by
-    /// [`Algorithm::PartMsu3`](crate::solver::maxsat::Algorithm).
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
-    ///         // ...
-    ///         .graph(GraphType::Vig)
-    ///         // ...
-    ///         ;
-    /// ```
-    #[must_use]
-    pub const fn graph(mut self, graph_type: GraphType) -> Self {
-        self.graph_type = graph_type;
-        self
-    }
-
-    /// Updates [`Symmetry`].
+    /// Selects WBO's symmetry-breaking configuration.
     ///
     /// Possible values:
     /// - `None`
@@ -277,7 +265,7 @@ impl MaxSatConfig {
     /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
+    /// let config = OpenWboConfig::default()
     ///         // ...
     ///         .symmetry(Symmetry::Sym(1000))
     ///         // ...
@@ -286,32 +274,6 @@ impl MaxSatConfig {
     #[must_use]
     pub const fn symmetry(mut self, symmetry: Symmetry) -> Self {
         self.symmetry = symmetry;
-        self
-    }
-
-    /// Updates [`Verbosity`]. When activated the algorithms may output their
-    /// progress and intermediated results.
-    ///
-    /// Possible values:
-    /// - `None` (default)
-    /// - `Some`
-    ///
-    /// `Verbosity` is used by all algorithms.
-    ///
-    /// # Example
-    ///
-    /// Basic usage:
-    /// ```
-    /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
-    ///         // ...
-    ///         .verbosity(Verbosity::Some)
-    ///         // ...
-    ///         ;
-    /// ```
-    #[must_use]
-    pub const fn verbosity(mut self, verb: Verbosity) -> Self {
-        self.verbosity = verb;
         self
     }
 
@@ -325,7 +287,7 @@ impl MaxSatConfig {
     /// Basic usage:
     /// ```
     /// # use logicng::solver::maxsat::*;
-    /// let config = MaxSatConfig::default()
+    /// let config = OpenWboConfig::default()
     ///         // ...
     ///         .bmo(false)
     ///         // ...

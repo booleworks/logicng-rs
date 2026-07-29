@@ -8,7 +8,8 @@ use crate::knowledge_compilation::bdd::BddError;
 use crate::knowledge_compilation::dnnf::DnnfError;
 use crate::operations::OperationError;
 use crate::parser::ParserError;
-use crate::solver::SolverError;
+use crate::solver::lng_core_solver::SatError;
+use crate::solver::maxsat::MaxSatError;
 use crate::util::UtilError;
 
 /// A generic LogicNG result which carries the result or an error
@@ -33,8 +34,11 @@ pub enum LngError {
     #[error("operation: {0}")]
     Operation(#[from] OperationError),
 
-    #[error("solver: {0}")]
-    Solver(#[from] SolverError),
+    #[error("SAT solver: {0}")]
+    Sat(#[from] SatError),
+
+    #[error("MaxSAT solver: {0}")]
+    MaxSat(#[from] MaxSatError),
 
     #[error("graph: {0}")]
     Graph(#[from] GraphError),

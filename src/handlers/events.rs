@@ -30,6 +30,7 @@ pub enum LngEvent {
     EnumerationFoundModels(usize),
     FactorizationCreatedClause(EncodedFormula),
     OptimizationFoundBetterBound(Model),
+    ExternalEvent(String),
 }
 
 impl Display for LngEvent {
@@ -69,6 +70,7 @@ impl Display for LngEvent {
             Self::OptimizationFoundBetterBound(_) => {
                 f.write_str("optimization function found a better bound")
             }
+            Self::ExternalEvent(s) => f.write_str(s),
         }
     }
 }
@@ -91,6 +93,7 @@ pub enum LngComputation {
     Smus,
     Optimization,
     ModelEnumeration,
+    ExternalComputation(&'static str),
 }
 
 impl Display for LngComputation {
@@ -110,6 +113,7 @@ impl Display for LngComputation {
             Self::Smus => "SMUS Computation",
             Self::Optimization => "Optimization Function",
             Self::ModelEnumeration => "Model Enumeration",
+            Self::ExternalComputation(s) => s,
         })
     }
 }

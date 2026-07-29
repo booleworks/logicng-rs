@@ -2,7 +2,7 @@ use crate::datastructures::Model;
 use crate::errors::{LngError, LngResult};
 use crate::formulas::CType::{GT, LT};
 use crate::formulas::{EncodedFormula, FormulaFactory, Literal, Variable};
-use crate::solver::SolverError;
+use crate::solver::lng_core_solver::SatError;
 use crate::solver::lng_core_solver::Tristate::True;
 use crate::solver::lng_core_solver::functions::OptimizationFunction;
 use crate::solver::lng_core_solver::{CnfMethod, SatSolver, SatSolverConfig};
@@ -244,11 +244,11 @@ fn test_incrementality_minimize_and_maximize() -> LngResult<()> {
         let maximum_error = solver.optimize(f, &OptimizationFunction::maximize(literals.clone()));
         assert!(matches!(
             minimum_error,
-            Err(LngError::Solver(SolverError::OptimizationOnUnsat))
+            Err(LngError::Sat(SatError::OptimizationOnUnsat))
         ));
         assert!(matches!(
             maximum_error,
-            Err(LngError::Solver(SolverError::OptimizationOnUnsat))
+            Err(LngError::Sat(SatError::OptimizationOnUnsat))
         ));
     }
 

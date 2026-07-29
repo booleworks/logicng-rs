@@ -16,7 +16,7 @@ pub fn compute_unsat_core<B: PartialEq>(
     f: &FormulaFactory,
 ) -> LngResult<UnsatCore<B>> {
     if !solver.config().proof_generation {
-        return Err(crate::solver::SolverError::ProofGenerationRequired.into());
+        return Err(crate::solver::lng_core_solver::SatError::ProofGenerationRequired.into());
     }
 
     let mut clause2propositions = HashMap::new();
@@ -34,7 +34,7 @@ pub fn compute_unsat_core<B: PartialEq>(
     if clauses.iter().any(Vec::is_empty) {
         let empty_clause = clause2propositions
             .remove(&f.falsum())
-            .ok_or(crate::solver::SolverError::InvalidProofData)?;
+            .ok_or(crate::solver::lng_core_solver::SatError::InvalidProofData)?;
         return Ok(UnsatCore::new(vec![empty_clause], true));
     }
 
@@ -49,7 +49,7 @@ pub fn compute_unsat_core<B: PartialEq>(
                 clause2propositions
                     .get(&get_formula_for_vector(solver, &c, f))
                     .cloned()
-                    .ok_or(crate::solver::SolverError::InvalidProofData)
+                    .ok_or(crate::solver::lng_core_solver::SatError::InvalidProofData)
             })
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
@@ -87,7 +87,7 @@ fn handle_trivial_case<B: PartialEq>(
             }
         }
     }
-    Err(crate::solver::SolverError::InvalidProofData.into())
+    Err(crate::solver::lng_core_solver::SatError::InvalidProofData.into())
 }
 
 fn get_formula_for_vector<B>(

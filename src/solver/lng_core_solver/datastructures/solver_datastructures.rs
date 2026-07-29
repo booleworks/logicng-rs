@@ -1,5 +1,3 @@
-use crate::propositions::Proposition;
-
 /// Internal representation of a variable on the solver.
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[repr(transparent)]

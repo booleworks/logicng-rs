@@ -4,7 +4,7 @@ use crate::datastructures::Assignment;
 use crate::errors::{LngError, LngResult};
 use crate::formulas::{FormulaFactory, Literal, StringLiteral, Variable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A `Model` stores a set of positive and negative [`Variable`]s.
 ///
 /// `Model` stores all variables in [`Vec`]s, this allows for a fast creation of

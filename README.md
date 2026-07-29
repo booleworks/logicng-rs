@@ -43,9 +43,7 @@ functionalities:
   - Incremental/Decremental solver interface
   - Proof generation
   - Optimization with incremental cardinality constraints
-- Optimizing formulas with a MaxSAT solver (integrated
-  [Open-WBO](https://github.com/sat-group/open-wbo)), activate via feature
-  `open_wbo`
+- Optimizing formulas with a MaxSAT solver
 - Knowledge compilation with BDDs or DNNFs
 - Model counting with DNNFs or BDDs
 
@@ -115,12 +113,6 @@ let mut solver = SatSolver::new();
 solver.add(formula, &f).expect("Adding formula failed");
 let result = solver.sat();
 ```
-
-## Features
-
-| Feature     | Description                                         |
-| ----------- | --------------------------------------------------- |
-| `open_wbo`  | Activates MaxSAT solving with Open-WBO.             |
 
 ## Funding
 

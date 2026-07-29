@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use itertools::Itertools;
 use logicng::formulas::{EncodedFormula, FormulaFactory};
 use logicng::io::read_formula;
-use logicng::solver::maxsat::{Algorithm, MaxSatSolver};
+use logicng::solver::maxsat::{MaxSatSolver, OpenWboConfig, RustOpenWboFactory};
 
 /// Test for parallel model maximization with the MaxSat solver
 /// on a multi-threading formula factory.
@@ -40,7 +40,8 @@ fn maximize(thread_count: usize) {
                 }
                 let formula = read_formula(&paths_l[c], &f_l).unwrap();
                 let variables = formula.variables(&f_l);
-                let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+                let cfg = OpenWboConfig::default();
+                let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
                 solver.add_hard_formula(formula, &f_l).unwrap();
                 for var in &*variables {
                     solver

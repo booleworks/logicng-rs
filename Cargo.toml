@@ -17,9 +17,6 @@ repository = "https://github.com/booleworks/logicng-rs"
 [lib]
 crate-type = ["lib"]
 
-[workspace]
-members = ["lib/open_wbo_ffi"]
-
 [dependencies]
 fastrand = "2"
 regex = "1.5.5"
@@ -30,7 +27,6 @@ pest = "2.8"
 pest_derive = "2.8"
 dashmap = "6"
 thiserror = "2"
-logicng-open-wbo-sys = { version = "0.1.0", path = "lib/open_wbo_ffi", optional = true }
 
 # bitvec@1.0.1 and wyz@0.5.1 allow tap@1.0.0 as dependency, but only build with
 # tap@1.0.1 or newer. We need to enforce this version to build with
@@ -41,7 +37,6 @@ tap = { version = "1.0.1", optional = true }
 default = []
 # these tests should only be executed with the release profile, otherwise they take too much time
 long_running_tests = []
-open_wbo = ["dep:logicng-open-wbo-sys"]
 
 [profile.release]
 debug = true # no runtime costs involved
@@ -61,7 +56,6 @@ path = "examples/benches/maximize.rs"
 [[example]]
 name = "maximize_maxsat"
 path = "examples/benches/maximize_maxsat.rs"
-required-features = ["open_wbo"]
 
 [[example]]
 name = "solve"

@@ -36,7 +36,7 @@ pub fn formula_on_solver<B>(
                 .map(|&l| l.variable())
                 .collect::<Box<[Variable]>>();
             let rhs = rhs.try_into().map_err(|_| {
-                crate::solver::SolverError::OptimizationBoundTooLarge { bound: rhs }
+                crate::solver::lng_core_solver::SatError::OptimizationBoundTooLarge { bound: rhs }
             })?;
             formulas.insert(f.cc(CType::LE, rhs, vars)?);
         } else {

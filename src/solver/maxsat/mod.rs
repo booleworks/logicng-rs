@@ -1,7 +1,12 @@
-mod maxsat_config;
-mod maxsat_ffi;
+mod maxsat_error;
 mod maxsat_solver;
+/// MaxSAT algorithms and encodings ported from OpenWBO to Rust.
+pub mod openwbo_rs;
 
+pub use crate::backends::MaxSatResult;
+pub use maxsat_error::*;
+pub use maxsat_solver::*;
+pub use openwbo_rs::*;
 /// Provides a solver for MaxSAT problems.
 ///
 /// Given an unsatisfiable formula in CNF, the MaxSAT problem is the problem of
@@ -43,13 +48,15 @@ mod maxsat_solver;
 ///    the solvers.
 ///
 ///
-/// # MaxSAT Algorithms in LogicNG
+/// # MaxSAT Algorithms and Implementations
 ///
-/// LogicNG Rust does not implement the algorithms itself, but makes use of
-/// [OpenWBO](http://sat.inesc-id.pt/open-wbo/) as an library. `OpenWBO` allows
-/// you to use different algorithms, depending on your MaxSAT flavor and your
-/// specific use case. There are two orthogonal strategies to solve MaxSAT
-/// problems:
+/// The generic [`MaxSatSolver`] interface supports different solver backends
+/// and algorithms. This crate includes the pure-Rust [`RustOpenWboBackend`],
+/// which is created most conveniently through [`RustOpenWboFactory`]. Its
+/// algorithms are ports of algorithms from
+/// [OpenWBO](https://github.com/sat-group/open-wbo).
+///
+/// There are two orthogonal strategies to solve MaxSAT problems:
 ///
 /// 1. Based on linear search
 /// 2. Based on producing and iteratively relaxing unsatisfiable cores
@@ -64,51 +71,44 @@ mod maxsat_solver;
 /// |------------|---------------|------------|----------|
 /// | `LinearSU` | Linear Search | yes        | yes*     |
 /// | `MSU3`     | Unsat-Core    | yes        | no       |
-/// | `PartMSU3` | Unsat-Core    | yes        | no       |
 /// | `WBO`      | Unsat-Core    | yes        | yes      |
 /// | `OLL`      | Unsat-Core    | yes        | yes      |
 ///
 /// \* *`LinearSU` does not support weighted MaxSAT problems with the
 /// `PbEncoding::Adder`*
 ///
-/// All algorithms in LogicNG support partial MaxSAT. `MSU3` and `PartMSU3` do
-/// not support weighted clauses/formulas.
+/// All available algorithms support partial MaxSAT. `MSU3` does not support
+/// weighted clauses or formulas.
 ///
-/// The `LinearSU` stands for Linear SAT-UNSAT and it means that all sat-calls
-/// on the SAT-Solver are SAT except for the last call. That means: We start
-/// with a version without soft formulas on the SAT solver (which is SAT as long
-/// as the conjunction of the hard formulas evaluate to `true`). Then we add
-/// clauses as long as an UNSAT comes for the first time.
+/// `LinearSU` stands for linear SAT-UNSAT search. It starts with a model of the
+/// relaxed formula and repeatedly tightens an upper bound on the cost. Its SAT
+/// calls are satisfiable until the final call proves that the bound cannot be
+/// improved.
 ///
-/// The two `MSU3` and `PartMSU3` algorithms are based on unsatisfiable cores.
-/// The `WBO` algorithm is based on a CNF encoding of the pseudo-Boolean
-/// Optimization problem. Which algorithm to use depends strongly on the
-/// specific use case and must be evaluated.
+/// `MSU3`, `WBO`, and `OLL` are core-guided algorithms. Which algorithm performs
+/// best depends strongly on the problem family and should be evaluated for the
+/// intended workload.
 ///
 ///
 /// # Using MaxSAT Solvers in LogicNG
 ///
-/// A MaxSAT solver is represented by the
-/// [`MaxSatSolver`](crate::solver::maxsat::MaxSatSolver) struct. You can create
-/// a new instance by using
-/// [`MaxSatSolver::new`](crate::solver::maxsat::MaxSatSolver::new) or
-/// [`MaxSatSolver::from_config`](crate::solver::maxsat::MaxSatSolver::from_config).
-/// Both constructors take an [`Algorithm`](crate::solver::maxsat::Algorithm) as
-/// argument, which will be used by the solver. Additionally, `from_config`
-/// takes a `MaxSatConfig`, which allows you to configure certain details
-/// (encodings, strategies) of the algorithm. Solver created by `new` use a
-/// default configuration. Once you have created a solver, you can no longer
-/// modify the algorithm or the configuration.
+/// A MaxSAT solver is represented by the [`MaxSatSolver`] struct. It provides
+/// the common operations for adding constraints, solving, cancellation, and
+/// resetting a problem independently of a concrete backend.
+///
+/// The included Rust implementation is configured with [`OpenWboConfig`] and
+/// connected to the generic solver through [`RustOpenWboFactory`].
 ///
 /// ```
 /// # use logicng::solver::maxsat::*;
 ///
-/// let solver1 = MaxSatSolver::new(Algorithm::Oll).unwrap(); //Solver with default configuration
+/// let mut solver1 = MaxSatSolver::from_factory(&RustOpenWboFactory::new(OpenWboConfig::default())).unwrap();
 ///
-/// let config = MaxSatConfig::default()
+/// let config = OpenWboConfig::default()
+///                 .algorithm(Algorithm::LinearSu)
 ///                 .cardinal(CardinalEncoding::MTotalizer)
 ///                 .pb(PbEncoding::Gte);
-/// let solver2 = MaxSatSolver::from_config(Algorithm::LinearSu, config).unwrap(); //With custom configuration
+/// let mut solver2 = MaxSatSolver::from_factory(&RustOpenWboFactory::new(config)).unwrap();
 /// ```
 ///
 /// Hard formulas are added with the method
@@ -116,30 +116,23 @@ mod maxsat_solver;
 /// soft clauses are added with
 /// [`MaxSatSolver::add_soft_formula`](crate::solver::maxsat::MaxSatSolver::add_soft_formula),
 /// which takes a positive weight. For an unweighted clause, use the weight 1.
-/// After you added all formulas, you can use the method `MaxSatSolver::solve`
-/// to solve the problem. The result is a `MaxSatResult` which has one of three
+/// After adding all formulas, use [`MaxSatSolver::solve`] to solve the problem.
+/// The returned [`MaxSatResult`] has one of three
 /// states:
 ///
-/// 1. `UNSATISFIABLE`: The hard clauses on the solver are already
+/// 1. `Unsatisfiable`: The hard clauses on the solver are already
 ///    unsatisfiable, optimization could not be performed
-/// 2. `OPTIMUM(u64)`: An optimal solution was found + returns the result.
-/// 3. `UNDEF`: If no search has been executed yet or the search was aborted by
-///    the algorithm and yielded no result.
+/// 2. `Optimum { bound, model }`: An optimal solution and its model were found.
+/// 3. `Undef`: No search result is available.
 ///
 /// The result is the minimum weight (or number of clauses if unweighted) of
 /// clauses/formulas which have to be unsatisfied.  Therefore, if the minimum
 /// number of weights is 0, the formula is satisfiable.
 ///
-/// Once a model is solved, the solver will cache the result. If you call
-/// `solve` again, it will return that cached result. If you want to reuse the
-/// solver, you need to call
+/// To reuse a solver for a different problem, call
 /// [`MaxSatSolver::reset`](crate::solver::maxsat::MaxSatSolver::reset) first.
 /// Note that this will only keep your algorithm and the configuration. All
 /// added formulas will be deleted.
-///
-/// The method
-/// [`MaxSatSolver::model`](crate::solver::maxsat::MaxSatSolver::model) returns
-/// the model found by the solver when an optimal solution was found.
 ///
 /// # Example
 ///
@@ -165,14 +158,17 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Msu3)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Msu3);
+/// let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(config)).unwrap();
 /// solver.add_soft_formula(1, "A & B & (C | D)".to_formula(&f), &f)?;
 /// solver.add_soft_formula(1, "A => ~B".to_formula(&f), &f)?;
 /// solver.add_soft_formula(1, "~C".to_formula(&f), &f)?;
 /// solver.add_soft_formula(1, "~D".to_formula(&f), &f)?;
 ///
-/// let result = solver.solve()?; //Optimum(1)
-/// let model = solver.model()?; //pos=[], neg=[~A, ~B, ~C, ~D]
+/// let MaxSatResult::Optimum { bound, model } = solver.solve()? else {
+///     panic!("expected an optimum");
+/// };
+/// assert_eq!(bound, 1);
 /// # Ok(())
 /// # }
 /// ```
@@ -198,14 +194,18 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Oll);
+/// let mut solver =
+///     MaxSatSolver::from_factory(&RustOpenWboFactory::new(config))?;
 /// solver.add_hard_formula("A & B & (C | D)".to_formula(&f), &f)?;
 /// solver.add_soft_formula(2, "A => ~B".to_formula(&f), &f)?;
 /// solver.add_soft_formula(4, "~C".to_formula(&f), &f)?;
 /// solver.add_soft_formula(8, "~D".to_formula(&f), &f)?;
 ///
-/// let result = solver.solve()?; //Optimum(6)
-/// let model = solver.model()?; //pos=[A, B, C], neg=[~D]
+/// let MaxSatResult::Optimum { bound, model } = solver.solve()? else {
+///     panic!("expected an optimum");
+/// };
+/// assert_eq!(bound, 6);
 /// #   Ok(())
 /// # }
 ///
@@ -236,14 +236,15 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Oll);
+/// let mut solver =
+///     MaxSatSolver::from_factory(&RustOpenWboFactory::new(config))?;
 /// solver.add_hard_formula("A & B & C".to_formula(&f), &f)?;
 /// solver.add_hard_formula("A => ~B".to_formula(&f), &f)?;
 /// solver.add_hard_formula("~C".to_formula(&f), &f)?;
 /// solver.add_soft_formula(8, "X | Y".to_formula(&f), &f)?;
 ///
-/// let result = solver.solve()?; //Unsatisfiable
-/// let model = solver.model().expect_err("Expected no model!");
+/// assert_eq!(solver.solve()?, MaxSatResult::Unsatisfiable);
 /// # Ok(())
 /// # }
 /// ```
@@ -259,13 +260,17 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Oll);
+/// let mut solver =
+///     MaxSatSolver::from_factory(&RustOpenWboFactory::new(config))?;
 /// solver.add_hard_formula("A & B & C".to_formula(&f), &f)?;
 /// solver.add_soft_formula(1, "~C | D".to_formula(&f), &f)?;
 /// solver.add_soft_formula(1, "X | Y".to_formula(&f), &f)?;
 ///
-/// let result = solver.solve()?; // Optimum(0)
-/// let model = solver.model()?; // pos=[A, B, C, D, X], neg=[~Y]
+/// let MaxSatResult::Optimum { bound, model } = solver.solve()? else {
+///     panic!("expected an optimum");
+/// };
+/// assert_eq!(bound, 0);
 /// # Ok(())
 /// # }
 /// ```
@@ -290,7 +295,9 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Oll);
+/// let mut solver =
+///     MaxSatSolver::from_factory(&RustOpenWboFactory::new(config))?;
 /// solver.add_hard_formula("(A & B & ~X & ~D) | (B & C & ~A) | (C & ~D & X)".to_formula(&f), &f)?;
 /// solver.add_soft_formula(2, "A".to_formula(&f), &f)?;
 /// solver.add_soft_formula(4, "B".to_formula(&f), &f)?;
@@ -320,7 +327,9 @@ mod maxsat_solver;
 /// # use std::error::Error;
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let f = FormulaFactory::new();
-/// let mut solver = MaxSatSolver::new(Algorithm::Oll)?;
+/// let config = OpenWboConfig::default().algorithm(Algorithm::Oll);
+/// let mut solver =
+///     MaxSatSolver::from_factory(&RustOpenWboFactory::new(config))?;
 /// solver.add_hard_formula("(A & B & ~X & ~D) | (B & C & ~A) | (C & ~D & X)".to_formula(&f), &f)?;
 /// solver.add_soft_formula(2, "~A".to_formula(&f), &f)?;
 /// solver.add_soft_formula(4, "~B".to_formula(&f), &f)?;
@@ -337,10 +346,6 @@ mod maxsat_solver;
 ///
 /// Once you wrap your head around this concept of duality you have a very
 /// mighty tool to solve all kinds of optimization problems with MaxSAT solving.
-pub use maxsat_config::*;
-pub use maxsat_solver::*;
-
 /// We deviate from the convention of putting unit tests in the source file in this case,
 /// s.t. the file don't become too large
-#[cfg(test)]
 pub(crate) mod tests;

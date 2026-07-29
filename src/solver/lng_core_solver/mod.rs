@@ -6,12 +6,14 @@ pub mod functions;
 mod datastructures;
 mod lng_core_solver;
 mod sat_call;
+mod sat_error;
 mod sat_solver;
 mod sat_solver_config;
 
 pub use datastructures::*;
 pub use lng_core_solver::*;
 pub use sat_call::*;
+pub use sat_error::*;
 pub use sat_solver::*;
 pub use sat_solver_config::*;
 

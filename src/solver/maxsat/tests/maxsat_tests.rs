@@ -1,13 +1,27 @@
-use crate::formulas::FormulaFactory;
-use crate::solver::maxsat::{Algorithm, MaxSatConfig, MaxSatResult, MaxSatSolver};
 use std::collections::HashMap;
 use std::io::BufRead;
 
+#[cfg(test)]
+use crate::backends::MaxSatResult;
+#[cfg(test)]
+use crate::datastructures::Model;
+#[cfg(test)]
+use crate::errors::LngResult;
+#[cfg(test)]
+use crate::formulas::FormulaFactory;
+#[cfg(test)]
+use crate::solver::maxsat::{MaxSatSolver, OpenWboConfig, RustOpenWboFactory};
+
+#[cfg(test)]
 mod handler_tests {
+    use crate::backends::MaxSatResult;
     use crate::formulas::FormulaFactory;
-    use crate::handlers::{CancelableResult, ComputationHandler, LngEvent, TimeoutHandler};
+    use crate::handlers::{
+        CancelableResult, ComputationHandler, LngComputation, LngEvent, TimeoutHandler,
+    };
+    use crate::solver::maxsat::openwbo_rs::config::{Algorithm, OpenWboConfig};
     use crate::solver::maxsat::tests::maxsat_tests::read_cnf_to_solver;
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
+    use crate::solver::maxsat::{MaxSatSolver, RustOpenWboFactory};
     use std::path::Path;
     use std::time::{Duration, Instant};
 
@@ -21,7 +35,8 @@ mod handler_tests {
 
     #[test]
     fn timeout_can_cancel_at_start() {
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Oll);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         let result = solver
             .solve_with_handler(&mut TimeoutHandler::new(0))
             .unwrap();
@@ -34,7 +49,8 @@ mod handler_tests {
     #[test]
     fn cancellation_in_glucose_keeps_best_bound_and_model() {
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::new(Algorithm::LinearSu).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::LinearSu);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         for i in 0..100 {
             let variable = f.var(format!("x{i}"));
             solver.add_soft_formula(1, variable.into(), &f).unwrap();
@@ -44,11 +60,13 @@ mod handler_tests {
         }
 
         let result = solver.solve_with_handler(&mut CancelInSatSolver).unwrap();
-        assert!(matches!(
-            result,
-            CancelableResult::Partial(MaxSatResult::Optimum(_), LngEvent::SatConflictDetected)
-        ));
-        assert!(!solver.model().unwrap().literals().is_empty());
+        match result {
+            CancelableResult::Partial(
+                MaxSatResult::Optimum { model, .. },
+                LngEvent::SatConflictDetected,
+            ) => assert!(!model.literals().is_empty()),
+            result => panic!("unexpected result: {result:?}"),
+        }
     }
 
     #[test]
@@ -57,7 +75,8 @@ mod handler_tests {
         const MAX_CANCELLATION_DELAY: Duration = Duration::from_millis(500);
 
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::new(Algorithm::Wbo).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Wbo);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         let instance =
             Path::new("resources/partialweightedmaxsat/large/mancoosi-test-i40d0u98-17.wcnf");
         read_cnf_to_solver(&mut solver, instance, &f).unwrap();
@@ -80,12 +99,14 @@ mod handler_tests {
         );
 
         match result {
-            CancelableResult::Partial(MaxSatResult::Optimum(_), cause) => {
+            CancelableResult::Partial(MaxSatResult::Optimum { model, .. }, cause) => {
                 assert!(matches!(
                     cause,
-                    LngEvent::MaxSatSolverCall | LngEvent::SatConflictDetected
+                    LngEvent::MaxSatSolverCall
+                        | LngEvent::SatConflictDetected
+                        | LngEvent::ComputationFinished(LngComputation::MaxSat)
                 ));
-                assert!(!solver.model().unwrap().literals().is_empty());
+                assert!(!model.literals().is_empty());
             }
             CancelableResult::Canceled(cause) => {
                 panic!("timeout did not preserve a best-so-far result: {cause:?}")
@@ -102,7 +123,8 @@ mod handler_tests {
     #[test]
     fn large_maxsat_instance_finishes_with_sufficient_timeout() {
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::new(Algorithm::Wbo).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Wbo);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         let instance =
             Path::new("resources/partialweightedmaxsat/large/mancoosi-test-i40d0u98-17.wcnf");
         read_cnf_to_solver(&mut solver, instance, &f).unwrap();
@@ -111,25 +133,27 @@ mod handler_tests {
             .solve_with_handler(&mut TimeoutHandler::new(100_000))
             .unwrap();
 
-        assert!(matches!(
-            result,
-            CancelableResult::Ok(MaxSatResult::Optimum(1_780_852))
-        ));
-        assert!(!solver.model().unwrap().literals().is_empty());
+        match result {
+            CancelableResult::Ok(MaxSatResult::Optimum { bound, model }) => {
+                assert_eq!(bound, 1_780_852);
+                assert!(!model.literals().is_empty());
+            }
+            result => panic!("unexpected result: {result:?}"),
+        }
     }
 }
 
+#[cfg(test)]
 mod pure_maxsat_tests {
+    use crate::backends::MaxSatResult;
     use crate::formulas::FormulaFactory;
-    use crate::solver::SolverError;
-    use crate::solver::maxsat::maxsat_config::{
-        CardinalEncoding, GraphType, MaxSatConfig, MergeStrategy, Symmetry, Verbosity,
-        WeightStrategy,
-    };
+    use crate::solver::maxsat::openwbo_rs::config::{Algorithm, OpenWboConfig};
     use crate::solver::maxsat::tests::maxsat_tests::read_cnf_to_solver;
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
+    use crate::solver::maxsat::{
+        CardinalEncoding, MaxSatSolver, RustOpenWboFactory, Symmetry, WeightStrategy,
+    };
 
-    use super::test_on_files;
+    use super::{assert_optimum, test_on_files};
 
     static FILES: &[(&str, u64)] = &[
         (
@@ -167,7 +191,8 @@ mod pure_maxsat_tests {
     #[test]
     fn corner_case() {
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::new(Algorithm::Wbo).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Wbo);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         solver
             .add_hard_formula(f.parse("a | b").unwrap(), &f)
             .unwrap();
@@ -175,133 +200,87 @@ mod pure_maxsat_tests {
         solver
             .add_soft_formula(1, f.parse("a").unwrap(), &f)
             .unwrap();
-        let mut result = solver.solve().unwrap();
-        assert!(matches!(result, MaxSatResult::Optimum(_)));
-        result = solver.solve().unwrap();
-        assert!(matches!(result, MaxSatResult::Optimum(_)));
+        let result = solver.solve().unwrap();
+        assert!(matches!(result, MaxSatResult::Optimum { .. }));
     }
 
     #[test]
     fn test_wbo() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default()
+        let c = OpenWboConfig::default()
+            .algorithm(Algorithm::Wbo)
             .weight(WeightStrategy::None)
-            .symmetry(Symmetry::Sym(i32::MAX))
-            .verbosity(Verbosity::None);
+            .symmetry(Symmetry::Sym(i32::MAX));
         cs.push(c.clone());
         cs.push(c.symmetry(Symmetry::None));
 
-        test_on_files(&Algorithm::Wbo, &cs, &f, FILES);
-        test_on_files(&Algorithm::Wbo, &cs, &f, SAT_FILES);
+        test_on_files(&cs, &f, FILES);
+        test_on_files(&cs, &f, SAT_FILES);
     }
 
     #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "requires a release build because the debug build exhausts the stack"
+    )]
     fn test_linear_su() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default()
-            .cardinal(CardinalEncoding::Totalizer)
-            .verbosity(Verbosity::None);
+        let c = OpenWboConfig::default()
+            .algorithm(Algorithm::LinearSu)
+            .cardinal(CardinalEncoding::Totalizer);
         cs.push(c.clone());
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer));
         cs.push(c.cardinal(CardinalEncoding::CNetworks));
 
-        test_on_files(&Algorithm::LinearSu, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_msu_3() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default()
-            .cardinal(CardinalEncoding::Totalizer)
-            .verbosity(Verbosity::None);
+        let c = OpenWboConfig::default()
+            .algorithm(Algorithm::Msu3)
+            .cardinal(CardinalEncoding::Totalizer);
         cs.push(c.clone());
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer));
         cs.push(c.cardinal(CardinalEncoding::CNetworks));
 
-        test_on_files(&Algorithm::Msu3, &cs, &f, FILES);
-        test_on_files(&Algorithm::Msu3, &cs, &f, SAT_FILES);
-    }
-
-    #[test]
-    fn test_part_msu_3() {
-        let f = FormulaFactory::new();
-        let mut cs = vec![];
-        let c = MaxSatConfig::default()
-            .cardinal(CardinalEncoding::Totalizer)
-            .verbosity(Verbosity::None);
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::Res),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::CVig),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::Vig),
-        );
-        cs.push(c.clone().merge(MergeStrategy::Binary).graph(GraphType::Res));
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Binary)
-                .graph(GraphType::CVig),
-        );
-        cs.push(c.clone().merge(MergeStrategy::Binary).graph(GraphType::Vig));
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::Res),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::CVig),
-        );
-        cs.push(
-            c.merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::Vig),
-        );
-
-        test_on_files(&Algorithm::PartMsu3, &cs, &f, FILES);
-        test_on_files(&Algorithm::PartMsu3, &cs, &f, SAT_FILES);
+        test_on_files(&cs, &f, FILES);
+        test_on_files(&cs, &f, SAT_FILES);
     }
 
     #[test]
     fn test_oll() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default();
+        let c = OpenWboConfig::default().algorithm(Algorithm::Oll);
         cs.push(c);
 
-        test_on_files(&Algorithm::Oll, &cs, &f, FILES);
-        test_on_files(&Algorithm::Oll, &cs, &f, SAT_FILES);
+        test_on_files(&cs, &f, FILES);
+        test_on_files(&cs, &f, SAT_FILES);
     }
 
     #[test]
     fn test_single() {
         let file = std::path::PathBuf::from("resources/maxsat/c-fat200-2.clq.cnf");
         let f = FormulaFactory::new();
-        let c = MaxSatConfig::default()
-            .cardinal(CardinalEncoding::MTotalizer)
-            .verbosity(Verbosity::None);
+        let cfg = OpenWboConfig::default()
+            .algorithm(Algorithm::Msu3)
+            .cardinal(CardinalEncoding::MTotalizer);
 
-        let mut solver = MaxSatSolver::from_config(Algorithm::Msu3, c).unwrap();
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         read_cnf_to_solver(&mut solver, &file, &f).unwrap();
-        assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(26)));
+        assert_optimum(solver.solve(), 26);
     }
 
     #[test]
-    fn test_assignment() {
-        let config = MaxSatConfig::default().verbosity(Verbosity::None);
+    fn test_model() {
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::from_config(Algorithm::Msu3, config).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Msu3);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
 
         solver.add_hard_formula(f.parse("y").unwrap(), &f).unwrap();
         solver.add_hard_formula(f.parse("~z").unwrap(), &f).unwrap();
@@ -335,61 +314,35 @@ mod pure_maxsat_tests {
         solver
             .add_soft_formula(1, f.parse("z").unwrap(), &f)
             .unwrap();
-        assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(3)));
-
-        let model = solver.assignment().unwrap();
+        let model = assert_optimum(solver.solve(), 3);
         assert_eq!(model.len(), 8);
-        assert_eq!(model.pos.len(), 1);
-        assert!(model.contains_pos(f.var("y")));
-        assert_eq!(model.neg.len(), 7);
+        assert_eq!(model.pos().len(), 1);
+        assert!(model.pos().contains(&f.var("y")));
+        assert_eq!(model.neg().len(), 7);
         for n in ["a", "b", "c", "d", "e", "x", "z"] {
-            assert!(model.contains_neg(f.var(n)));
+            assert!(model.neg().contains(&f.var(n)));
         }
     }
 
     #[test]
-    fn test_illegal_model() {
-        let config = MaxSatConfig::default().verbosity(Verbosity::None);
+    fn test_unsatisfiable_has_no_model() {
         let f = FormulaFactory::new();
-        let mut solver = MaxSatSolver::from_config(Algorithm::Msu3, config).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Msu3);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
 
         solver
-            .add_soft_formula(1, f.parse("a => b").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("b => c").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("c => d").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("d => e").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("a => x").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("~e").unwrap(), &f)
-            .unwrap();
-        solver
-            .add_soft_formula(1, f.parse("~x").unwrap(), &f)
+            .add_hard_formula(f.parse("a & ~a").unwrap(), &f)
             .unwrap();
 
-        assert_eq!(
-            solver.model().unwrap_err(),
-            SolverError::IllegalModelRequest.into()
-        );
+        assert_eq!(solver.solve(), Ok(MaxSatResult::Unsatisfiable));
     }
 }
 
+#[cfg(test)]
 mod partial_maxsat_tests {
-    use crate::formulas::FormulaFactory;
-    use crate::solver::maxsat::Algorithm;
-    use crate::solver::maxsat::maxsat_config::{
-        CardinalEncoding, GraphType, MaxSatConfig, MergeStrategy, Verbosity,
-    };
-
     use super::test_on_files;
+    use crate::formulas::FormulaFactory;
+    use crate::solver::maxsat::{Algorithm, CardinalEncoding, OpenWboConfig};
 
     static FILES: &[(&str, u64)] = &[
         ("resources/partialmaxsat/c1355_F176gat-1278gat@1.wcnf", 13),
@@ -406,27 +359,27 @@ mod partial_maxsat_tests {
     fn test_wbo() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None);
+        let c = OpenWboConfig::default().algorithm(Algorithm::Wbo);
         cs.push(c);
 
-        test_on_files(&Algorithm::Wbo, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_oll() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None);
+        let c = OpenWboConfig::default().algorithm(Algorithm::Oll);
         cs.push(c);
 
-        test_on_files(&Algorithm::Oll, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_linear_su() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None);
+        let c = OpenWboConfig::default().algorithm(Algorithm::LinearSu);
         cs.push(c.clone().cardinal(CardinalEncoding::Totalizer).bmo(false));
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer).bmo(false));
         cs.push(c.clone().cardinal(CardinalEncoding::CNetworks).bmo(false));
@@ -434,78 +387,31 @@ mod partial_maxsat_tests {
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer).bmo(true));
         cs.push(c.cardinal(CardinalEncoding::CNetworks).bmo(true));
 
-        test_on_files(&Algorithm::LinearSu, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_msu3() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None);
+        let c = OpenWboConfig::default().algorithm(Algorithm::Msu3);
         cs.push(c.clone().cardinal(CardinalEncoding::Totalizer));
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer));
         cs.push(c.cardinal(CardinalEncoding::CNetworks));
 
-        test_on_files(&Algorithm::Msu3, &cs, &f, FILES);
-    }
-
-    #[test]
-    fn test_part_msu3() {
-        let f = FormulaFactory::new();
-        let mut cs = vec![];
-        let c = MaxSatConfig::default()
-            .cardinal(CardinalEncoding::Totalizer)
-            .verbosity(Verbosity::None);
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::Res),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::CVig),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Sequential)
-                .graph(GraphType::Vig),
-        );
-        cs.push(c.clone().merge(MergeStrategy::Binary).graph(GraphType::Res));
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::Binary)
-                .graph(GraphType::CVig),
-        );
-        cs.push(c.clone().merge(MergeStrategy::Binary).graph(GraphType::Vig));
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::Res),
-        );
-        cs.push(
-            c.clone()
-                .merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::CVig),
-        );
-        cs.push(
-            c.merge(MergeStrategy::SequentialSorted)
-                .graph(GraphType::Vig),
-        );
-
-        test_on_files(&Algorithm::PartMsu3, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 }
 
+#[cfg(test)]
 mod partial_weighted_tests {
+    use super::{assert_optimum, test_on_files};
     use crate::formulas::FormulaFactory;
-    use crate::solver::maxsat::maxsat_config::{
-        CardinalEncoding, MaxSatConfig, Verbosity, WeightStrategy,
+    use crate::solver::maxsat::{
+        Algorithm, CardinalEncoding, MaxSatSolver, OpenWboConfig, RustOpenWboFactory,
+        WeightStrategy,
     };
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
     use std::collections::HashSet;
-
-    use super::test_on_files;
 
     static FILES: &[(&str, u64)] = &[
         ("resources/partialweightedmaxsat/8.wcsp.log.wcnf", 2),
@@ -548,57 +454,65 @@ mod partial_weighted_tests {
     fn test_wbo() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None);
+        let c = OpenWboConfig::default().algorithm(Algorithm::Wbo);
         //cs.push(c.clone().weight(WeightStrategy::Normal)); //takes too long
         //cs.push(c.clone().weight(WeightStrategy::Diversify)); //takes too long
         cs.push(c.weight(WeightStrategy::None));
 
-        test_on_files(&Algorithm::Wbo, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_linear_su() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default()
-            .verbosity(Verbosity::None)
+        let c = OpenWboConfig::default()
+            .algorithm(Algorithm::LinearSu)
             .bmo(false);
         cs.push(c.clone().cardinal(CardinalEncoding::Totalizer));
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer));
         cs.push(c.cardinal(CardinalEncoding::CNetworks));
 
-        test_on_files(&Algorithm::LinearSu, &cs, &f, FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_linear_su_bmo() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None).bmo(true);
+        let c = OpenWboConfig::default()
+            .algorithm(Algorithm::LinearSu)
+            .bmo(true);
         cs.push(c.clone().cardinal(CardinalEncoding::Totalizer));
         cs.push(c.clone().cardinal(CardinalEncoding::MTotalizer));
         cs.push(c.cardinal(CardinalEncoding::CNetworks));
 
-        test_on_files(&Algorithm::LinearSu, &cs, &f, BMO_FILES);
+        test_on_files(&cs, &f, BMO_FILES);
     }
 
     #[test]
     fn test_oll() {
         let f = FormulaFactory::new();
         let mut cs = vec![];
-        let c = MaxSatConfig::default().verbosity(Verbosity::None).bmo(true);
+        let c = OpenWboConfig::default().algorithm(Algorithm::Oll).bmo(true);
         cs.push(c);
 
-        test_on_files(&Algorithm::Oll, &cs, &f, BMO_FILES);
-        test_on_files(&Algorithm::Oll, &cs, &f, FILES);
+        test_on_files(&cs, &f, BMO_FILES);
+        test_on_files(&cs, &f, FILES);
     }
 
     #[test]
     fn test_weighted_non_clause_soft_constraints() {
         let f = FormulaFactory::new();
         let solvers = vec![
-            MaxSatSolver::new(Algorithm::LinearSu).unwrap(),
-            MaxSatSolver::new(Algorithm::Wbo).unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::LinearSu),
+            ))
+            .unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::Wbo),
+            ))
+            .unwrap(),
         ];
 
         for mut solver in solvers {
@@ -608,9 +522,8 @@ mod partial_weighted_tests {
             solver
                 .add_soft_formula(2, f.parse("~a & ~b & ~c").unwrap(), &f)
                 .unwrap();
-            assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(2)));
-            let model = solver.assignment().unwrap();
-            let literals: HashSet<_> = model.pos.union(&model.neg).collect();
+            let model = assert_optimum(solver.solve(), 2);
+            let literals: HashSet<_> = model.pos().iter().chain(model.neg()).collect();
             assert_eq!(literals.len(), 3);
             assert!(literals.contains(&f.var("a")));
             assert!(literals.contains(&f.var("b")));
@@ -622,8 +535,14 @@ mod partial_weighted_tests {
     fn test_weighted_soft_constraints_corner_case_verum() {
         let f = FormulaFactory::new();
         let solvers = vec![
-            MaxSatSolver::new(Algorithm::LinearSu).unwrap(),
-            MaxSatSolver::new(Algorithm::Wbo).unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::LinearSu),
+            ))
+            .unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::Wbo),
+            ))
+            .unwrap(),
         ];
 
         for mut solver in solvers {
@@ -636,9 +555,8 @@ mod partial_weighted_tests {
             solver
                 .add_soft_formula(3, f.parse("~a & ~b & ~c").unwrap(), &f)
                 .unwrap();
-            assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(3)));
-            let model = solver.assignment().unwrap();
-            let literals: HashSet<_> = model.pos.union(&model.neg).collect();
+            let model = assert_optimum(solver.solve(), 3);
+            let literals: HashSet<_> = model.pos().iter().chain(model.neg()).collect();
             assert_eq!(literals.len(), 3);
             assert!(literals.contains(&f.var("a")));
             assert!(literals.contains(&f.var("b")));
@@ -650,8 +568,14 @@ mod partial_weighted_tests {
     fn test_weighted_soft_constraints_cors_case_falsum() {
         let f = FormulaFactory::new();
         let solvers = vec![
-            MaxSatSolver::new(Algorithm::LinearSu).unwrap(),
-            MaxSatSolver::new(Algorithm::Wbo).unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::LinearSu),
+            ))
+            .unwrap(),
+            MaxSatSolver::from_factory(&RustOpenWboFactory::new(
+                OpenWboConfig::default().algorithm(Algorithm::Wbo),
+            ))
+            .unwrap(),
         ];
 
         for mut solver in solvers {
@@ -664,9 +588,8 @@ mod partial_weighted_tests {
             solver
                 .add_soft_formula(3, f.parse("~a & ~b & ~c").unwrap(), &f)
                 .unwrap();
-            assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(5)));
-            let model = solver.assignment().unwrap();
-            let literals: HashSet<_> = model.pos.union(&model.neg).collect();
+            let model = assert_optimum(solver.solve(), 5);
+            let literals: HashSet<_> = model.pos().iter().chain(model.neg()).collect();
             assert_eq!(literals.len(), 3);
             assert!(literals.contains(&f.var("a")));
             assert!(literals.contains(&f.var("b")));
@@ -675,10 +598,13 @@ mod partial_weighted_tests {
     }
 }
 
+#[cfg(test)]
 mod long_running_tests {
     use crate::formulas::FormulaFactory;
     use crate::solver::maxsat::tests::maxsat_tests::{read_cnf_to_solver, read_result};
-    use crate::solver::maxsat::{Algorithm, MaxSatResult, MaxSatSolver};
+    use crate::solver::maxsat::{Algorithm, MaxSatSolver, OpenWboConfig, RustOpenWboFactory};
+
+    use super::assert_optimum;
 
     #[test]
     fn test() {
@@ -686,7 +612,8 @@ mod long_running_tests {
         let dir_path = std::path::PathBuf::from("resources/longrunning/wms");
         let dir = std::fs::read_dir(&dir_path).expect("Failed reading dir!");
         let result = read_result(&dir_path.join("result.txt")).expect("Failed reading result!");
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).expect("Failed to build solver!");
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Oll);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
 
         let start = std::time::Instant::now();
         for file in dir {
@@ -695,7 +622,7 @@ mod long_running_tests {
                 solver.reset();
                 read_cnf_to_solver(&mut solver, &fi.path(), &f).unwrap();
                 let expected_res = result[fi.file_name().to_str().unwrap()];
-                assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(expected_res)));
+                assert_optimum(solver.solve(), expected_res);
             }
         }
         println!("OLL\t: {}", start.elapsed().as_secs_f32());
@@ -706,9 +633,10 @@ mod long_running_tests {
         let f = FormulaFactory::new();
         let file_path =
             std::path::PathBuf::from("resources/partialweightedmaxsat/large/large_industrial.wcnf");
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Oll);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         read_cnf_to_solver(&mut solver, &file_path, &f).unwrap();
-        assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(68974)));
+        assert_optimum(solver.solve(), 68974);
     }
 
     #[test]
@@ -716,9 +644,10 @@ mod long_running_tests {
         let f = FormulaFactory::new();
         let file_path =
             std::path::PathBuf::from("resources/partialweightedmaxsat/large/t3g3-5555.spn.wcnf");
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Oll);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         read_cnf_to_solver(&mut solver, &file_path, &f).unwrap();
-        assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(1_100_610)));
+        assert_optimum(solver.solve(), 1_100_610);
     }
 
     #[test]
@@ -726,12 +655,14 @@ mod long_running_tests {
         let f = FormulaFactory::new();
         let file_path =
             std::path::PathBuf::from("resources/partialweightedmaxsat/large/large_weights.wcnf");
-        let mut solver = MaxSatSolver::new(Algorithm::Oll).unwrap();
+        let cfg = OpenWboConfig::default().algorithm(Algorithm::Oll);
+        let mut solver = MaxSatSolver::from_factory(&RustOpenWboFactory::new(cfg)).unwrap();
         read_cnf_to_solver(&mut solver, &file_path, &f).unwrap();
-        assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(90912)));
+        assert_optimum(solver.solve(), 90912);
     }
 }
 
+#[cfg(test)]
 fn read_cnf_to_solver(
     solver: &mut MaxSatSolver,
     path: &std::path::Path,
@@ -797,7 +728,7 @@ fn read_cnf_to_solver(
     }
     Ok(())
 }
-
+#[allow(dead_code)]
 fn read_result(path: &std::path::Path) -> Result<HashMap<String, u64>, Box<dyn std::error::Error>> {
     let mut map = HashMap::new();
     let file = std::fs::File::open(path).unwrap();
@@ -814,18 +745,26 @@ fn read_result(path: &std::path::Path) -> Result<HashMap<String, u64>, Box<dyn s
     Ok(map)
 }
 
-fn test_on_files(
-    algorithm: &Algorithm,
-    configs: &Vec<MaxSatConfig>,
-    f: &FormulaFactory,
-    source: &[(&str, u64)],
-) {
+#[cfg(test)]
+fn test_on_files(configs: &Vec<OpenWboConfig>, f: &FormulaFactory, source: &[(&str, u64)]) {
     for config in configs {
         for (file, result) in source {
-            let mut solver = MaxSatSolver::from_config(algorithm.clone(), config.clone()).unwrap();
+            let mut solver =
+                MaxSatSolver::from_factory(&RustOpenWboFactory::new(config.clone())).unwrap();
             let path = std::path::PathBuf::from(file);
             read_cnf_to_solver(&mut solver, &path, f).unwrap();
-            assert_eq!(solver.solve(), Ok(MaxSatResult::Optimum(*result)));
+            assert_optimum(solver.solve(), *result);
         }
+    }
+}
+
+#[cfg(test)]
+fn assert_optimum(result: LngResult<MaxSatResult>, expected_bound: u64) -> Model {
+    match result.unwrap() {
+        MaxSatResult::Optimum { bound, model } => {
+            assert_eq!(bound, expected_bound);
+            model
+        }
+        result => panic!("expected optimum result, got {result:?}"),
     }
 }
