@@ -53,12 +53,7 @@ impl MaxSatSolver {
     /// Returns an error if no MaxSAT backend is configured or if the backend
     /// cannot be initialized.
     pub fn from_context(context: &ComputationContext) -> LngResult<Self> {
-        let factory = context
-            .backends
-            .maxsat
-            .as_deref()
-            // TODO default Rust implementation later
-            .ok_or(MaxSatError::NoBackendConfigured)?;
+        let factory = context.backends.maxsat();
         Self::from_factory(factory)
     }
 
