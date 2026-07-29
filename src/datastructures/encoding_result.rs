@@ -150,6 +150,27 @@ impl<'s, 'f, B> EncodingResultSatSolver<'s, 'f, B> {
         Self::new_with_prop_id(solver, prop_id, f)
     }
 
+    /// Creates a [`SatSolver`]-based [`EncodingResult`] for an already
+    /// registered proposition.
+    ///
+    /// Clauses produced through this result are associated with `proposition`.
+    /// Passing `None` creates clauses without proposition information. This
+    /// constructor is primarily useful for internal encoding pipelines which
+    /// already carry a [`PropositionID`]; use [`Self::new`] when starting with
+    /// a [`Proposition`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use logicng::datastructures::EncodingResultSatSolver;
+    /// # use logicng::formulas::FormulaFactory;
+    /// # use logicng::solver::lng_core_solver::SatSolver;
+    /// let f = FormulaFactory::new();
+    /// let mut solver = SatSolver::new();
+    /// let result = EncodingResultSatSolver::new_with_prop_id(&mut solver, None, &f);
+    ///
+    /// assert_eq!(result.factory().id(), f.id());
+    /// ```
     pub fn new_with_prop_id(
         solver: &'s mut SatSolver<B>,
         proposition: Option<PropositionID>,

@@ -261,6 +261,11 @@ impl ProofInformation {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+/// Opaque identifier of a proposition registered on a SAT solver.
+///
+/// The identifier associates generated clauses and proof information with the
+/// proposition from which they originated. It is only meaningful for the
+/// solver instance which created it.
 pub struct PropositionID(pub(crate) usize);
 
 #[cfg(test)]
